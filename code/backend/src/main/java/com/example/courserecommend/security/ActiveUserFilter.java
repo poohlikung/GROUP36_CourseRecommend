@@ -20,6 +20,7 @@ import java.io.IOException;
 public class ActiveUserFilter extends OncePerRequestFilter {
 
     private final AuthService authService;
+    private final SecurityErrorWriter errorWriter;
 
     @Override
     protected void doFilterInternal(
@@ -36,7 +37,8 @@ public class ActiveUserFilter extends OncePerRequestFilter {
                 session.invalidate();
             }
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "บัญชีนี้ถูกระงับ");
+            errorWriter.write(request, response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "SESSION_INVALIDATED", "เซสชันหมดอายุหรือบัญชีถูกระงับ กรุณาเข้าสู่ระบบใหม่");
             return;
         }
 
