@@ -5,6 +5,7 @@ import com.example.courserecommend.catalog.dto.CatalogCourseResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -24,8 +25,11 @@ public class CatalogController {
     }
 
     @GetMapping("/courses")
-    public ResponseEntity<List<CatalogCourseResponse>> getCourses() {
-        return ResponseEntity.ok(catalogCourseService.getPublishedCourses());
+    public ResponseEntity<List<CatalogCourseResponse>> getCourses(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String platform) {
+        return ResponseEntity.ok(catalogCourseService.getPublishedCourses(q, category, platform));
     }
 
     @GetMapping("/categories")

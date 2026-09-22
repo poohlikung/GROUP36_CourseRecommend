@@ -24,10 +24,25 @@ public class CatalogCourseService {
         this.courseRepository = courseRepository;
     }
 
-    public List<CatalogCourseResponse> getPublishedCourses() {
-        return courseRepository.findAllByStatusWithDetails(CourseStatus.PUBLISHED).stream()
+    public List<CatalogCourseResponse> getPublishedCourses(
+            String query,
+            String categorySlug,
+            String platformSlug) {
+        return courseRepository.searchByStatusWithDetails(
+                        CourseStatus.PUBLISHED,
+                        normalize(query),
+                        normalize(categorySlug),
+                        normalize(platformSlug))
+                .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private CatalogCourseResponse toResponse(Course course) {

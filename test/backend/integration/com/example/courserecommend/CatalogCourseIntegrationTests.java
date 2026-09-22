@@ -89,10 +89,48 @@ class CatalogCourseIntegrationTests {
                 .andExpect(jsonPath("$[0].categories[0].slug").value("software-development"));
     }
 
+    @Test
+    void guestCanFilterCoursesBySearchCategoryAndPlatform() throws Exception {
+        saveCourse("Spring Boot Fundamentals", "spring-boot-fundamentals", CourseStatus.PUBLISHED);
+
+        Platform otherPlatform = platformRepository.save(Platform.builder()
+                .name("Video Academy")
+                .slug("video-academy")
+                .allowedHost("video-academy.test")
+                .build());
+        Category otherCategory = categoryRepository.save(Category.builder()
+                .name("Data Analytics")
+                .slug("data-analytics")
+                .build());
+        saveCourse(
+                "Data Analytics Essentials",
+                "data-analytics-essentials",
+                CourseStatus.PUBLISHED,
+                otherPlatform,
+                otherCategory);
+
+        mockMvc.perform(get("/api/v1/catalog/courses")
+                        .queryParam("q", "spring")
+                        .queryParam("category", "software-development")
+                        .queryParam("platform", "coursehub-learning"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].slug").value("spring-boot-fundamentals"));
+    }
+
     private void saveCourse(String title, String slug, CourseStatus status) {
+        saveCourse(title, slug, status, platform, category);
+    }
+
+    private void saveCourse(
+            String title,
+            String slug,
+            CourseStatus status,
+            Platform coursePlatform,
+            Category courseCategory) {
         Course course = Course.builder()
                 .provider(provider)
-                .platform(platform)
+                .platform(coursePlatform)
                 .title(title)
                 .slug(slug)
                 .description("Learn the foundations with practical examples.")
@@ -102,7 +140,7 @@ class CatalogCourseIntegrationTests {
                 .effortHours(12)
                 .status(status)
                 .build();
-        course.getCategories().add(category);
+        course.getCategories().add(courseCategory);
 
         CoursePrice price = CoursePrice.builder()
                 .course(course)
