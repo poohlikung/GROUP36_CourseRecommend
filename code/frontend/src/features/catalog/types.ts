@@ -7,7 +7,7 @@ export type CatalogOption = {
 export type CatalogPrice = {
   paymentType: 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION';
   amount: number | null;
-  currency: string;
+  currency: string | null;
 };
 
 export type CatalogCourse = {
@@ -15,7 +15,6 @@ export type CatalogCourse = {
   title: string;
   slug: string;
   description: string | null;
-  url: string;
   level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   language: 'THAI' | 'ENGLISH' | 'SUB_THAI';
   effortHours: number | null;
@@ -23,10 +22,29 @@ export type CatalogCourse = {
   platform: CatalogOption;
   price: CatalogPrice | null;
   categories: CatalogOption[];
+  averageRating: number | null;
+  reviewCount: number;
+  externalUrl: string | null;
 };
 
 export type CatalogFilters = {
   query: string;
   category: string;
   platform: string;
+  level: string;
+  language: string;
+  paymentType: string;
+  minPrice: string;
+  maxPrice: string;
+  sort: string;
+};
+
+export type CatalogPage<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
 };

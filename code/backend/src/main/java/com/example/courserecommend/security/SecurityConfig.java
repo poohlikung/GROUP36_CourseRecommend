@@ -1,7 +1,9 @@
 package com.example.courserecommend.security;
 
+import com.example.courserecommend.auth.AuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,9 +18,6 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.http.HttpMethod;
-
-import com.example.courserecommend.auth.AuthService;
 
 @Configuration
 @EnableWebSecurity
@@ -67,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses")
                         .permitAll()
                         .anyRequest().authenticated());
 

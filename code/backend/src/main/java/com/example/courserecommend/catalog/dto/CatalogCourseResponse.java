@@ -10,12 +10,14 @@ public record CatalogCourseResponse(
         String title,
         String slug,
         String description,
-        String url,
         CourseLevel level,
         CourseLanguage language,
         Integer effortHours,
         CatalogOptionResponse provider,
         CatalogOptionResponse platform,
         CatalogPriceResponse price,
-        List<CatalogOptionResponse> categories) {
+        List<CatalogOptionResponse> categories,
+        Double averageRating,
+        long reviewCount,
+        String externalUrl) {
 }
