@@ -56,7 +56,10 @@ class AuthControllerIntegrationTests {
         assertThat(userRepository.findByEmail(email)).isPresent();
         assertThat(userRepository.findByEmail(email).orElseThrow().getPasswordHash()).isNotEqualTo(password);
 
+        MockHttpSession sessionBeforeLogin = new MockHttpSession();
+        String sessionIdBeforeLogin = sessionBeforeLogin.getId();
         MockHttpSession session = (MockHttpSession) mockMvc.perform(post("/api/v1/auth/login")
+                        .session(sessionBeforeLogin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(csrf.headerName(), csrf.token())
                         .cookie(csrf.cookie())
@@ -66,6 +69,8 @@ class AuthControllerIntegrationTests {
                 .andReturn()
                 .getRequest()
                 .getSession(false);
+
+        assertThat(session.getId()).isNotEqualTo(sessionIdBeforeLogin);
 
         mockMvc.perform(get("/api/v1/auth/me").session(session))
                 .andExpect(status().isOk())
