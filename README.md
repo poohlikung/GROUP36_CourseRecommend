@@ -15,3 +15,22 @@
 3. ตรวจ backend ที่ `http://localhost:8080/api/v1/system/liveness` และ Swagger ที่ `http://localhost:8080/swagger-ui.html`
 
 ฐานข้อมูลสร้างด้วย Flyway migration เท่านั้น โดย JPA ใช้ `validate` เพื่อป้องกัน schema ถูกแก้โดยอัตโนมัติ
+
+## เริ่ม Frontend
+
+```bash
+cd code/frontend
+npm ci
+npm run dev
+```
+
+เปิด `http://localhost:5173` โดย Vite จะ proxy `/api` ไป backend บนพอร์ต `8080` หน้า `/register` และ `/login` ใช้ session cookie และ CSRF token จาก backend
+
+## ทดสอบ
+
+```bash
+cd code/backend && ./mvnw test
+cd code/frontend && npm run build
+```
+
+ชุดทดสอบ PostgreSQL ใช้ Testcontainers และจะข้ามเมื่อ Docker ไม่ทำงาน สำหรับ production ที่ใช้ HTTPS ให้กำหนด `SERVER_SERVLET_SESSION_COOKIE_SECURE=true`
