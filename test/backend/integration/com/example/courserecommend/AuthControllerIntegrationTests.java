@@ -58,7 +58,7 @@ class AuthControllerIntegrationTests {
 
         MockHttpSession sessionBeforeLogin = new MockHttpSession();
         String sessionIdBeforeLogin = sessionBeforeLogin.getId();
-        MockHttpSession session = (MockHttpSession) mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .session(sessionBeforeLogin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(csrf.headerName(), csrf.token())
@@ -66,11 +66,11 @@ class AuthControllerIntegrationTests {
                         .content(objectMapper.writeValueAsString(new LoginPayload(email, password))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email))
-                .andReturn()
-                .getRequest()
-                .getSession(false);
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
 
         assertThat(session.getId()).isNotEqualTo(sessionIdBeforeLogin);
+        assertThat(loginResult.getResponse().getCookie("XSRF-TOKEN").getMaxAge()).isZero();
 
         mockMvc.perform(get("/api/v1/auth/me").session(session))
                 .andExpect(status().isOk())
@@ -151,6 +151,7 @@ class AuthControllerIntegrationTests {
 
         String token = objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
         Cookie cookie = result.getResponse().getCookie("XSRF-TOKEN");
+        assertThat(cookie.getAttribute("SameSite")).isEqualTo("Lax");
         return new CsrfCredentials("X-XSRF-TOKEN", token, cookie);
     }
 
