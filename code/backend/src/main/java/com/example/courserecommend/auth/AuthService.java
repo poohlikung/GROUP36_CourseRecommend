@@ -9,6 +9,7 @@ import com.example.courserecommend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,12 +43,13 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public UserDetails loadUserDetails(String email) {
-        User user = getActiveUserByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("ไม่พบบัญชีผู้ใช้"));
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPasswordHash())
                 .roles(user.getRole().name())
-                .disabled(user.getStatus().name().equals("SUSPENDED"))
+                .disabled(user.getStatus() == UserStatus.SUSPENDED)
                 .build();
     }
 

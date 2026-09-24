@@ -20,6 +20,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 
 @Configuration
 @EnableWebSecurity
@@ -55,7 +56,8 @@ public class SecurityConfig {
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
             SessionAuthenticationStrategy sessionAuthenticationStrategy,
-            ActiveUserFilter activeUserFilter) throws Exception {
+            ActiveUserFilter activeUserFilter,
+            SecurityErrorWriter securityErrorWriter) throws Exception {
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -64,6 +66,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionAuthenticationStrategy(sessionAuthenticationStrategy))
+                .requestCache(cache -> cache.requestCache(new NullRequestCache()))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) -> securityErrorWriter.write(
+                                response, 401, "authentication_required", "กรุณาเข้าสู่ระบบ"))
+                        .accessDeniedHandler((request, response, exception) -> securityErrorWriter.write(
+                                response, 403, "access_denied", "คุณไม่มีสิทธิ์ดำเนินการนี้")))
                 .addFilterAfter(activeUserFilter, SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
