@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { CatalogCourseCard } from '../features/catalog/CatalogCourseCard';
 import { getCatalogCourses, getCatalogOptions } from '../features/catalog/catalogApi';
 import type { CatalogCourse, CatalogOption, CatalogPage as CatalogPageData } from '../features/catalog/types';
+import { AuthActions } from '../features/auth/AuthActions';
 
 const emptyCatalogPage: CatalogPageData<CatalogCourse> = {
   content: [],
@@ -134,9 +135,7 @@ export function CatalogPage() {
           <Link to="/" className="text-xl font-black tracking-tight">
             Course<span className="text-cyan-600">Hub</span>
           </Link>
-          <span className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
-            ค้นหาคอร์สที่เหมาะกับคุณ
-          </span>
+          <AuthActions />
         </div>
       </header>
 

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
+import { AuthActions } from '../features/auth/AuthActions';
 
 export function HomePage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-slate-50">
+    <main className="relative grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-slate-50">
+      <div className="absolute right-6 top-6"><AuthActions dark /></div>
       <section className="max-w-2xl">
         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">
           CourseHub
