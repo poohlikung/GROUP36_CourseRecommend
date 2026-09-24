@@ -15,6 +15,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,10 +33,19 @@ public class AuthController {
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
+    private final LogoutHandler logoutHandler;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthUserResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<AuthUserResponse> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        authService.register(request);
+        Authentication authentication = authenticateAndStore(
+                request.email(), request.password(), httpRequest, httpResponse);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(authService.getCurrentUser(authentication.getName()));
     }
 
     @GetMapping("/csrf")
@@ -47,19 +58,34 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        Authentication authentication = authenticateAndStore(
+                request.email(), request.password(), httpRequest, httpResponse);
+        return authService.getCurrentUser(authentication.getName());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) {
+        logoutHandler.logout(request, response, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    private Authentication authenticateAndStore(
+            String email,
+            String password,
+            HttpServletRequest request,
+            HttpServletResponse response) {
         Authentication authentication = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(request.email().trim().toLowerCase(java.util.Locale.ROOT), request.password()));
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        authService.normalizeEmail(email), password));
+        sessionAuthenticationStrategy.onAuthentication(authentication, request, response);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
-
-        return authService.getCurrentUser(authentication.getName());
-    }
-
-    @GetMapping("/me")
-    public AuthUserResponse currentUser(Authentication authentication) {
-        return authService.getCurrentUser(authentication.getName());
+        securityContextRepository.saveContext(context, request, response);
+        return authentication;
     }
 }

@@ -9,6 +9,7 @@ import com.example.courserecommend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,8 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public UserDetails loadUserDetails(String email) {
-        User user = getActiveUserByEmail(email);
+        User user = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new UsernameNotFoundException("ไม่พบบัญชีผู้ใช้"));
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPasswordHash())
@@ -64,11 +66,15 @@ public class AuthService {
     }
 
     private User getActiveUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "บัญชีนี้ถูกระงับ");
         }
         return user;
+    }
+
+    public String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

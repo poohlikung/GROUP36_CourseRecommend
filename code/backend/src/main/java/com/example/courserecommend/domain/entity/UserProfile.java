@@ -2,6 +2,7 @@ package com.example.courserecommend.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
@@ -20,7 +21,7 @@ public class UserProfile {
     @Column(name = "user_id")
     private Long userId;
 
-    @OneToOne(optional = false)
+    @OneToOne(optional = false, fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "user_id")
     private User user;
@@ -40,5 +41,10 @@ public class UserProfile {
 
     void attachUser(User user) {
         this.user = user;
+    }
+
+    public void update(String displayName, String bio) {
+        this.displayName = displayName;
+        this.bio = bio;
     }
 }

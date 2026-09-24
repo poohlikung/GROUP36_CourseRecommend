@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export function HomePage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-slate-50">
+    <main className="grid min-h-[calc(100vh-73px)] place-items-center bg-slate-950 px-6 text-center text-slate-50">
       <section className="max-w-2xl">
         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">
           CourseHub
