@@ -88,7 +88,10 @@ class AuthControllerIntegrationTests {
         userRepository.saveAndFlush(user);
 
         mockMvc.perform(get("/api/v1/auth/me").session(session))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("session_revoked"));
+
+        assertThat(session.isInvalid()).isTrue();
     }
 
     @Test
