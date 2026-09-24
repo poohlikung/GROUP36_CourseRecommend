@@ -87,6 +87,12 @@ public class SecurityConfig {
                                 response, 401, "authentication_required", "กรุณาเข้าสู่ระบบ"))
                         .accessDeniedHandler((request, response, exception) -> securityErrorWriter.write(
                                 response, 403, "access_denied", "คุณไม่มีสิทธิ์ดำเนินการนี้")))
+                .logout(logout -> logout
+                        .logoutUrl("/api/v1/auth/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                        .logoutSuccessHandler((request, response, authentication) -> response.setStatus(204)))
                 .addFilterAfter(activeUserFilter, SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(

@@ -146,8 +146,49 @@ class AuthControllerIntegrationTests {
                 .andExpect(jsonPath("$.code").value("account_suspended"));
     }
 
+    @Test
+    void logoutInvalidatesSession() throws Exception {
+        String email = "logout@example.com";
+        String password = "safe-password";
+        CsrfCredentials csrf = getCsrfCredentials();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(csrf.headerName(), csrf.token())
+                        .cookie(csrf.cookie())
+                        .content(objectMapper.writeValueAsString(
+                                new RegisterPayload(email, password, "Logout"))))
+                .andExpect(status().isCreated());
+
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(csrf.headerName(), csrf.token())
+                        .cookie(csrf.cookie())
+                        .content(objectMapper.writeValueAsString(new LoginPayload(email, password))))
+                .andExpect(status().isOk());
+
+        CsrfCredentials logoutCsrf = getCsrfCredentials(session);
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .session(session)
+                        .header(logoutCsrf.headerName(), logoutCsrf.token())
+                        .cookie(logoutCsrf.cookie()))
+                .andExpect(status().isNoContent());
+
+        assertThat(session.isInvalid()).isTrue();
+    }
+
     private CsrfCredentials getCsrfCredentials() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/auth/csrf"))
+        return getCsrfCredentials(null);
+    }
+
+    private CsrfCredentials getCsrfCredentials(MockHttpSession session) throws Exception {
+        var request = get("/api/v1/auth/csrf");
+        if (session != null) {
+            request.session(session);
+        }
+        MvcResult result = mockMvc.perform(request)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
                 .andReturn();
