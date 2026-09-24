@@ -91,6 +91,58 @@ class AuthControllerIntegrationTests {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void anonymousMeReturnsJson401WithoutCreatingSession() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("authentication_required"))
+                .andReturn();
+
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
+    @Test
+    void invalidCredentialsReturnJson401() throws Exception {
+        CsrfCredentials csrf = getCsrfCredentials();
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(csrf.headerName(), csrf.token())
+                        .cookie(csrf.cookie())
+                        .content(objectMapper.writeValueAsString(
+                                new LoginPayload("missing@example.com", "wrong-password"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("invalid_credentials"))
+                .andExpect(jsonPath("$.message").value("อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
+    }
+
+    @Test
+    void suspendedAccountCannotLogin() throws Exception {
+        String email = "suspended@example.com";
+        String password = "safe-password";
+        CsrfCredentials csrf = getCsrfCredentials();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(csrf.headerName(), csrf.token())
+                        .cookie(csrf.cookie())
+                        .content(objectMapper.writeValueAsString(
+                                new RegisterPayload(email, password, "Suspended"))))
+                .andExpect(status().isCreated());
+
+        var user = userRepository.findByEmail(email).orElseThrow();
+        user.suspend();
+        userRepository.saveAndFlush(user);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(csrf.headerName(), csrf.token())
+                        .cookie(csrf.cookie())
+                        .content(objectMapper.writeValueAsString(new LoginPayload(email, password))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("account_suspended"));
+    }
+
     private CsrfCredentials getCsrfCredentials() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/auth/csrf"))
                 .andExpect(status().isOk())
