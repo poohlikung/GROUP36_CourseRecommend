@@ -49,5 +49,14 @@ class FlywayMigrationIntegrationTests {
                 """, Integer.class);
 
         assertThat(tableCount).isEqualTo(12);
+
+        Integer demoAccounts = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM users
+                WHERE email IN (
+                  'admin@coursehub.local', 'instructor.cs@kku.ac.th',
+                  'learner.keattisak@kkumail.com', 'learner.sorawit@kkumail.com'
+                )
+                """, Integer.class);
+        assertThat(demoAccounts).isZero();
     }
 }
