@@ -14,6 +14,8 @@
 2. รัน `docker compose up --build`
 3. ตรวจ backend ที่ `http://localhost:8080/api/v1/system/liveness` และ Swagger ที่ `http://localhost:8080/swagger-ui.html`
 
+สำหรับ local ที่ใช้ HTTP ให้ตั้ง `SESSION_COOKIE_SECURE=false` ใน `.env` (มีตัวอย่างใน `.env.example`) เพื่อให้เบราว์เซอร์รับ session cookie ได้ เมื่อ deploy ผ่าน HTTPS ให้ตั้ง `SESSION_COOKIE_SECURE=true` หรือไม่กำหนดตัวแปรนี้เพื่อใช้ค่าเริ่มต้น `true` และอย่าปิด Secure ใน production
+
 ฐานข้อมูลสร้างด้วย Flyway migration เท่านั้น โดย JPA ใช้ `validate` เพื่อป้องกัน schema ถูกแก้โดยอัตโนมัติ
 
 ## Auth และโปรไฟล์

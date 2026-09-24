@@ -70,6 +70,9 @@ class AuthControllerIntegrationTests {
         mockMvc.perform(get("/api/v1/me").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("new.user@example.com"));
+
+        mockMvc.perform(get("/api/v1/auth/me").session(session))
+                .andExpect(status().isNotFound());
     }
 
     @Test
