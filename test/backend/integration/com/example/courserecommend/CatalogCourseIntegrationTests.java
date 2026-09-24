@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("flyway-test")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @Transactional
 class CatalogCourseIntegrationTests {
 

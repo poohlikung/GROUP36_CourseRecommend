@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("flyway-test")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class FlywayMigrationIntegrationTests {
 
     @Container
