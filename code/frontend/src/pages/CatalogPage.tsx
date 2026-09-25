@@ -2,6 +2,8 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { CatalogCourseCard } from '../features/catalog/CatalogCourseCard';
+import { bookmarkApi } from '../features/bookmarks/bookmarkApi';
+import { useAuth } from '../auth/AuthContext';
 import { getCatalogCourses, getCatalogOptions } from '../features/catalog/catalogApi';
 import type { CatalogCourse, CatalogOption, CatalogPage as CatalogPageData } from '../features/catalog/types';
 
@@ -16,6 +18,8 @@ const emptyCatalogPage: CatalogPageData<CatalogCourse> = {
 };
 
 export function CatalogPage() {
+  const { status } = useAuth();
+  const [savedIds, setSavedIds] = useState<number[]>([]);
   const [categories, setCategories] = useState<CatalogOption[]>([]);
   const [platforms, setPlatforms] = useState<CatalogOption[]>([]);
   const [catalog, setCatalog] = useState<CatalogPageData<CatalogCourse>>(emptyCatalogPage);
@@ -40,6 +44,18 @@ export function CatalogPage() {
       || (maxPrice && Number(maxPrice) < 0)
       || (minPrice && maxPrice && Number(minPrice) > Number(maxPrice)),
   );
+
+  useEffect(() => {
+    if (status !== 'authenticated' || catalog.content.length === 0) {
+      setSavedIds([]);
+      return;
+    }
+    const controller = new AbortController();
+    bookmarkApi.savedIds(catalog.content.map((course) => course.id), controller.signal)
+      .then(setSavedIds)
+      .catch(() => { if (!controller.signal.aborted) setSavedIds([]); });
+    return () => controller.abort();
+  }, [catalog, status]);
 
   useEffect(() => {
     if (priceRangeInvalid) {
@@ -283,7 +299,9 @@ export function CatalogPage() {
         {!priceRangeInvalid && !coursesError && !loading && catalog.content.length > 0 && (
           <>
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {catalog.content.map((course) => <CatalogCourseCard key={course.id} course={course} />)}
+              {catalog.content.map((course) => <CatalogCourseCard key={course.id} course={course}
+                saved={savedIds.includes(course.id)}
+                onBookmarkChange={(saved) => setSavedIds((ids) => saved ? [...ids, course.id] : ids.filter((id) => id !== course.id))} />)}
             </div>
             {catalog.totalPages > 1 && (
               <nav className="mt-10 flex items-center justify-center gap-4" aria-label="หน้ารายการคอร์ส">
