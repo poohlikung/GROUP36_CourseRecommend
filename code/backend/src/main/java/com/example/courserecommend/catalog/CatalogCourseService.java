@@ -92,7 +92,7 @@ public class CatalogCourseService {
         return value.trim();
     }
 
-    private List<CatalogCourseResponse> mapCoursesInPageOrder(List<Long> courseIds) {
+    public List<CatalogCourseResponse> mapCoursesInPageOrder(List<Long> courseIds) {
         if (courseIds.isEmpty()) {
             return Collections.emptyList();
         }

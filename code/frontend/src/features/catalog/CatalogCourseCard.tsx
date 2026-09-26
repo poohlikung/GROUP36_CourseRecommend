@@ -1,4 +1,5 @@
 import type { CatalogCourse } from './types';
+import { BookmarkButton } from '../bookmarks/BookmarkButton';
 
 const levelLabels: Record<CatalogCourse['level'], string> = {
   BEGINNER: 'เริ่มต้น',
@@ -32,7 +33,11 @@ function formatPrice(course: CatalogCourse) {
   return `${course.price.amount.toLocaleString('th-TH')} ${currency ?? ''}`.trim();
 }
 
-export function CatalogCourseCard({ course }: { course: CatalogCourse }) {
+export function CatalogCourseCard({ course, saved = false, onBookmarkChange = () => {} }: {
+  course: CatalogCourse;
+  saved?: boolean;
+  onBookmarkChange?: (saved: boolean) => void;
+}) {
   return (
     <article
       aria-labelledby={`course-title-${course.id}`}
@@ -74,6 +79,8 @@ export function CatalogCourseCard({ course }: { course: CatalogCourse }) {
             ? 'ยังไม่มีรีวิว'
             : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} รีวิว)`}
         </p>
+
+        <div className="mt-4"><BookmarkButton courseId={course.id} courseTitle={course.title} saved={saved} onChange={onBookmarkChange} /></div>
 
         <div className="mt-auto flex items-end justify-between gap-4 border-t border-slate-100 pt-5">
           <div>
