@@ -8,6 +8,7 @@ import com.example.courserecommend.repository.AuditLogRepository;
 import com.example.courserecommend.repository.ProviderMemberRepository;
 import com.example.courserecommend.repository.ProviderRepository;
 import com.example.courserecommend.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,6 +39,22 @@ class ProviderMemberControllerTests {
     @Autowired private ProviderMemberRepository memberRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private AuditLogRepository auditLogRepository;
+    @Autowired private ObjectMapper objectMapper;
+
+    @Test
+    void openApiDescribesMemberRoutesSessionAndCsrf() throws Exception {
+        var response = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk()).andReturn();
+        var document = objectMapper.readTree(response.getResponse().getContentAsString());
+
+        assertThat(document.path("paths").path("/api/v1/providers/{providerId}/members").has("get"))
+                .isTrue();
+        assertThat(document.path("paths").path("/api/v1/providers/{providerId}/members").has("post"))
+                .isTrue();
+        assertThat(document.path("paths").path("/api/v1/providers/{providerId}/members/{memberId}").has("delete"))
+                .isTrue();
+        assertThat(document.toString()).contains("sessionCookie", "JSESSIONID", "X-XSRF-TOKEN");
+    }
 
     @Test
     @WithMockUser(username = "api-owner@example.com")
