@@ -109,7 +109,10 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses")
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/courses",
+                                "/api/v1/courses/*/reviews")
                         .permitAll()
                         .anyRequest().authenticated());
 
