@@ -27,6 +27,7 @@ export function AppLayout() {
           <div className="flex items-center gap-3 text-sm font-medium">
             {status === 'authenticated' && user ? (
               <>
+                <NavLink to="/bookmarks" className="rounded-lg px-3 py-2 hover:bg-slate-100">คอร์สที่บันทึก</NavLink>
                 <NavLink to="/profile" className="rounded-lg px-3 py-2 hover:bg-slate-100">
                   {user.displayName}
                 </NavLink>

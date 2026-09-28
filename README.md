@@ -18,12 +18,17 @@
 
 ฐานข้อมูลสร้างด้วย Flyway migration เท่านั้น โดย JPA ใช้ `validate` เพื่อป้องกัน schema ถูกแก้โดยอัตโนมัติ
 
+ถ้าใช้ PostgreSQL ที่ติดตั้งในเครื่องแทน Docker ให้สร้างฐานข้อมูลว่างก่อน แล้วเพิ่ม `DATABASE_URL=jdbc:postgresql://localhost:5432/<ชื่อฐานข้อมูลว่าง>` ใน `.env` ที่ root จากนั้นรัน `mvn spring-boot:run` ใน `code/backend` ได้โดยตรง Backend จะอ่าน `.env` ของ root สำหรับการรันแบบนี้ด้วย; ค่า `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` ที่ตั้งใน environment จะมีลำดับสูงกว่า หากฐานข้อมูลเดิมมีตารางแต่ไม่มี `flyway_schema_history` ให้ใช้ฐานข้อมูลว่างใหม่เพื่อให้ Flyway สร้าง schema ครบ อย่า baseline schema ที่ยังไม่ครบ
+
 ## Auth และโปรไฟล์
 
 - สมัครสมาชิก: `POST /api/v1/auth/register` (เข้าสู่ระบบอัตโนมัติ)
 - เข้าสู่ระบบ/ออกจากระบบ: `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`
 - ผู้ใช้ปัจจุบัน: `GET /api/v1/me`
 - อ่าน/แก้ไขโปรไฟล์: `GET /api/v1/me/profile`, `PUT /api/v1/me/profile`
+- บันทึกคอร์ส: `PUT /api/v1/me/bookmarks/{courseId}` และยกเลิกด้วย `DELETE /api/v1/me/bookmarks/{courseId}` (ทำซ้ำได้)
+- รายการคอร์สที่บันทึก: `GET /api/v1/me/bookmarks?page=0&size=12`; ตรวจสถานะคอร์สใน catalog ด้วย `GET /api/v1/me/bookmarks/ids?courseIds=1&courseIds=2` (สูงสุด 48 รหัส)
+- หน้าเว็บส่วนตัว: `/bookmarks` แสดงเฉพาะคอร์สที่ยังเผยแพร่และผู้ให้บริการยัง active
 - ทุกคำขอที่เปลี่ยนข้อมูลต้องขอ CSRF token จาก `GET /api/v1/auth/csrf` ก่อน
 
 Frontend ใช้ Vite proxy เรียก `/api` ไปยัง backend ในเครื่อง:
