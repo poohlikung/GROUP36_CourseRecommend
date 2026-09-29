@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ReviewControllerIntegrationTests {
 
     private static final String LEARNER_EMAIL = "learner@test.local";
+    private static final String ADMIN_EMAIL = "admin@test.local";
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES =
@@ -67,7 +68,8 @@ class ReviewControllerIntegrationTests {
                 TRUNCATE TABLE users, providers, platforms, categories CASCADE
                 """);
 
-        learnerId = insertUser(LEARNER_EMAIL, "CourseHub Learner");
+        learnerId = insertUser(LEARNER_EMAIL, "CourseHub Learner", "LEARNER");
+        insertUser(ADMIN_EMAIL, "CourseHub Admin", "ADMIN");
 
         Long providerId = jdbc.queryForObject("""
                 INSERT INTO providers (name, slug, status)
@@ -97,15 +99,18 @@ class ReviewControllerIntegrationTests {
     void guestCanReadOnlyPublishedReviews() throws Exception {
         Long publishedUser = insertUser(
                 "published@test.local",
-                "Published Reviewer"
+                "Published Reviewer",
+                "LEARNER"
         );
         Long pendingUser = insertUser(
                 "pending@test.local",
-                "Pending Reviewer"
+                "Pending Reviewer",
+                "LEARNER"
         );
         Long rejectedUser = insertUser(
                 "rejected@test.local",
-                "Rejected Reviewer"
+                "Rejected Reviewer",
+                "LEARNER"
         );
 
         insertReview(publishedUser, 5, "รีวิวที่เผยแพร่แล้ว", "PUBLISHED");
@@ -124,7 +129,7 @@ class ReviewControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(username = LEARNER_EMAIL)
+    @WithMockUser(username = LEARNER_EMAIL, roles = "LEARNER")
     void userCreatesPendingReviewAndCannotCreateDuplicate() throws Exception {
         String request = """
                 {
@@ -177,7 +182,7 @@ class ReviewControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(username = LEARNER_EMAIL)
+    @WithMockUser(username = LEARNER_EMAIL, roles = "LEARNER")
     void userReadsAndUpdatesOwnReview() throws Exception {
         insertReview(
                 learnerId,
@@ -225,7 +230,7 @@ class ReviewControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(username = LEARNER_EMAIL)
+    @WithMockUser(username = LEARNER_EMAIL, roles = "LEARNER")
     void invalidScoresReturnValidationError() throws Exception {
         String invalidRequest = """
                 {
@@ -250,6 +255,61 @@ class ReviewControllerIntegrationTests {
                         "contentScore",
                         "teachingScore"
                 )));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_EMAIL, roles = "ADMIN")
+    void adminCannotCreateOrUpdateReview() throws Exception {
+        insertReview(learnerId, 3, "ข้อความเดิม", "PUBLISHED");
+
+        String request = """
+                {
+                  "overallScore": 5,
+                  "contentScore": 5,
+                  "teachingScore": 5,
+                  "difficultyScore": 5,
+                  "body": "รีวิวที่ ADMIN ไม่ควรเขียนได้"
+                }
+                """;
+
+        mockMvc.perform(post(
+                        "/api/v1/courses/{courseId}/reviews",
+                        courseId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        mockMvc.perform(put(
+                        "/api/v1/courses/{courseId}/reviews/me",
+                        courseId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*)
+                FROM reviews
+                WHERE course_id = ?
+                """, Integer.class, courseId);
+        String body = jdbc.queryForObject("""
+                SELECT body
+                FROM reviews
+                WHERE course_id = ? AND user_id = ?
+                """, String.class, courseId, learnerId);
+
+        assertThat(count).isEqualTo(1);
+        assertThat(body).isEqualTo("ข้อความเดิม");
+    }
+
+    @Test
+    void invalidPaginationReturnsValidationError() throws Exception {
+        assertPaginationValidationError("page", "-1", "page");
+        assertPaginationValidationError("size", "0", "size");
+        assertPaginationValidationError("size", "51", "size");
     }
 
     @Test
@@ -278,14 +338,33 @@ class ReviewControllerIntegrationTests {
                 .andExpect(status().isUnauthorized());
     }
 
-    private Long insertUser(String email, String displayName) {
+    private void assertPaginationValidationError(
+            String parameter,
+            String value,
+            String expectedField) throws Exception {
+        mockMvc.perform(get(
+                        "/api/v1/courses/{courseId}/reviews",
+                        courseId)
+                        .queryParam(parameter, value))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("ข้อมูลไม่ถูกต้อง"))
+                .andExpect(jsonPath("$.path").value(
+                        "/api/v1/courses/" + courseId + "/reviews"))
+                .andExpect(jsonPath("$.fieldErrors").isArray())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value(expectedField));
+    }
+
+    private Long insertUser(String email, String displayName, String role) {
         Long userId = jdbc.queryForObject("""
                 INSERT INTO users (
                     email, password_hash, role, status
                 )
-                VALUES (?, 'unused', 'LEARNER', 'ACTIVE')
+                VALUES (?, 'unused', ?, 'ACTIVE')
                 RETURNING id
-                """, Long.class, email);
+                """, Long.class, email, role);
 
         jdbc.update("""
                 INSERT INTO user_profiles (user_id, display_name)

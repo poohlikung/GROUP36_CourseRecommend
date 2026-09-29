@@ -10,6 +10,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -23,6 +24,19 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         List<ApiFieldError> fieldErrors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> new ApiFieldError(error.getField(), error.getDefaultMessage()))
+                .toList();
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "ข้อมูลไม่ถูกต้อง", request, fieldErrors);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodValidation(
+            HandlerMethodValidationException exception,
+            HttpServletRequest request) {
+        List<ApiFieldError> fieldErrors = exception.getParameterValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream()
+                        .map(error -> new ApiFieldError(
+                                result.getMethodParameter().getParameterName(),
+                                error.getDefaultMessage())))
                 .toList();
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "ข้อมูลไม่ถูกต้อง", request, fieldErrors);
     }
