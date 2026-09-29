@@ -3,13 +3,16 @@ package com.example.courserecommend.exception;
 import com.example.courserecommend.common.ApiErrorResponse;
 import com.example.courserecommend.common.ApiFieldError;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -25,6 +28,11 @@ public class GlobalExceptionHandler {
                 .map(error -> new ApiFieldError(error.getField(), error.getDefaultMessage()))
                 .toList();
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "ข้อมูลไม่ถูกต้อง", request, fieldErrors);
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiErrorResponse> handleUnreadableRequest(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "ข้อมูลไม่ถูกต้อง", request, List.of());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -65,7 +73,11 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request,
             List<ApiFieldError> fieldErrors) {
-        return ResponseEntity.status(status)
-                .body(ApiErrorResponse.of(status.value(), code, message, request.getRequestURI(), fieldErrors));
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(status);
+        if (request.getRequestURI().matches("/api/v1/providers/[^/]+/members(?:/[^/]+)?")) {
+            response.cacheControl(CacheControl.noStore());
+        }
+        return response.body(ApiErrorResponse.of(status.value(), code, message,
+                request.getRequestURI(), fieldErrors));
     }
 }

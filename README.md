@@ -31,6 +31,34 @@
 - หน้าเว็บส่วนตัว: `/bookmarks` แสดงเฉพาะคอร์สที่ยังเผยแพร่และผู้ให้บริการยัง active
 - ทุกคำขอที่เปลี่ยนข้อมูลต้องขอ CSRF token จาก `GET /api/v1/auth/csrf` ก่อน
 
+## สมาชิกทีม Provider (UC11)
+
+ผู้ใช้ต้องเข้าสู่ระบบและเป็น `OWNER` ของ Provider ที่ระบุ จึงดู เพิ่ม หรือลบสมาชิกได้ แม้บัญชีเป็น `ADMIN` ก็ต้องเป็น Owner ของ Provider นั้นด้วย ส่วน `OWNER` และ `EDITOR` ผ่าน service ตรวจสิทธิ์สำหรับแก้ Provider/Course ของทีมตนเอง API ชุดนี้ไม่รวมการเปลี่ยนบทบาทสมาชิกเดิมหรือการสร้าง Owner คนแรก ซึ่งเป็นหน้าที่ของ Provider registration และใช้ได้ทุกสถานะ Provider
+
+| คำขอ | ผลสำเร็จ | เงื่อนไข |
+| --- | --- | --- |
+| `GET /api/v1/providers/{providerId}/members` | `200` รายชื่อเรียงตาม member ID | Owner เท่านั้น |
+| `POST /api/v1/providers/{providerId}/members` | `201` พร้อม `Location: /api/v1/providers/{providerId}/members/{memberId}` | Owner เพิ่มบัญชี ACTIVE ที่มีอยู่เป็น `OWNER` หรือ `EDITOR` |
+| `DELETE /api/v1/providers/{providerId}/members/{memberId}` | `204` | Owner ลบสมาชิกในทีม; ลบตัวเองได้เมื่อยังมี Owner อื่น |
+
+POST รับ JSON เช่น `{"email":"editor@example.com","memberRole":"EDITOR"}` อีเมลถูกแปลงเป็นตัวพิมพ์เล็กตามระบบสมัครสมาชิก Response สมาชิกมีเฉพาะ `{"id":12,"userId":34,"email":"editor@example.com","memberRole":"EDITOR"}` และทุก response ของ API ชุดนี้มี `Cache-Control: no-store`
+
+ข้อผิดพลาดใช้รูปแบบ `{timestamp,status,code,message,path,fieldErrors}` ของระบบเดิม: `400` ข้อมูลผิด, `401` ไม่ได้เข้าสู่ระบบหรือ session หมดอายุ, `403` ไม่มีสิทธิ์หรือ CSRF ผิด, `404` ไม่พบ Provider/บัญชี/member ID ภายใต้ Provider, `409` สมาชิกซ้ำ/บัญชีถูกระงับ/กำลังลบ Owner คนสุดท้าย การเพิ่มหรือลบที่ไม่สำเร็จไม่เปลี่ยน membership หรือ audit
+
+ตัวอย่าง PowerShell (เข้าสู่ระบบก่อน แล้วขอ CSRF token ใหม่หลัง login):
+
+```powershell
+$base = 'http://localhost:8080'
+$csrf = Invoke-RestMethod "$base/api/v1/auth/csrf" -SessionVariable memberSession
+$login = @{ email = 'owner@example.com'; password = 'your-password' } | ConvertTo-Json
+Invoke-RestMethod "$base/api/v1/auth/login" -Method Post -WebSession $memberSession -ContentType 'application/json' -Headers @{ 'X-XSRF-TOKEN' = $csrf.token } -Body $login
+$csrf = Invoke-RestMethod "$base/api/v1/auth/csrf" -WebSession $memberSession
+$member = @{ email = 'editor@example.com'; memberRole = 'EDITOR' } | ConvertTo-Json
+Invoke-RestMethod "$base/api/v1/providers/1/members" -Method Post -WebSession $memberSession -ContentType 'application/json' -Headers @{ 'X-XSRF-TOKEN' = $csrf.token } -Body $member
+```
+
+Swagger/OpenAPI ที่ `/swagger-ui.html` และ `/v3/api-docs` ระบุ session cookie, CSRF header, payload และสถานะตอบกลับของทั้งสาม endpoint
+
 Frontend ใช้ Vite proxy เรียก `/api` ไปยัง backend ในเครื่อง:
 
 ```powershell
