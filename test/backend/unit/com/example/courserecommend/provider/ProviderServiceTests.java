@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@Transactional
 class ProviderServiceTests {
 
     @Autowired private ProviderService service;
@@ -42,10 +44,10 @@ class ProviderServiceTests {
 
     @Test
     void createProvider_Success() {
-        User user = user("create-owner@example.com");
+        User user = user("ps-create-owner@example.com");
         CreateProviderRequest request = new CreateProviderRequest(
                 "Chula MOOC",
-                "chula-mooc-unique",
+                "ps-chula-mooc-unique",
                 "คอร์สเรียนจากจุฬาฯ",
                 "https://mooc.chula.ac.th"
         );
@@ -55,7 +57,7 @@ class ProviderServiceTests {
 
         assertThat(response.id()).isNotNull();
         assertThat(response.name()).isEqualTo("Chula MOOC");
-        assertThat(response.slug()).isEqualTo("chula-mooc-unique");
+        assertThat(response.slug()).isEqualTo("ps-chula-mooc-unique");
         assertThat(response.status()).isEqualTo(ProviderStatus.PENDING);
 
         assertThat(memberRepository.existsByProviderIdAndUserId(response.id(), user.getId())).isTrue();
@@ -72,12 +74,12 @@ class ProviderServiceTests {
 
     @Test
     void createProvider_ConflictDuplicateSlug() {
-        User user = user("slug-user@example.com");
-        provider("duplicate-slug");
+        User user = user("ps-slug-user@example.com");
+        provider("ps-duplicate-slug");
 
         CreateProviderRequest request = new CreateProviderRequest(
                 "Dupe Provider",
-                "duplicate-slug",
+                "ps-duplicate-slug",
                 "คำอธิบาย",
                 "https://example.com"
         );
@@ -87,40 +89,40 @@ class ProviderServiceTests {
 
     @Test
     void findMyProviders_ReturnsUserMemberships() {
-        User user = user("my-providers-user@example.com");
-        Provider p1 = provider("my-provider-1");
-        Provider p2 = provider("my-provider-2");
+        User user = user("ps-my-providers-user@example.com");
+        Provider p1 = provider("ps-my-provider-1");
+        Provider p2 = provider("ps-my-provider-2");
 
         member(p1, user, MemberRole.OWNER);
         member(p2, user, MemberRole.EDITOR);
 
         List<MyProviderResponse> mine = service.findMyProviders(user.getEmail());
         assertThat(mine).hasSize(2);
-        assertThat(mine).extracting(MyProviderResponse::slug).containsExactly("my-provider-1", "my-provider-2");
+        assertThat(mine).extracting(MyProviderResponse::slug).containsExactly("ps-my-provider-1", "ps-my-provider-2");
     }
 
     @Test
     void getById_SuccessAndNotFound() {
-        Provider p = provider("get-by-id");
+        Provider p = provider("ps-get-by-id");
         ProviderResponse found = service.getById(p.getId());
-        assertThat(found.slug()).isEqualTo("get-by-id");
+        assertThat(found.slug()).isEqualTo("ps-get-by-id");
 
         assertStatus(HttpStatus.NOT_FOUND, () -> service.getById(999999L));
     }
 
     @Test
     void getBySlug_SuccessAndNotFound() {
-        provider("get-by-slug-found");
-        ProviderResponse found = service.getBySlug("get-by-slug-found");
-        assertThat(found.slug()).isEqualTo("get-by-slug-found");
+        provider("ps-get-by-slug-found");
+        ProviderResponse found = service.getBySlug("ps-get-by-slug-found");
+        assertThat(found.slug()).isEqualTo("ps-get-by-slug-found");
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.getBySlug("slug-not-exist"));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getBySlug("ps-slug-not-exist"));
     }
 
     @Test
     void updateProvider_OwnerOrEditorSuccess() {
-        User owner = user("update-owner@example.com");
-        Provider p = provider("update-provider");
+        User owner = user("ps-update-owner@example.com");
+        Provider p = provider("ps-update-provider");
         member(p, owner, MemberRole.OWNER);
 
         UpdateProviderRequest request = new UpdateProviderRequest(
@@ -137,8 +139,8 @@ class ProviderServiceTests {
 
     @Test
     void updateProvider_ForbiddenForNonMember() {
-        User outsider = user("outsider@example.com");
-        Provider p = provider("update-outsider-provider");
+        User outsider = user("ps-outsider@example.com");
+        Provider p = provider("ps-update-outsider-provider");
 
         UpdateProviderRequest request = new UpdateProviderRequest("New", null, null);
         assertStatus(HttpStatus.FORBIDDEN, () -> service.updateProvider(outsider.getEmail(), p.getId(), request));
@@ -146,8 +148,8 @@ class ProviderServiceTests {
 
     @Test
     void deleteProvider_SuccessWhenNoCourses() {
-        User owner = user("delete-owner@example.com");
-        Provider p = provider("delete-provider");
+        User owner = user("ps-delete-owner@example.com");
+        Provider p = provider("ps-delete-provider");
         member(p, owner, MemberRole.OWNER);
 
         service.deleteProvider(owner.getEmail(), p.getId());
@@ -158,14 +160,14 @@ class ProviderServiceTests {
 
     @Test
     void deleteProvider_ConflictWhenCoursesExist() {
-        User owner = user("delete-conflict-owner@example.com");
-        Provider p = provider("delete-conflict-provider");
+        User owner = user("ps-delete-conflict-owner@example.com");
+        Provider p = provider("ps-delete-conflict-provider");
         member(p, owner, MemberRole.OWNER);
 
         Platform platform = platformRepository.findAll().stream().findFirst().orElseGet(() ->
                 platformRepository.save(Platform.builder()
                         .name("TestPlatform")
-                        .slug("test-plat")
+                        .slug("ps-test-plat")
                         .allowedHost("example.com")
                         .build())
         );
@@ -174,7 +176,7 @@ class ProviderServiceTests {
                 .provider(p)
                 .platform(platform)
                 .title("Sample Course")
-                .slug("sample-course-" + p.getId())
+                .slug("ps-sample-course-" + p.getId())
                 .url("https://example.com/course")
                 .build());
 
@@ -183,8 +185,8 @@ class ProviderServiceTests {
 
     @Test
     void deleteProvider_ForbiddenWhenNotOwner() {
-        User editor = user("delete-editor@example.com");
-        Provider p = provider("delete-editor-provider");
+        User editor = user("ps-delete-editor@example.com");
+        Provider p = provider("ps-delete-editor-provider");
         member(p, editor, MemberRole.EDITOR);
 
         assertStatus(HttpStatus.FORBIDDEN, () -> service.deleteProvider(editor.getEmail(), p.getId()));
