@@ -13,6 +13,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     boolean existsByCourseIdAndUserId(Long courseId, Long userId);
 
+    boolean existsByCourseId(Long courseId);
+
     Optional<Review> findByCourseIdAndUserId(Long courseId, Long userId);
 
     @EntityGraph(attributePaths = {"user", "user.profile"})

@@ -23,7 +23,20 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
         boolean existsBySlug(String slug);
 
+        boolean existsBySlugAndIdNot(String slug, Long id);
+
         boolean existsByProviderId(Long providerId);
+
+        List<Course> findByProviderIdOrderByCreatedAtDesc(Long providerId);
+
+        @Query("SELECT DISTINCT c FROM Course c " +
+                "LEFT JOIN FETCH c.provider " +
+                "LEFT JOIN FETCH c.platform " +
+                "LEFT JOIN FETCH c.price " +
+                "LEFT JOIN FETCH c.categories " +
+                "WHERE c.provider.id = :providerId " +
+                "ORDER BY c.createdAt DESC")
+        List<Course> findByProviderIdWithDetails(@Param("providerId") Long providerId);
 
         @Query("SELECT DISTINCT c FROM Course c " +
                         "LEFT JOIN FETCH c.provider " +
