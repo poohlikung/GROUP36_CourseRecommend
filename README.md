@@ -4,7 +4,7 @@
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |
 | 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | | |
-| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | | |
+| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider CRUD Backend + UI, Database Schema (Flyway) |
 | 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth/User/Profile Backend + UI |
 | 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | | |
 
@@ -30,6 +30,28 @@
 - รายการคอร์สที่บันทึก: `GET /api/v1/me/bookmarks?page=0&size=12`; ตรวจสถานะคอร์สใน catalog ด้วย `GET /api/v1/me/bookmarks/ids?courseIds=1&courseIds=2` (สูงสุด 48 รหัส)
 - หน้าเว็บส่วนตัว: `/bookmarks` แสดงเฉพาะคอร์สที่ยังเผยแพร่และผู้ให้บริการยัง active
 - ทุกคำขอที่เปลี่ยนข้อมูลต้องขอ CSRF token จาก `GET /api/v1/auth/csrf` ก่อน
+
+## ผู้ให้บริการ (Provider CRUD - UC09, UC10)
+
+ผู้ใช้ที่เข้าสู่ระบบสามารถลงทะเบียนเป็นผู้ให้บริการ (Provider Registration - UC09) โดยกรอกชื่อ, Slug, คำอธิบาย และเว็บไซต์ เมื่อสร้างสำเร็จระบบจะกำหนดสถานะเริ่มต้นเป็น `PENDING` และแต่งตั้งผู้สร้างเป็น `OWNER` ของทีมผู้ให้บริการนั้นทันที พร้อมบันทึกประวัติลง `audit_logs`
+
+สำหรับการจัดการข้อมูลสถาบัน (Provider Profile Management - UC10) สมาชิกทีมที่เป็น `OWNER` หรือ `EDITOR` สามารถดูและแก้ไขข้อมูลของสถาบันตนเองได้ ส่วนการลบ Provider ทำได้เฉพาะ `OWNER` และระบบจะไม่อนุญาตให้ลบหากสถาบันนั้นยังมีคอร์สเปิดสอนอยู่ (ตอบกลับ `409 Conflict`)
+
+| คำขอ | ผลสำเร็จ | เงื่อนไข / สิทธิ์ |
+| --- | --- | --- |
+| `POST /api/v1/providers` | `201` พร้อม `Location: /api/v1/providers/{id}` | ผู้ใช้ล็อกอิน (สร้าง Provider ใหม่, ได้รับบทบาท `OWNER`) |
+| `GET /api/v1/providers/me` | `200` รายการ Provider ที่เป็นสมาชิก | ผู้ใช้ล็อกอิน (แสดง Provider ที่ตนเป็น Owner หรือ Editor) |
+| `GET /api/v1/providers/{id}` | `200` ข้อมูล Provider | ทุกคน / สมาชิก |
+| `GET /api/v1/providers/slug/{slug}` | `200` ข้อมูล Provider | ทุกคน / สมาชิก |
+| `PUT /api/v1/providers/{id}` | `200` ข้อมูลที่แก้ไขแล้ว | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น |
+| `DELETE /api/v1/providers/{id}` | `204` ไม่มี body | เฉพาะ `OWNER` และต้องไม่มีคอร์สค้างอยู่ (หากมีคอร์สจะตอบ `409`) |
+
+### หน้าจอ Provider Management บนเว็บ
+- เข้าใช้งานได้ที่เส้นทาง `/providers`
+- แสดงรายชื่อสถาบันที่ผู้ใช้สังกัด พร้อมแสดง Badge สถานะ (`Pending`, `Approved`) และบทบาทสมาชิก (`Owner`, `Editor`)
+- มี Modal สำหรับลงทะเบียนสถาบันใหม่ (UC09)
+- มี Modal สำหรับแก้ไขข้อมูลสถาบันเดิม (UC10)
+- มีปุ่มลบสถาบัน พร้อมระบบยืนยัน และแจ้งเตือนหากติด Conflict
 
 ## สมาชิกทีม Provider (UC11)
 
