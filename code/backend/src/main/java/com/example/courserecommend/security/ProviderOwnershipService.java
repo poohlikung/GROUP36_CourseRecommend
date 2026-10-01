@@ -65,7 +65,7 @@ public class ProviderOwnershipService {
                         "คุณไม่ใช่สมาชิกของ Provider นี้"));
     }
 
-    private User currentUser() {
+    public User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
