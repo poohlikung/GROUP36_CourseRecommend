@@ -152,4 +152,69 @@ describe('provider flow', () => {
 
     await waitFor(() => expect(mocks.delete).toHaveBeenCalledWith(1));
   });
+
+  it('clears description and websiteUrl when updating with empty inputs', async () => {
+    mocks.findMine.mockResolvedValueOnce([mockProviders[0]]).mockResolvedValueOnce([]);
+    mocks.update.mockResolvedValueOnce({
+      ...mockProviders[0],
+      description: null,
+      websiteUrl: null,
+    });
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Chula MOOC')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'แก้ไขข้อมูล' }));
+
+    expect(screen.getByText(/แก้ไขข้อมูล Provider/)).toBeInTheDocument();
+
+    const descInput = screen.getByLabelText(/คำอธิบายสถาบัน/);
+    const webInput = screen.getByLabelText(/เว็บไซต์ทางการ/);
+
+    await user.clear(descInput);
+    await user.clear(webInput);
+
+    await user.click(screen.getByRole('button', { name: 'บันทึกการแก้ไข' }));
+
+    await waitFor(() =>
+      expect(mocks.update).toHaveBeenCalledWith(1, {
+        name: 'Chula MOOC',
+        description: '',
+        websiteUrl: '',
+      })
+    );
+  });
+
+  it('does not render link for unsafe url scheme like javascript:', async () => {
+    const providerWithUnsafeUrl: MyProvider = {
+      id: 99,
+      name: 'Unsafe Link Provider',
+      slug: 'unsafe-link-provider',
+      description: 'Test description',
+      websiteUrl: 'javascript:alert(1)',
+      status: 'APPROVED',
+      role: 'VIEWER',
+      createdAt: '2026-09-30T10:00:00Z',
+    };
+    mocks.findMine.mockResolvedValueOnce([providerWithUnsafeUrl]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Unsafe Link Provider')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /javascript:alert/ })).not.toBeInTheDocument();
+  });
 });

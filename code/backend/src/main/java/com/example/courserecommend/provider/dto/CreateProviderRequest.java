@@ -12,5 +12,8 @@ public record CreateProviderRequest(
 
         @Size(max = 2000, message = "คำอธิบายต้องไม่เกิน 2000 ตัวอักษร") @Schema(description = "รายละเอียดเกี่ยวกับสถาบัน", example = "คอร์สเรียนออนไลน์คุณภาพจากจุฬาฯ") String description,
 
-        @Size(max = 255, message = "URL เว็บไซต์ต้องไม่เกิน 255 ตัวอักษร") @Schema(description = "URL เว็บไซต์ทางการ", example = "https://mooc.chula.ac.th") String websiteUrl) {
+        @Size(max = 255, message = "URL เว็บไซต์ต้องไม่เกิน 255 ตัวอักษร")
+        @Pattern(regexp = "^(https?://.*)?$", message = "URL เว็บไซต์ต้องขึ้นต้นด้วย http:// หรือ https://")
+        @Schema(description = "URL เว็บไซต์ทางการ", example = "https://mooc.chula.ac.th")
+        String websiteUrl) {
 }

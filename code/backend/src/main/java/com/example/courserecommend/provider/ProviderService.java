@@ -47,11 +47,18 @@ public class ProviderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Slug นี้ถูกใช้งานแล้ว");
         }
 
+        String desc = request.description() != null && !request.description().isBlank()
+                ? request.description().trim()
+                : null;
+        String webUrl = request.websiteUrl() != null && !request.websiteUrl().isBlank()
+                ? request.websiteUrl().trim()
+                : null;
+
         Provider provider = Provider.builder()
                 .name(request.name().trim())
                 .slug(slug)
-                .description(request.description())
-                .websiteUrl(request.websiteUrl())
+                .description(desc)
+                .websiteUrl(webUrl)
                 .status(ProviderStatus.PENDING)
                 .build();
         provider = providerRepository.save(provider);
@@ -111,10 +118,10 @@ public class ProviderService {
             provider.setName(request.name().trim());
         }
         if (request.description() != null) {
-            provider.setDescription(request.description());
+            provider.setDescription(request.description().isBlank() ? null : request.description().trim());
         }
         if (request.websiteUrl() != null) {
-            provider.setWebsiteUrl(request.websiteUrl());
+            provider.setWebsiteUrl(request.websiteUrl().isBlank() ? null : request.websiteUrl().trim());
         }
 
         provider = providerRepository.save(provider);

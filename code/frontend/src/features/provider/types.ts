@@ -33,6 +33,6 @@ export interface CreateProviderPayload {
 
 export interface UpdateProviderPayload {
   name?: string;
-  description?: string;
-  websiteUrl?: string;
+  description?: string | null;
+  websiteUrl?: string | null;
 }

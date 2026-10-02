@@ -6,6 +6,7 @@ import com.example.courserecommend.domain.entity.Provider;
 import com.example.courserecommend.domain.entity.ProviderMember;
 import com.example.courserecommend.domain.entity.User;
 import com.example.courserecommend.domain.enums.MemberRole;
+import com.example.courserecommend.domain.enums.ProviderStatus;
 import com.example.courserecommend.provider.dto.CreateProviderRequest;
 import com.example.courserecommend.provider.dto.UpdateProviderRequest;
 import com.example.courserecommend.repository.CourseRepository;
@@ -204,6 +205,55 @@ class ProviderControllerTests {
                 .andExpect(status().isNoContent());
 
         assertThat(providerRepository.existsById(p.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = "ctrl-owner@example.com")
+    void createProvider_ValidationFailureInvalidWebsiteUrlScheme() throws Exception {
+        user("ctrl-owner@example.com");
+
+        CreateProviderRequest request = new CreateProviderRequest(
+                "Unsafe Scheme Team",
+                "unsafe-scheme-team",
+                "คำอธิบาย",
+                "javascript:alert(1)"
+        );
+
+        mockMvc.perform(post("/api/v1/providers")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("websiteUrl"));
+    }
+
+    @Test
+    @WithMockUser(username = "ctrl-owner@example.com")
+    void updateProvider_AllowsClearingFieldsWithEmptyString() throws Exception {
+        User owner = user("ctrl-owner@example.com");
+        Provider p = providerRepository.save(Provider.builder()
+                .name("Original Provider")
+                .slug("ctrl-clear-provider")
+                .description("Has Description")
+                .websiteUrl("https://original.com")
+                .status(ProviderStatus.ACTIVE)
+                .build());
+        memberRepository.save(new ProviderMember(p, owner, MemberRole.OWNER));
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Kept Name",
+                "",
+                ""
+        );
+
+        mockMvc.perform(put("/api/v1/providers/" + p.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Kept Name"))
+                .andExpect(jsonPath("$.description").doesNotExist())
+                .andExpect(jsonPath("$.websiteUrl").doesNotExist());
     }
 
     private Provider provider(String slug) {

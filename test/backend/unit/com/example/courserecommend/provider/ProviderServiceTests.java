@@ -138,6 +138,35 @@ class ProviderServiceTests {
     }
 
     @Test
+    void updateProvider_ClearDescriptionAndWebsite_SetsNull() {
+        User owner = user("ps-clear-owner@example.com");
+        Provider p = Provider.builder()
+                .name("To Be Cleared")
+                .slug("ps-to-be-cleared")
+                .description("Initial Description")
+                .websiteUrl("https://initial.com")
+                .status(ProviderStatus.ACTIVE)
+                .build();
+        p = providerRepository.save(p);
+        member(p, owner, MemberRole.OWNER);
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Cleared Name",
+                "   ",
+                ""
+        );
+
+        ProviderResponse updated = service.updateProvider(owner.getEmail(), p.getId(), request);
+        assertThat(updated.name()).isEqualTo("Cleared Name");
+        assertThat(updated.description()).isNull();
+        assertThat(updated.websiteUrl()).isNull();
+
+        Provider refreshed = providerRepository.findById(p.getId()).orElseThrow();
+        assertThat(refreshed.getDescription()).isNull();
+        assertThat(refreshed.getWebsiteUrl()).isNull();
+    }
+
+    @Test
     void updateProvider_ForbiddenForNonMember() {
         User outsider = user("ps-outsider@example.com");
         Provider p = provider("ps-update-outsider-provider");

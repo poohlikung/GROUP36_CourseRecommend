@@ -10,6 +10,12 @@ import type {
   UpdateProviderPayload,
 } from '../features/provider/types';
 
+export function isSafeHttpUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+}
+
 export function ProviderPage() {
   const [providers, setProviders] = useState<MyProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,8 +110,8 @@ export function ProviderPage() {
     try {
       await providerApi.update(editingProvider.id, {
         name: editForm.name?.trim(),
-        description: editForm.description?.trim() || undefined,
-        websiteUrl: editForm.websiteUrl?.trim() || undefined,
+        description: editForm.description ? editForm.description.trim() : '',
+        websiteUrl: editForm.websiteUrl ? editForm.websiteUrl.trim() : '',
       });
       setEditingProvider(null);
       setSuccessMessage('แก้ไขข้อมูล Provider สำเร็จ');
@@ -295,10 +301,10 @@ export function ProviderPage() {
                   {p.description || 'ไม่มีคำอธิบาย'}
                 </p>
 
-                {p.websiteUrl && (
+                {isSafeHttpUrl(p.websiteUrl) && (
                   <p className="mt-2 text-xs">
                     <a
-                      href={p.websiteUrl}
+                      href={p.websiteUrl!}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-medium text-cyan-700 hover:underline"
@@ -426,6 +432,8 @@ export function ProviderPage() {
                   id="create-website"
                   type="url"
                   maxLength={255}
+                  pattern="https?://.*"
+                  title="URL ต้องขึ้นต้นด้วย http:// หรือ https://"
                   value={createForm.websiteUrl}
                   onChange={(e) => setCreateForm({ ...createForm, websiteUrl: e.target.value })}
                   placeholder="https://example.com"
@@ -499,7 +507,7 @@ export function ProviderPage() {
                   id="edit-desc"
                   rows={3}
                   maxLength={2000}
-                  value={editForm.description}
+                  value={editForm.description ?? ''}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
@@ -517,8 +525,11 @@ export function ProviderPage() {
                   id="edit-website"
                   type="url"
                   maxLength={255}
-                  value={editForm.websiteUrl}
+                  pattern="https?://.*"
+                  title="URL ต้องขึ้นต้นด้วย http:// หรือ https://"
+                  value={editForm.websiteUrl ?? ''}
                   onChange={(e) => setEditForm({ ...editForm, websiteUrl: e.target.value })}
+                  placeholder="https://example.com"
                   className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
                 <FieldError message={getFieldError(updateError, 'websiteUrl')} />
