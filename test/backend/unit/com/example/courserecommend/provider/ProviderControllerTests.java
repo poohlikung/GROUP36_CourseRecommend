@@ -154,7 +154,7 @@ class ProviderControllerTests {
         member(p, updater, MemberRole.OWNER);
 
         UpdateProviderRequest request = new UpdateProviderRequest(
-                "New Name", "New Desc", "https://new.com"
+                "New Name", null, "New Desc", "https://new.com"
         );
 
         mockMvc.perform(put("/api/v1/providers/" + p.getId())
@@ -242,6 +242,7 @@ class ProviderControllerTests {
 
         UpdateProviderRequest request = new UpdateProviderRequest(
                 "Kept Name",
+                null,
                 "",
                 ""
         );
@@ -268,5 +269,56 @@ class ProviderControllerTests {
 
     private ProviderMember member(Provider provider, User user, MemberRole role) {
         return memberRepository.save(new ProviderMember(provider, user, role));
+    }
+
+    @Test
+    void anonymousUserCanGetProviderByIdAndSlug() throws Exception {
+        Provider p = provider("ctrl-anon-get-test");
+
+        mockMvc.perform(get("/api/v1/providers/" + p.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("ctrl-anon-get-test"));
+
+        mockMvc.perform(get("/api/v1/providers/slug/ctrl-anon-get-test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("ctrl-anon-get-test"));
+    }
+
+    @Test
+    @WithMockUser(username = "ctrl-slug-updater@example.com")
+    void updateProvider_ChangeSlugSuccess() throws Exception {
+        User updater = user("ctrl-slug-updater@example.com");
+        Provider p = provider("ctrl-old-slug");
+        member(p, updater, MemberRole.OWNER);
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Same Name", "ctrl-new-slug", null, null
+        );
+
+        mockMvc.perform(put("/api/v1/providers/" + p.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("ctrl-new-slug"));
+    }
+
+    @Test
+    @WithMockUser(username = "ctrl-slug-conflict@example.com")
+    void updateProvider_ConflictDuplicateSlug() throws Exception {
+        User updater = user("ctrl-slug-conflict@example.com");
+        Provider p = provider("ctrl-slug-mine");
+        member(p, updater, MemberRole.OWNER);
+        provider("ctrl-slug-taken");
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Same Name", "ctrl-slug-taken", null, null
+        );
+
+        mockMvc.perform(put("/api/v1/providers/" + p.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
     }
 }

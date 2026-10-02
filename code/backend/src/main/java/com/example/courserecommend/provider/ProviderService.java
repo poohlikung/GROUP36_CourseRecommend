@@ -117,6 +117,15 @@ public class ProviderService {
         if (request.name() != null && !request.name().isBlank()) {
             provider.setName(request.name().trim());
         }
+        if (request.slug() != null && !request.slug().isBlank()) {
+            String newSlug = request.slug().trim().toLowerCase();
+            if (!newSlug.equals(provider.getSlug())) {
+                if (providerRepository.existsBySlug(newSlug)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Slug นี้ถูกใช้งานแล้ว");
+                }
+                provider.setSlug(newSlug);
+            }
+        }
         if (request.description() != null) {
             provider.setDescription(request.description().isBlank() ? null : request.description().trim());
         }

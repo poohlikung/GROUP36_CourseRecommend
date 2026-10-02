@@ -37,6 +37,7 @@ export function ProviderPage() {
   // Edit Form State
   const [editForm, setEditForm] = useState<UpdateProviderPayload>({
     name: '',
+    slug: '',
     description: '',
     websiteUrl: '',
   });
@@ -74,6 +75,7 @@ export function ProviderPage() {
     setEditingProvider(provider);
     setEditForm({
       name: provider.name,
+      slug: provider.slug,
       description: provider.description ?? '',
       websiteUrl: provider.websiteUrl ?? '',
     });
@@ -110,6 +112,7 @@ export function ProviderPage() {
     try {
       await providerApi.update(editingProvider.id, {
         name: editForm.name?.trim(),
+        slug: editForm.slug?.trim().toLowerCase(),
         description: editForm.description ? editForm.description.trim() : '',
         websiteUrl: editForm.websiteUrl ? editForm.websiteUrl.trim() : '',
       });
@@ -141,7 +144,7 @@ export function ProviderPage() {
 
   function getStatusBadge(status: ProviderStatus) {
     switch (status) {
-      case 'APPROVED':
+      case 'ACTIVE':
         return (
           <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
             อนุมัติแล้ว
@@ -151,12 +154,6 @@ export function ProviderPage() {
         return (
           <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
             รอการอนุมัติ (Pending)
-          </span>
-        );
-      case 'REJECTED':
-        return (
-          <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800">
-            ไม่อนุมัติ
           </span>
         );
       case 'SUSPENDED':
@@ -497,6 +494,25 @@ export function ProviderPage() {
                   className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
                 <FieldError message={getFieldError(updateError, 'name')} />
+              </div>
+
+              <div>
+                <label htmlFor="edit-slug" className="block text-xs font-semibold text-slate-700">
+                  URL Slug
+                </label>
+                <input
+                  id="edit-slug"
+                  type="text"
+                  minLength={2}
+                  maxLength={100}
+                  pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  title="ตัวพิมพ์เล็ก ตัวเลข คั่นด้วยเครื่องหมายขีดกลาง (-) เท่านั้น"
+                  value={editForm.slug ?? ''}
+                  onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                  placeholder="chula-mooc"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+                <FieldError message={getFieldError(updateError, 'slug')} />
               </div>
 
               <div>

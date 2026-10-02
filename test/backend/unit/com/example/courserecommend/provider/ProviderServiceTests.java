@@ -127,6 +127,7 @@ class ProviderServiceTests {
 
         UpdateProviderRequest request = new UpdateProviderRequest(
                 "Updated Name",
+                null,
                 "Updated Desc",
                 "https://updated.com"
         );
@@ -152,6 +153,7 @@ class ProviderServiceTests {
 
         UpdateProviderRequest request = new UpdateProviderRequest(
                 "Cleared Name",
+                null,
                 "   ",
                 ""
         );
@@ -171,7 +173,7 @@ class ProviderServiceTests {
         User outsider = user("ps-outsider@example.com");
         Provider p = provider("ps-update-outsider-provider");
 
-        UpdateProviderRequest request = new UpdateProviderRequest("New", null, null);
+        UpdateProviderRequest request = new UpdateProviderRequest("New", null, null, null);
         assertStatus(HttpStatus.FORBIDDEN, () -> service.updateProvider(outsider.getEmail(), p.getId(), request));
     }
 
@@ -239,5 +241,51 @@ class ProviderServiceTests {
         assertThatThrownBy(action::run)
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatusCode()).isEqualTo(status));
+    }
+
+    @Test
+    void updateProvider_ChangeSlugSuccess() {
+        User owner = user("ps-slug-change-owner@example.com");
+        Provider p = provider("ps-old-slug-value");
+        member(p, owner, MemberRole.OWNER);
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Same Name", "ps-new-slug-value", null, null
+        );
+
+        ProviderResponse updated = service.updateProvider(owner.getEmail(), p.getId(), request);
+        assertThat(updated.slug()).isEqualTo("ps-new-slug-value");
+
+        Provider refreshed = providerRepository.findById(p.getId()).orElseThrow();
+        assertThat(refreshed.getSlug()).isEqualTo("ps-new-slug-value");
+    }
+
+    @Test
+    void updateProvider_ConflictDuplicateSlug() {
+        User owner = user("ps-slug-dup-owner@example.com");
+        Provider p = provider("ps-slug-original");
+        member(p, owner, MemberRole.OWNER);
+        provider("ps-slug-existing-other");
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Same Name", "ps-slug-existing-other", null, null
+        );
+
+        assertStatus(HttpStatus.CONFLICT, () -> service.updateProvider(owner.getEmail(), p.getId(), request));
+    }
+
+    @Test
+    void updateProvider_SameSlugNoConflict() {
+        User owner = user("ps-slug-same-owner@example.com");
+        Provider p = provider("ps-slug-keep-same");
+        member(p, owner, MemberRole.OWNER);
+
+        UpdateProviderRequest request = new UpdateProviderRequest(
+                "Updated Name", "ps-slug-keep-same", null, null
+        );
+
+        ProviderResponse updated = service.updateProvider(owner.getEmail(), p.getId(), request);
+        assertThat(updated.slug()).isEqualTo("ps-slug-keep-same");
+        assertThat(updated.name()).isEqualTo("Updated Name");
     }
 }

@@ -36,7 +36,7 @@ const mockProviders: MyProvider[] = [
     slug: 'chula-mooc',
     description: 'คอร์สเรียนจุฬาฯ',
     websiteUrl: 'https://mooc.chula.ac.th',
-    status: 'APPROVED',
+    status: 'ACTIVE',
     role: 'OWNER',
     createdAt: '2026-09-30T10:00:00Z',
   },
@@ -187,6 +187,7 @@ describe('provider flow', () => {
     await waitFor(() =>
       expect(mocks.update).toHaveBeenCalledWith(1, {
         name: 'Chula MOOC',
+        slug: 'chula-mooc',
         description: '',
         websiteUrl: '',
       })
@@ -200,7 +201,7 @@ describe('provider flow', () => {
       slug: 'unsafe-link-provider',
       description: 'Test description',
       websiteUrl: 'javascript:alert(1)',
-      status: 'APPROVED',
+      status: 'ACTIVE',
       role: 'VIEWER',
       createdAt: '2026-09-30T10:00:00Z',
     };
@@ -216,5 +217,43 @@ describe('provider flow', () => {
 
     expect(await screen.findByText('Unsafe Link Provider')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /javascript:alert/ })).not.toBeInTheDocument();
+  });
+
+  it('allows editing slug in update modal', async () => {
+    mocks.findMine.mockResolvedValueOnce([mockProviders[0]]).mockResolvedValueOnce([]);
+    mocks.update.mockResolvedValueOnce({
+      ...mockProviders[0],
+      slug: 'chula-mooc-updated',
+    });
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Chula MOOC')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'แก้ไขข้อมูล' }));
+
+    expect(screen.getByText(/แก้ไขข้อมูล Provider/)).toBeInTheDocument();
+
+    const slugInput = screen.getByLabelText(/URL Slug/);
+    await user.clear(slugInput);
+    await user.type(slugInput, 'chula-mooc-updated');
+
+    await user.click(screen.getByRole('button', { name: 'บันทึกการแก้ไข' }));
+
+    await waitFor(() =>
+      expect(mocks.update).toHaveBeenCalledWith(1, {
+        name: 'Chula MOOC',
+        slug: 'chula-mooc-updated',
+        description: 'คอร์สเรียนจุฬาฯ',
+        websiteUrl: 'https://mooc.chula.ac.th',
+      })
+    );
   });
 });

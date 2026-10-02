@@ -1,4 +1,4 @@
-export type ProviderStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+export type ProviderStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
 
 export type MemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
 
@@ -33,6 +33,7 @@ export interface CreateProviderPayload {
 
 export interface UpdateProviderPayload {
   name?: string;
+  slug?: string;
   description?: string | null;
   websiteUrl?: string | null;
 }
