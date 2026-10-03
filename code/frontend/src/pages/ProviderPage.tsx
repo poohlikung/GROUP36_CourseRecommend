@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getErrorMessage, getFieldError } from '../api/client';
 import { FieldError } from '../components/AuthCard';
+import { CourseManagementSection } from '../features/course/CourseManagementSection';
 import { providerApi } from '../features/provider/providerApi';
 import type {
   CreateProviderPayload,
@@ -23,6 +24,7 @@ export function ProviderPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<MyProvider | null>(null);
   const [deletingProvider, setDeletingProvider] = useState<MyProvider | null>(null);
+  const [managingCoursesProvider, setManagingCoursesProvider] = useState<MyProvider | null>(null);
 
   // Create Form State
   const [createForm, setCreateForm] = useState<CreateProviderPayload>({
@@ -188,6 +190,20 @@ export function ProviderPage() {
     }
   }
 
+  if (managingCoursesProvider) {
+    return (
+      <main className="mx-auto max-w-6xl px-5 py-10">
+        <CourseManagementSection
+          provider={managingCoursesProvider}
+          onBack={() => {
+            setManagingCoursesProvider(null);
+            loadProviders();
+          }}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
       {/* Header */}
@@ -313,7 +329,17 @@ export function ProviderPage() {
               </div>
 
               {/* Actions */}
-              <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                {(p.role === 'OWNER' || p.role === 'EDITOR') && (
+                  <button
+                    type="button"
+                    onClick={() => setManagingCoursesProvider(p)}
+                    className="rounded-lg bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-cyan-600"
+                  >
+                    จัดการคอร์สเรียน
+                  </button>
+                )}
+
                 {(p.role === 'OWNER' || p.role === 'EDITOR') && (
                   <button
                     type="button"
