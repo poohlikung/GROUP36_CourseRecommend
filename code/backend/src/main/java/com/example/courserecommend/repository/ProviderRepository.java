@@ -16,4 +16,8 @@ public interface ProviderRepository extends JpaRepository<Provider, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select provider from Provider provider where provider.id = :id")
     Optional<Provider> findByIdForUpdate(@Param("id") Long id);
+
+    boolean existsBySlug(String slug);
+
+    Optional<Provider> findBySlug(String slug);
 }

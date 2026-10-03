@@ -22,4 +22,10 @@ public interface ProviderMemberRepository extends JpaRepository<ProviderMember, 
     boolean existsByProviderIdAndUserId(Long providerId, Long userId);
 
     long countByProviderIdAndMemberRole(Long providerId, MemberRole memberRole);
+
+    @EntityGraph(attributePaths = { "provider", "user" })
+    List<ProviderMember> findByUserIdOrderByProviderIdAsc(Long userId);
+
+    void deleteByProviderId(Long providerId);
+
 }

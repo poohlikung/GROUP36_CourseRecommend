@@ -114,6 +114,13 @@ public class SecurityConfig {
                                 "/api/v1/courses",
                                 "/api/v1/courses/*/reviews")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/providers/me")
+                        .authenticated()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/providers/{id}",
+                                "/api/v1/providers/slug/{slug}")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/reviews")
                         .hasRole("LEARNER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*/reviews/me")
