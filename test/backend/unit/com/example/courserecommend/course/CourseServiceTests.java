@@ -167,6 +167,29 @@ class CourseServiceTests {
     }
 
     @Test
+    void getCourse_PublishedCourseAccessibleWithoutAuth() {
+        Course c = createTestCourse("cs-get-pub-anon", CourseStatus.PUBLISHED);
+
+        CourseDetailResponse found = courseService.getCourse(c.getId());
+        assertThat(found.slug()).isEqualTo("cs-get-pub-anon");
+    }
+
+    @Test
+    void getCourse_DraftCourseNotFoundForAnonymous() {
+        Course c = createTestCourse("cs-get-draft-anon", CourseStatus.DRAFT);
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-outsider@example.com")
+    void getCourse_DraftCourseNotFoundForOutsider() {
+        Course c = createTestCourse("cs-get-draft-outsider", CourseStatus.DRAFT);
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+    }
+
+    @Test
     @WithMockUser(username = "cs-owner@example.com")
     void listCoursesByProvider_Success() {
         createTestCourse("cs-list-1", CourseStatus.DRAFT);
@@ -204,6 +227,63 @@ class CourseServiceTests {
         assertThat(updated.language()).isEqualTo(CourseLanguage.ENGLISH);
         assertThat(updated.paymentType()).isEqualTo(PaymentType.SUBSCRIPTION);
         assertThat(updated.amount()).isEqualByComparingTo("499.00");
+    }
+
+    @Test
+    @WithMockUser(username = "cs-editor@example.com")
+    void updateCourse_PublishedCourseRevertsToDraftAndRequiresReModeration() {
+        Course c = createTestCourse("cs-update-pub-revert", CourseStatus.PUBLISHED);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Updated Title",
+                "cs-update-pub-revert-new",
+                "Updated Description",
+                "https://example.com/updated",
+                platform.getId(),
+                CourseLevel.ADVANCED,
+                CourseLanguage.ENGLISH,
+                50,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of(category.getId())
+        );
+
+        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        assertThat(updated.status()).isEqualTo(CourseStatus.DRAFT);
+        assertThat(updated.slug()).isEqualTo("cs-update-pub-revert-new");
+
+        AuditLog log = auditLogRepository.findAll().stream()
+                .filter(l -> l.getEntityId().equals(c.getId()) && "COURSE_UPDATED".equals(l.getAction()))
+                .reduce((first, second) -> second)
+                .orElseThrow();
+        assertThat(log.getOldStatus()).isEqualTo(CourseStatus.PUBLISHED.name());
+        assertThat(log.getNewStatus()).isEqualTo(CourseStatus.DRAFT.name());
+    }
+
+    @Test
+    @WithMockUser(username = "cs-editor@example.com")
+    void updateCourse_SuspendedOrArchivedCourseBadRequest() {
+        Course suspended = createTestCourse("cs-update-suspended", CourseStatus.SUSPENDED);
+        Course archived = createTestCourse("cs-update-archived", CourseStatus.ARCHIVED);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Updated Title",
+                "cs-update-forbidden-slug",
+                "Updated Description",
+                "https://example.com/updated",
+                platform.getId(),
+                CourseLevel.ADVANCED,
+                CourseLanguage.ENGLISH,
+                50,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of()
+        );
+
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(suspended.getId(), request));
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(archived.getId(), request));
     }
 
     @Test

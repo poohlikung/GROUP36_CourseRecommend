@@ -103,6 +103,10 @@ public class CourseService {
     public CourseDetailResponse getCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ"));
+        if (course.getStatus() != CourseStatus.PUBLISHED
+                && !ownershipService.isEditorOrOwner(course.getProvider().getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ");
+        }
         return CourseDetailResponse.from(course);
     }
 
@@ -120,6 +124,15 @@ public class CourseService {
     public CourseDetailResponse updateCourse(Long id, UpdateCourseRequest request) {
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
+
+        if (course.getStatus() == CourseStatus.SUSPENDED || course.getStatus() == CourseStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่สามารถแก้ไขคอร์สที่ถูกระงับหรือเก็บถาวรได้");
+        }
+
+        CourseStatus oldStatus = course.getStatus();
+        if (oldStatus == CourseStatus.PUBLISHED || oldStatus == CourseStatus.PENDING) {
+            course.setStatus(CourseStatus.DRAFT);
+        }
 
         String newSlug = request.slug().trim().toLowerCase();
         if (courseRepository.existsBySlugAndIdNot(newSlug, id)) {
@@ -173,7 +186,7 @@ public class CourseService {
 
         course = courseRepository.save(course);
 
-        AuditLog audit = new AuditLog(actor, "COURSE_UPDATED", ENTITY_TYPE, course.getId(), null, null);
+        AuditLog audit = new AuditLog(actor, "COURSE_UPDATED", ENTITY_TYPE, course.getId(), oldStatus.name(), course.getStatus().name());
         auditLogRepository.save(audit);
 
         return CourseDetailResponse.from(course);

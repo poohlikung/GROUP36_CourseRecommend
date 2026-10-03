@@ -40,6 +40,22 @@ public class ProviderOwnershipService {
         return requireEditableMembership(providerId, currentUser());
     }
 
+    public boolean isEditorOrOwner(Long providerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return false;
+        }
+        if (authentication.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            return true;
+        }
+        return userRepository.findByEmail(authentication.getName())
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .flatMap(user -> memberRepository.findByProviderIdAndUserId(providerId, user.getId()))
+                .map(member -> member.getMemberRole() == MemberRole.OWNER || member.getMemberRole() == MemberRole.EDITOR)
+                .orElse(false);
+    }
+
     public Course requireCourseEditorOrOwner(Long courseId) {
         User user = currentUser();
         Course course = courseRepository.findById(courseId)

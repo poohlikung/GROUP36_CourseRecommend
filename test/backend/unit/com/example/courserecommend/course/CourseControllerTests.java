@@ -150,12 +150,30 @@ class CourseControllerTests {
     }
 
     @Test
-    void getCourse_AnonymousUser_Returns200() throws Exception {
-        Course course = createTestCourse("cctrl-get-course-anon", CourseStatus.DRAFT);
+    void getCourse_PublishedCourse_AnonymousUser_Returns200() throws Exception {
+        Course course = createTestCourse("cctrl-get-course-pub-anon", CourseStatus.PUBLISHED);
 
         mockMvc.perform(get("/api/v1/courses/" + course.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("cctrl-get-course-anon"));
+                .andExpect(jsonPath("$.slug").value("cctrl-get-course-pub-anon"));
+    }
+
+    @Test
+    void getCourse_DraftCourse_AnonymousUser_Returns404() throws Exception {
+        Course course = createTestCourse("cctrl-get-course-draft-anon", CourseStatus.DRAFT);
+
+        mockMvc.perform(get("/api/v1/courses/" + course.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-outsider@example.com")
+    void getCourse_DraftCourse_OutsiderUser_Returns404() throws Exception {
+        getOrCreateUser("cctrl-outsider@example.com");
+        Course course = createTestCourse("cctrl-get-course-draft-outsider", CourseStatus.DRAFT);
+
+        mockMvc.perform(get("/api/v1/courses/" + course.getId()))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -211,6 +229,35 @@ class CourseControllerTests {
                 .andExpect(jsonPath("$.title").value("Updated Course Title"))
                 .andExpect(jsonPath("$.slug").value("cctrl-update-after"))
                 .andExpect(jsonPath("$.amount").value(990.00));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
+    void updateCourse_WhenPublished_RevertsToDraft() throws Exception {
+        Course course = createTestCourse("cctrl-pub-to-draft", CourseStatus.PUBLISHED);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Updated Published Course",
+                "cctrl-pub-to-draft-new",
+                "รายละเอียดใหม่",
+                "https://example.com/updated",
+                platform.getId(),
+                CourseLevel.ADVANCED,
+                CourseLanguage.ENGLISH,
+                30,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of()
+        );
+
+        mockMvc.perform(put("/api/v1/courses/" + course.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.slug").value("cctrl-pub-to-draft-new"));
     }
 
     @Test
