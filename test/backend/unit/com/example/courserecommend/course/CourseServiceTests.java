@@ -451,6 +451,41 @@ class CourseServiceTests {
     }
 
     @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void submitCourse_WhenRevisionRequested_Success() {
+        Course c = createTestCourse("cs-rev-req-submit", CourseStatus.REVISION_REQUESTED);
+        CourseDetailResponse submitted = courseService.submitCourse(c.getId());
+        assertThat(submitted.status()).isEqualTo(CourseStatus.PENDING);
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void submitCourse_ConflictWhenPending() {
+        Course c = createTestCourse("cs-pending-submit", CourseStatus.PENDING);
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void deleteCourse_ConflictWhenPendingOrSuspendedOrArchived() {
+        Course pending = createTestCourse("cs-del-pending", CourseStatus.PENDING);
+        Course suspended = createTestCourse("cs-del-suspended", CourseStatus.SUSPENDED);
+        Course archived = createTestCourse("cs-del-archived", CourseStatus.ARCHIVED);
+
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(pending.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(suspended.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(archived.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-editor@example.com")
+    void deleteCourse_SuccessByEditor() {
+        Course c = createTestCourse("cs-del-by-editor", CourseStatus.DRAFT);
+        courseService.deleteCourse(c.getId());
+        assertThat(courseRepository.existsById(c.getId())).isFalse();
+    }
+
+    @Test
     void getCourse_PublishedCourseOfSuspendedProviderNotFoundForAnonymous() {
         Provider suspended = createSuspendedProviderOwnedBy(owner);
         Course c = createTestCourse(suspended, "cs-get-suspended-anon", CourseStatus.PUBLISHED);

@@ -345,4 +345,64 @@ describe('course management flow', () => {
     expect(await screen.findByText('Variable Pricing Course')).toBeInTheDocument();
     expect(screen.getByText('ดูราคาที่เว็บไซต์')).toBeInTheDocument();
   });
+
+  it('submits a revision-requested course for review (UC13)', async () => {
+    const revisionCourse: CourseDetail = {
+      ...mockCourses[0],
+      id: 301,
+      title: 'Revision Needed Course',
+      status: 'REVISION_REQUESTED',
+    };
+    mocks.listByProvider.mockResolvedValueOnce([revisionCourse]).mockResolvedValueOnce([
+      { ...revisionCourse, status: 'PENDING' },
+    ]);
+    mocks.submitCourse.mockResolvedValueOnce({ ...revisionCourse, status: 'PENDING' });
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+
+    expect(await screen.findByText('Revision Needed Course')).toBeInTheDocument();
+    expect(screen.getByText('ต้องแก้ไข (Revision Requested)')).toBeInTheDocument();
+
+    const submitBtn = screen.getByRole('button', { name: 'ส่งตรวจ' });
+    await user.click(submitBtn);
+
+    await waitFor(() => expect(mocks.submitCourse).toHaveBeenCalledWith(301));
+    expect(await screen.findByText(/ส่งคอร์สให้ผู้ดูแลระบบตรวจสอบแล้ว/)).toBeInTheDocument();
+  });
+
+  it('displays correct price labels for subscription and free courses', async () => {
+    const subCourse: CourseDetail = {
+      ...mockCourses[0],
+      id: 401,
+      title: 'Subscription Course',
+      paymentType: 'SUBSCRIPTION',
+      amount: 499,
+      currency: 'THB',
+    };
+    mocks.listByProvider.mockResolvedValueOnce([mockCourses[0], subCourse]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+
+    expect(await screen.findByText('Subscription Course')).toBeInTheDocument();
+    expect(screen.getByText('ฟรี')).toBeInTheDocument();
+    expect(screen.getByText('499 THB / เดือน')).toBeInTheDocument();
+  });
 });
