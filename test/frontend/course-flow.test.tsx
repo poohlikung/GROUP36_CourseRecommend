@@ -288,4 +288,36 @@ describe('course management flow', () => {
       )
     );
   });
+
+  it('keeps an unknown price empty when editing a paid course', async () => {
+    const paidWithoutPrice: CourseDetail = {
+      ...mockCourses[0],
+      paymentType: 'ONE_TIME',
+      amount: null,
+    };
+    mocks.listByProvider.mockResolvedValueOnce([paidWithoutPrice]).mockResolvedValueOnce([paidWithoutPrice]);
+    mocks.updateCourse.mockResolvedValueOnce(paidWithoutPrice);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+    expect(await screen.findByText('Modern Web Development')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'แก้ไข' }));
+    expect(screen.getByLabelText('จำนวนเงิน')).toHaveValue(null);
+
+    await user.click(screen.getByRole('button', { name: 'บันทึกการแก้ไข' }));
+
+    await waitFor(() => expect(mocks.updateCourse).toHaveBeenCalled());
+    const [, payload] = mocks.updateCourse.mock.calls[0];
+    expect(payload.paymentType).toBe('ONE_TIME');
+    expect(payload.amount).toBeUndefined();
+  });
 });

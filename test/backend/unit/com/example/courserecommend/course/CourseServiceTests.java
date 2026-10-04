@@ -375,6 +375,49 @@ class CourseServiceTests {
     }
 
     @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void deleteCourse_ConflictWhenPreviouslyPublished() {
+        Course c = createTestCourse("cs-delete-was-published", CourseStatus.PUBLISHED);
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Edited Title",
+                "cs-delete-was-published",
+                "Desc",
+                "https://example.com/edited",
+                platform.getId(),
+                CourseLevel.BEGINNER,
+                CourseLanguage.THAI,
+                10,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of()
+        );
+
+        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        assertThat(updated.status()).isEqualTo(CourseStatus.DRAFT);
+
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(c.getId()));
+        assertThat(courseRepository.existsById(c.getId())).isTrue();
+    }
+
+    @Test
+    void getCourse_PublishedCourseOfSuspendedProviderNotFoundForAnonymous() {
+        Provider suspended = createSuspendedProviderOwnedBy(owner);
+        Course c = createTestCourse(suspended, "cs-get-suspended-anon", CourseStatus.PUBLISHED);
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void getCourse_PublishedCourseOfSuspendedProviderVisibleToOwner() {
+        Provider suspended = createSuspendedProviderOwnedBy(owner);
+        Course c = createTestCourse(suspended, "cs-get-suspended-owner", CourseStatus.PUBLISHED);
+
+        assertThat(courseService.getCourse(c.getId()).slug()).isEqualTo("cs-get-suspended-owner");
+    }
+
+    @Test
     @WithMockUser(username = "cs-outsider@example.com")
     void forbiddenForNonMember() {
         Course c = createTestCourse("cs-forbidden-slug", CourseStatus.DRAFT);
@@ -489,8 +532,12 @@ class CourseServiceTests {
     }
 
     private Course createTestCourse(String slug, CourseStatus status) {
+        return createTestCourse(provider, slug, status);
+    }
+
+    private Course createTestCourse(Provider owningProvider, String slug, CourseStatus status) {
         Course course = Course.builder()
-                .provider(provider)
+                .provider(owningProvider)
                 .platform(platform)
                 .title("Test Course " + slug)
                 .slug(slug)
@@ -509,6 +556,16 @@ class CourseServiceTests {
                 .build();
         course.setPrice(price);
         return courseRepository.save(course);
+    }
+
+    private Provider createSuspendedProviderOwnedBy(User member) {
+        Provider suspended = providerRepository.save(Provider.builder()
+                .name("CS Suspended Academy")
+                .slug("cs-suspended-academy")
+                .status(ProviderStatus.SUSPENDED)
+                .build());
+        memberRepository.save(new ProviderMember(suspended, member, MemberRole.OWNER));
+        return suspended;
     }
 
     private User getOrCreateUser(String email) {

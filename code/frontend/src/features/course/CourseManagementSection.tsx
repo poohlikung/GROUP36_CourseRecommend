@@ -118,7 +118,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     setFormLanguage(course.language);
     setFormEffortHours(course.effortHours ? String(course.effortHours) : '');
     setFormPaymentType(course.paymentType);
-    setFormAmount(course.amount !== null && course.amount !== undefined ? String(course.amount) : '0');
+    setFormAmount(course.amount !== null && course.amount !== undefined ? String(course.amount) : '');
     setFormCurrency(course.currency || 'THB');
     setFormCategoryIds(course.categories.map((c) => c.id));
     setFormError(undefined);

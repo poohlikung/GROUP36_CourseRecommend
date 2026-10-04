@@ -8,6 +8,7 @@ import com.example.courserecommend.domain.enums.CourseLanguage;
 import com.example.courserecommend.domain.enums.CourseLevel;
 import com.example.courserecommend.domain.enums.CourseStatus;
 import com.example.courserecommend.domain.enums.PaymentType;
+import com.example.courserecommend.domain.enums.ProviderStatus;
 import com.example.courserecommend.repository.AuditLogRepository;
 import com.example.courserecommend.repository.CategoryRepository;
 import com.example.courserecommend.repository.CourseRepository;
@@ -103,8 +104,9 @@ public class CourseService {
     public CourseDetailResponse getCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ"));
-        if (course.getStatus() != CourseStatus.PUBLISHED
-                && !ownershipService.isEditorOrOwner(course.getProvider().getId())) {
+        boolean publiclyVisible = course.getStatus() == CourseStatus.PUBLISHED
+                && course.getProvider().getStatus() == ProviderStatus.ACTIVE;
+        if (!publiclyVisible && !ownershipService.isEditorOrOwner(course.getProvider().getId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ");
         }
         return CourseDetailResponse.from(course);
@@ -218,6 +220,10 @@ public class CourseService {
 
         if (course.getStatus() != CourseStatus.DRAFT) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ไม่สามารถลบคอร์สที่เผยแพร่หรือไม่อยู่ในสถานะ DRAFT ได้");
+        }
+
+        if (auditLogRepository.existsStatusHistory(ENTITY_TYPE, id, CourseStatus.PUBLISHED.name())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ไม่สามารถลบคอร์สที่เคยเผยแพร่แล้วได้ กรุณาใช้การเก็บถาวรแทน");
         }
 
         if (reviewRepository.existsByCourseId(id)) {
