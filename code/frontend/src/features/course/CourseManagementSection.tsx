@@ -263,7 +263,10 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     if (course.paymentType === 'FREE') {
       return <span className="font-semibold text-emerald-700">ฟรี</span>;
     }
-    const amt = course.amount !== null && course.amount !== undefined ? course.amount.toLocaleString() : '0';
+    if (course.amount === null || course.amount === undefined) {
+      return <span className="font-semibold text-slate-500">ดูราคาที่เว็บไซต์</span>;
+    }
+    const amt = course.amount.toLocaleString();
     const typeLabel = course.paymentType === 'SUBSCRIPTION' ? '/ เดือน' : '';
     return (
       <span className="font-semibold text-slate-900">

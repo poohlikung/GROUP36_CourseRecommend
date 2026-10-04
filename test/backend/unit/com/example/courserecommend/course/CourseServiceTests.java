@@ -157,6 +157,27 @@ class CourseServiceTests {
 
     @Test
     @WithMockUser(username = "cs-owner@example.com")
+    void createCourse_BadRequestMissingCategory() {
+        CreateCourseRequest request = new CreateCourseRequest(
+                "Course Invalid Cat",
+                "cs-invalid-cat-slug",
+                "คำอธิบาย",
+                "https://example.com/course",
+                platform.getId(),
+                CourseLevel.BEGINNER,
+                CourseLanguage.THAI,
+                10,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of(999999L)
+        );
+
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.createCourse(provider.getId(), request));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
     void getCourse_SuccessAndNotFound() {
         Course c = createTestCourse("cs-get-slug", CourseStatus.DRAFT);
 
@@ -284,6 +305,35 @@ class CourseServiceTests {
 
         assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(suspended.getId(), request));
         assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(archived.getId(), request));
+    }
+
+    @Test
+    @WithMockUser(username = "cs-editor@example.com")
+    void updateCourse_BadRequestMissingCategory_PreservesExistingCategories() {
+        Course c = createTestCourse("cs-update-invalid-cat", CourseStatus.DRAFT);
+        c.getCategories().add(category);
+        courseRepository.save(c);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Updated Title",
+                "cs-update-invalid-cat",
+                "Desc",
+                "https://example.com/updated",
+                platform.getId(),
+                CourseLevel.BEGINNER,
+                CourseLanguage.THAI,
+                10,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of(999999L)
+        );
+
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(c.getId(), request));
+
+        Course refreshed = courseRepository.findById(c.getId()).orElseThrow();
+        assertThat(refreshed.getCategories()).hasSize(1);
+        assertThat(refreshed.getCategories()).extracting(Category::getId).contains(category.getId());
     }
 
     @Test

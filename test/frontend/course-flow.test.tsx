@@ -320,4 +320,29 @@ describe('course management flow', () => {
     expect(payload.paymentType).toBe('ONE_TIME');
     expect(payload.amount).toBeUndefined();
   });
+
+  it('displays "ดูราคาที่เว็บไซต์" on course card when paid course amount is null', async () => {
+    const paidWithoutPrice: CourseDetail = {
+      ...mockCourses[0],
+      id: 201,
+      title: 'Variable Pricing Course',
+      paymentType: 'ONE_TIME',
+      amount: null,
+    };
+    mocks.listByProvider.mockResolvedValueOnce([paidWithoutPrice]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+
+    expect(await screen.findByText('Variable Pricing Course')).toBeInTheDocument();
+    expect(screen.getByText('ดูราคาที่เว็บไซต์')).toBeInTheDocument();
+  });
 });

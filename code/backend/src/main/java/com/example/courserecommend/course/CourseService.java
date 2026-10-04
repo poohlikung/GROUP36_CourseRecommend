@@ -59,10 +59,7 @@ public class CourseService {
 
         validateCourseUrlWithPlatform(request.url(), platform);
 
-        Set<Category> categories = new HashSet<>();
-        if (request.categoryIds() != null && !request.categoryIds().isEmpty()) {
-            categories.addAll(categoryRepository.findAllById(request.categoryIds()));
-        }
+        Set<Category> categories = resolveCategories(request.categoryIds());
 
         String desc = request.description() != null && !request.description().isBlank()
                 ? request.description().trim()
@@ -180,10 +177,9 @@ public class CourseService {
         }
 
         if (request.categoryIds() != null) {
+            Set<Category> updatedCategories = resolveCategories(request.categoryIds());
             course.getCategories().clear();
-            if (!request.categoryIds().isEmpty()) {
-                course.getCategories().addAll(categoryRepository.findAllById(request.categoryIds()));
-            }
+            course.getCategories().addAll(updatedCategories);
         }
 
         course = courseRepository.save(course);
@@ -262,5 +258,16 @@ public class CourseService {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "รูปแบบ URL ไม่ถูกต้อง");
         }
+    }
+
+    private Set<Category> resolveCategories(Set<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        List<Category> found = categoryRepository.findAllById(categoryIds);
+        if (found.size() != categoryIds.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "พบหมวดหมู่ที่ไม่ถูกต้องหรือไม่พบในระบบ");
+        }
+        return new HashSet<>(found);
     }
 }

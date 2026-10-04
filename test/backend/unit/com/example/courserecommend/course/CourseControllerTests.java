@@ -203,6 +203,31 @@ class CourseControllerTests {
 
     @Test
     @WithMockUser(username = "cctrl-owner@example.com")
+    void createCourse_InvalidCategoryId_Returns400() throws Exception {
+        CreateCourseRequest request = new CreateCourseRequest(
+                "Invalid Category Course",
+                "cctrl-invalid-cat",
+                "คำอธิบาย",
+                "https://example.com/invalid-cat",
+                platform.getId(),
+                CourseLevel.BEGINNER,
+                CourseLanguage.THAI,
+                10,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of(999999L)
+        );
+
+        mockMvc.perform(post("/api/v1/providers/" + provider.getId() + "/courses")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
     void updateCourse_Returns200() throws Exception {
         Course course = createTestCourse("cctrl-update-before", CourseStatus.DRAFT);
 
@@ -258,6 +283,33 @@ class CourseControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.slug").value("cctrl-pub-to-draft-new"));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
+    void updateCourse_InvalidCategoryId_Returns400() throws Exception {
+        Course course = createTestCourse("cctrl-upd-inv-cat", CourseStatus.DRAFT);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Updated Course Invalid Cat",
+                "cctrl-upd-inv-cat-new",
+                "คำอธิบาย",
+                "https://example.com/updated",
+                platform.getId(),
+                CourseLevel.ADVANCED,
+                CourseLanguage.ENGLISH,
+                30,
+                PaymentType.FREE,
+                BigDecimal.ZERO,
+                "THB",
+                Set.of(999999L)
+        );
+
+        mockMvc.perform(put("/api/v1/courses/" + course.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
