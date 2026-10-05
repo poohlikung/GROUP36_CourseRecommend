@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -103,7 +104,7 @@ class ProviderServiceTests {
 
     @Test
     void getById_SuccessAndNotFound() {
-        Provider p = provider("ps-get-by-id");
+        Provider p = activeProvider("ps-get-by-id");
         ProviderResponse found = service.getById(p.getId());
         assertThat(found.slug()).isEqualTo("ps-get-by-id");
 
@@ -112,11 +113,50 @@ class ProviderServiceTests {
 
     @Test
     void getBySlug_SuccessAndNotFound() {
-        provider("ps-get-by-slug-found");
+        activeProvider("ps-get-by-slug-found");
         ProviderResponse found = service.getBySlug("ps-get-by-slug-found");
         assertThat(found.slug()).isEqualTo("ps-get-by-slug-found");
 
         assertStatus(HttpStatus.NOT_FOUND, () -> service.getBySlug("ps-slug-not-exist"));
+    }
+
+    @Test
+    void getById_PendingOrSuspendedNotFoundForAnonymous() {
+        Provider pending = provider("ps-hidden-pending");
+        Provider suspended = providerRepository.save(Provider.builder().name("s").slug("ps-hidden-suspended")
+                .status(ProviderStatus.SUSPENDED).build());
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getById(pending.getId()));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getBySlug("ps-hidden-pending"));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getById(suspended.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "ps-hidden-outsider@example.com")
+    void getById_PendingNotFoundForOutsider() {
+        user("ps-hidden-outsider@example.com");
+        Provider pending = provider("ps-hidden-outsider");
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getById(pending.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "ps-hidden-editor@example.com")
+    void getById_PendingVisibleToMember() {
+        User editor = user("ps-hidden-editor@example.com");
+        Provider pending = provider("ps-visible-member");
+        member(pending, editor, MemberRole.EDITOR);
+
+        assertThat(service.getById(pending.getId()).status()).isEqualTo(ProviderStatus.PENDING);
+        assertThat(service.getBySlug("ps-visible-member").slug()).isEqualTo("ps-visible-member");
+    }
+
+    @Test
+    @WithMockUser(username = "ps-hidden-admin@example.com", roles = "ADMIN")
+    void getById_PendingVisibleToAdmin() {
+        Provider pending = provider("ps-visible-admin");
+
+        assertThat(service.getById(pending.getId()).slug()).isEqualTo("ps-visible-admin");
     }
 
     @Test
@@ -225,6 +265,11 @@ class ProviderServiceTests {
 
     private Provider provider(String slug) {
         return providerRepository.save(Provider.builder().name(slug).slug(slug).build());
+    }
+
+    private Provider activeProvider(String slug) {
+        return providerRepository.save(Provider.builder().name(slug).slug(slug)
+                .status(ProviderStatus.ACTIVE).build());
     }
 
     private User user(String email) {
