@@ -405,4 +405,89 @@ describe('course management flow', () => {
     expect(screen.getByText('ฟรี')).toBeInTheDocument();
     expect(screen.getByText('499 THB / เดือน')).toBeInTheDocument();
   });
+
+  it('keeps the course list visible when submitting for review fails', async () => {
+    mocks.listByProvider.mockResolvedValueOnce([mockCourses[0]]);
+    mocks.submitCourse.mockRejectedValueOnce(new Error('คอร์สต้องอยู่ในสถานะ DRAFT'));
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+    expect(await screen.findByText('Modern Web Development')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ส่งตรวจ' }));
+
+    expect(await screen.findByText('คอร์สต้องอยู่ในสถานะ DRAFT')).toBeInTheDocument();
+    expect(screen.getByText('Modern Web Development')).toBeInTheDocument();
+  });
+
+  it('disables submitting for review when the provider is not active', async () => {
+    mocks.findMine.mockResolvedValue([{ ...mockProvider, status: 'PENDING' }]);
+    mocks.listByProvider.mockResolvedValueOnce([mockCourses[0]]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+    expect(await screen.findByText('Modern Web Development')).toBeInTheDocument();
+
+    expect(screen.getByText(/ยังส่งคอร์สเข้าตรวจไม่ได้/)).toBeInTheDocument();
+    const submitBtn = screen.getByRole('button', { name: 'ส่งตรวจ' });
+    expect(submitBtn).toBeDisabled();
+    await user.click(submitBtn);
+    expect(mocks.submitCourse).not.toHaveBeenCalled();
+  });
+
+  it('hides the edit button for suspended and archived courses', async () => {
+    mocks.listByProvider.mockResolvedValueOnce([
+      { ...mockCourses[0], id: 201, title: 'Suspended Course', status: 'SUSPENDED' },
+      { ...mockCourses[0], id: 202, title: 'Archived Course', slug: 'archived', status: 'ARCHIVED' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+    expect(await screen.findByText('Suspended Course')).toBeInTheDocument();
+    expect(screen.getByText('Archived Course')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'แก้ไข' })).not.toBeInTheDocument();
+  });
+
+  it('warns that editing a published course returns it to draft', async () => {
+    mocks.listByProvider.mockResolvedValueOnce([{ ...mockCourses[0], status: 'PUBLISHED' }]);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ProviderPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'จัดการคอร์สเรียน' }));
+    expect(await screen.findByText('Modern Web Development')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'แก้ไข' }));
+    expect(screen.getByText(/คอร์สนี้จะกลับเป็นสถานะ Draft/)).toBeInTheDocument();
+  });
 });

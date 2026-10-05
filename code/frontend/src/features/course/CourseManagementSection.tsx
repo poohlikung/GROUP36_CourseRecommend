@@ -55,8 +55,10 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
   // Submit action state
   const [submittingCourseId, setSubmittingCourseId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState('');
 
   const canManage = provider.role === 'OWNER' || provider.role === 'EDITOR';
+  const canSubmitForReview = provider.status === 'ACTIVE';
 
   function loadCourses() {
     setLoading(true);
@@ -185,12 +187,14 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
   async function handleSubmitForReview(courseId: number) {
     setSubmittingCourseId(courseId);
+    setActionError('');
     try {
       await courseApi.submit(courseId);
       setSuccessMessage('ส่งคอร์สให้ผู้ดูแลระบบตรวจสอบแล้ว (สถานะ Pending)');
       loadCourses();
     } catch (err) {
-      setError(getErrorMessage(err));
+      // แยกจาก error ตอนโหลดรายการ เพื่อไม่ให้รายการคอร์สหายไป
+      setActionError(getErrorMessage(err));
     } finally {
       setSubmittingCourseId(null);
     }
@@ -323,6 +327,32 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
         </div>
       )}
 
+      {canManage && !canSubmitForReview && (
+        <div
+          role="note"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          Provider นี้ยังไม่ได้รับการอนุมัติ (สถานะไม่ใช่ Active) จึงยังส่งคอร์สเข้าตรวจไม่ได้
+          แต่สามารถสร้างและแก้ไขคอร์สดราฟต์ได้ตามปกติ
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+        >
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError('')}
+            className="text-xs font-semibold underline hover:no-underline"
+          >
+            ปิด
+          </button>
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
@@ -432,21 +462,24 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     <button
                       type="button"
                       onClick={() => handleSubmitForReview(course.id)}
-                      disabled={submittingCourseId === course.id}
+                      disabled={!canSubmitForReview || submittingCourseId === course.id}
+                      title={canSubmitForReview ? undefined : 'Provider ต้องได้รับการอนุมัติก่อนส่งคอร์สเข้าตรวจ'}
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50"
                     >
                       {submittingCourseId === course.id ? 'กำลังส่ง...' : 'ส่งตรวจ'}
                     </button>
                   )}
 
-                  {/* Edit button */}
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(course)}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    แก้ไข
-                  </button>
+                  {/* Edit button: backend ไม่อนุญาตให้แก้คอร์ส SUSPENDED/ARCHIVED */}
+                  {course.status !== 'SUSPENDED' && course.status !== 'ARCHIVED' && (
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(course)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      แก้ไข
+                    </button>
+                  )}
 
                   {/* Delete button: only for DRAFT */}
                   {course.status === 'DRAFT' && (
@@ -480,6 +513,17 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                 ? `แก้ไขคอร์ส ${editingCourse.slug}`
                 : `สร้างดราฟต์คอร์สใหม่ภายใต้สถาบัน ${provider.name}`}
             </p>
+
+            {editingCourse &&
+            (editingCourse.status === 'PUBLISHED' || editingCourse.status === 'PENDING') ? (
+              <div
+                role="note"
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+              >
+                เมื่อบันทึกการแก้ไข คอร์สนี้จะกลับเป็นสถานะ Draft
+                {editingCourse.status === 'PUBLISHED' ? ' และจะไม่แสดงในหน้าค้นหาคอร์ส' : ''} จนกว่าจะส่งตรวจและได้รับอนุมัติอีกครั้ง
+              </div>
+            ) : null}
 
             {formError ? (
               <div
