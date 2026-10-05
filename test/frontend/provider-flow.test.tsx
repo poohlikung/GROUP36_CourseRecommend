@@ -202,7 +202,7 @@ describe('provider flow', () => {
       description: 'Test description',
       websiteUrl: 'javascript:alert(1)',
       status: 'ACTIVE',
-      role: 'VIEWER',
+      role: 'EDITOR',
       createdAt: '2026-09-30T10:00:00Z',
     };
     mocks.findMine.mockResolvedValueOnce([providerWithUnsafeUrl]);
