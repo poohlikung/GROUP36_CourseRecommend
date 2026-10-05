@@ -45,6 +45,7 @@ public record UpdateCourseRequest(
         @DecimalMin(value = "0.00", message = "ราคาต้องไม่ต่ำกว่า 0")
         BigDecimal amount,
 
+        @Size(max = 10, message = "สกุลเงินต้องไม่เกิน 10 ตัวอักษร")
         String currency,
 
         Set<Long> categoryIds

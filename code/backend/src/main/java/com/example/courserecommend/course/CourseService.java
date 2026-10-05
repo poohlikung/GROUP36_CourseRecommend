@@ -125,7 +125,7 @@ public class CourseService {
         User actor = ownershipService.currentUser();
 
         if (course.getStatus() == CourseStatus.SUSPENDED || course.getStatus() == CourseStatus.ARCHIVED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่สามารถแก้ไขคอร์สที่ถูกระงับหรือเก็บถาวรได้");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ไม่สามารถแก้ไขคอร์สที่ถูกระงับหรือเก็บถาวรได้");
         }
 
         CourseStatus oldStatus = course.getStatus();
@@ -158,22 +158,23 @@ public class CourseService {
         }
         course.setEffortHours(request.effortHours());
 
-        PaymentType paymentType = request.paymentType() != null ? request.paymentType() : PaymentType.FREE;
-        BigDecimal amount = paymentType == PaymentType.FREE ? BigDecimal.ZERO : request.amount();
-        if (course.getPrice() != null) {
-            course.getPrice().setPaymentType(paymentType);
-            course.getPrice().setAmount(amount);
-            if (request.currency() != null && !request.currency().isBlank()) {
-                course.getPrice().setCurrency(request.currency().trim());
+        // paymentType ที่ไม่ได้ส่งมาหมายถึงคงราคาเดิม เหมือน level/language
+        if (request.paymentType() != null) {
+            PaymentType paymentType = request.paymentType();
+            BigDecimal amount = paymentType == PaymentType.FREE ? BigDecimal.ZERO : request.amount();
+            if (course.getPrice() != null) {
+                course.getPrice().setPaymentType(paymentType);
+                course.getPrice().setAmount(amount);
+            } else {
+                course.setPrice(CoursePrice.builder()
+                        .course(course)
+                        .paymentType(paymentType)
+                        .amount(amount)
+                        .build());
             }
-        } else {
-            CoursePrice price = CoursePrice.builder()
-                    .course(course)
-                    .paymentType(paymentType)
-                    .amount(amount)
-                    .currency(request.currency() != null && !request.currency().isBlank() ? request.currency().trim() : "THB")
-                    .build();
-            course.setPrice(price);
+        }
+        if (course.getPrice() != null && request.currency() != null && !request.currency().isBlank()) {
+            course.getPrice().setCurrency(request.currency().trim());
         }
 
         if (request.categoryIds() != null) {
@@ -197,6 +198,10 @@ public class CourseService {
 
         if (course.getStatus() != CourseStatus.DRAFT && course.getStatus() != CourseStatus.REVISION_REQUESTED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "คอร์สต้องอยู่ในสถานะ DRAFT หรือ REVISION_REQUESTED เท่านั้นจึงจะส่งตรวจได้");
+        }
+
+        if (course.getProvider().getStatus() != ProviderStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Provider ต้องได้รับการอนุมัติ (ACTIVE) ก่อนจึงจะส่งคอร์สเข้าตรวจได้");
         }
 
         CourseStatus oldStatus = course.getStatus();
