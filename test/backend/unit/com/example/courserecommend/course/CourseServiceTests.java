@@ -29,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class CourseServiceTests {
 
-    @Autowired private CourseService courseService;
+    @Autowired private CourseQueryService courseQueryService;
+    @Autowired private CourseCommandService courseCommandService;
     @Autowired private CourseRepository courseRepository;
     @Autowired private ProviderRepository providerRepository;
     @Autowired private ProviderMemberRepository memberRepository;
@@ -92,7 +93,7 @@ class CourseServiceTests {
         );
 
         long auditBefore = auditLogRepository.count();
-        CourseDetailResponse response = courseService.createCourse(provider.getId(), request);
+        CourseDetailResponse response = courseCommandService.createCourse(provider.getId(), request);
 
         assertThat(response.id()).isNotNull();
         assertThat(response.title()).isEqualTo("Java Masterclass");
@@ -131,7 +132,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.createCourse(provider.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.createCourse(provider.getId(), request));
     }
 
     @Test
@@ -152,7 +153,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.createCourse(provider.getId(), request));
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseCommandService.createCourse(provider.getId(), request));
     }
 
     @Test
@@ -173,7 +174,7 @@ class CourseServiceTests {
                 Set.of(999999L)
         );
 
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.createCourse(provider.getId(), request));
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseCommandService.createCourse(provider.getId(), request));
     }
 
     @Test
@@ -181,17 +182,17 @@ class CourseServiceTests {
     void getCourse_SuccessAndNotFound() {
         Course c = createTestCourse("cs-get-slug", CourseStatus.DRAFT);
 
-        CourseDetailResponse found = courseService.getCourse(c.getId());
+        CourseDetailResponse found = courseQueryService.getCourse(c.getId());
         assertThat(found.slug()).isEqualTo("cs-get-slug");
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(999999L));
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseQueryService.getCourse(999999L));
     }
 
     @Test
     void getCourse_PublishedCourseAccessibleWithoutAuth() {
         Course c = createTestCourse("cs-get-pub-anon", CourseStatus.PUBLISHED);
 
-        CourseDetailResponse found = courseService.getCourse(c.getId());
+        CourseDetailResponse found = courseQueryService.getCourse(c.getId());
         assertThat(found.slug()).isEqualTo("cs-get-pub-anon");
     }
 
@@ -199,7 +200,7 @@ class CourseServiceTests {
     void getCourse_DraftCourseNotFoundForAnonymous() {
         Course c = createTestCourse("cs-get-draft-anon", CourseStatus.DRAFT);
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseQueryService.getCourse(c.getId()));
     }
 
     @Test
@@ -207,7 +208,7 @@ class CourseServiceTests {
     void getCourse_DraftCourseNotFoundForOutsider() {
         Course c = createTestCourse("cs-get-draft-outsider", CourseStatus.DRAFT);
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseQueryService.getCourse(c.getId()));
     }
 
     @Test
@@ -216,7 +217,7 @@ class CourseServiceTests {
         createTestCourse("cs-list-1", CourseStatus.DRAFT);
         createTestCourse("cs-list-2", CourseStatus.PUBLISHED);
 
-        List<CourseDetailResponse> list = courseService.listCoursesByProvider(provider.getId());
+        List<CourseDetailResponse> list = courseQueryService.listCoursesByProvider(provider.getId());
         assertThat(list).hasSize(2);
         assertThat(list).extracting(CourseDetailResponse::slug).contains("cs-list-1", "cs-list-2");
     }
@@ -241,7 +242,7 @@ class CourseServiceTests {
                 Set.of(category.getId())
         );
 
-        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        CourseDetailResponse updated = courseCommandService.updateCourse(c.getId(), request);
         assertThat(updated.title()).isEqualTo("Updated Title");
         assertThat(updated.slug()).isEqualTo("cs-update-new-slug");
         assertThat(updated.level()).isEqualTo(CourseLevel.ADVANCED);
@@ -270,7 +271,7 @@ class CourseServiceTests {
                 Set.of(category.getId())
         );
 
-        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        CourseDetailResponse updated = courseCommandService.updateCourse(c.getId(), request);
         assertThat(updated.status()).isEqualTo(CourseStatus.DRAFT);
         assertThat(updated.slug()).isEqualTo("cs-update-pub-revert-new");
 
@@ -303,8 +304,8 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.updateCourse(suspended.getId(), request));
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.updateCourse(archived.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.updateCourse(suspended.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.updateCourse(archived.getId(), request));
     }
 
     @Test
@@ -329,7 +330,7 @@ class CourseServiceTests {
                 Set.of(999999L)
         );
 
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(c.getId(), request));
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseCommandService.updateCourse(c.getId(), request));
 
         Course refreshed = courseRepository.findById(c.getId()).orElseThrow();
         assertThat(refreshed.getCategories()).hasSize(1);
@@ -357,7 +358,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.updateCourse(second.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.updateCourse(second.getId(), request));
     }
 
     @Test
@@ -366,7 +367,7 @@ class CourseServiceTests {
         Course c = createTestCourse("cs-submit-slug", CourseStatus.DRAFT);
 
         long auditBefore = auditLogRepository.count();
-        CourseDetailResponse submitted = courseService.submitCourse(c.getId());
+        CourseDetailResponse submitted = courseCommandService.submitCourse(c.getId());
 
         assertThat(submitted.status()).isEqualTo(CourseStatus.PENDING);
         assertThat(auditLogRepository.count()).isEqualTo(auditBefore + 1);
@@ -400,7 +401,7 @@ class CourseServiceTests {
                 null
         );
 
-        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        CourseDetailResponse updated = courseCommandService.updateCourse(c.getId(), request);
         assertThat(updated.title()).isEqualTo("Renamed Paid Course");
         assertThat(updated.paymentType()).isEqualTo(PaymentType.ONE_TIME);
         assertThat(updated.amount()).isEqualByComparingTo("1290.00");
@@ -414,7 +415,7 @@ class CourseServiceTests {
         providerRepository.save(provider);
         Course c = createTestCourse("cs-submit-pending-provider", CourseStatus.DRAFT);
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.submitCourse(c.getId()));
         assertThat(courseRepository.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(CourseStatus.DRAFT);
     }
 
@@ -424,7 +425,7 @@ class CourseServiceTests {
         Provider suspended = createSuspendedProviderOwnedBy(owner);
         Course c = createTestCourse(suspended, "cs-submit-suspended-provider", CourseStatus.DRAFT);
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.submitCourse(c.getId()));
         assertThat(courseRepository.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(CourseStatus.DRAFT);
     }
 
@@ -432,7 +433,7 @@ class CourseServiceTests {
     @WithMockUser(username = "cs-owner@example.com")
     void submitCourse_ConflictWhenAlreadyPublished() {
         Course c = createTestCourse("cs-published-submit", CourseStatus.PUBLISHED);
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.submitCourse(c.getId()));
     }
 
     @Test
@@ -441,7 +442,7 @@ class CourseServiceTests {
         Course c = createTestCourse("cs-delete-draft", CourseStatus.DRAFT);
 
         long auditBefore = auditLogRepository.count();
-        courseService.deleteCourse(c.getId());
+        courseCommandService.deleteCourse(c.getId());
 
         assertThat(courseRepository.existsById(c.getId())).isFalse();
         assertThat(auditLogRepository.count()).isEqualTo(auditBefore + 1);
@@ -455,7 +456,7 @@ class CourseServiceTests {
     @WithMockUser(username = "cs-owner@example.com")
     void deleteCourse_ConflictWhenPublished() {
         Course c = createTestCourse("cs-delete-published", CourseStatus.PUBLISHED);
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(c.getId()));
     }
 
     @Test
@@ -472,7 +473,7 @@ class CourseServiceTests {
                 "รีวิวคอร์สเรียนที่ดีมาก"
         ));
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(c.getId()));
     }
 
     @Test
@@ -494,10 +495,10 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        CourseDetailResponse updated = courseCommandService.updateCourse(c.getId(), request);
         assertThat(updated.status()).isEqualTo(CourseStatus.DRAFT);
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(c.getId()));
         assertThat(courseRepository.existsById(c.getId())).isTrue();
     }
 
@@ -505,7 +506,7 @@ class CourseServiceTests {
     @WithMockUser(username = "cs-owner@example.com")
     void submitCourse_WhenRevisionRequested_Success() {
         Course c = createTestCourse("cs-rev-req-submit", CourseStatus.REVISION_REQUESTED);
-        CourseDetailResponse submitted = courseService.submitCourse(c.getId());
+        CourseDetailResponse submitted = courseCommandService.submitCourse(c.getId());
         assertThat(submitted.status()).isEqualTo(CourseStatus.PENDING);
     }
 
@@ -513,7 +514,7 @@ class CourseServiceTests {
     @WithMockUser(username = "cs-owner@example.com")
     void submitCourse_ConflictWhenPending() {
         Course c = createTestCourse("cs-pending-submit", CourseStatus.PENDING);
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.submitCourse(c.getId()));
     }
 
     @Test
@@ -523,16 +524,16 @@ class CourseServiceTests {
         Course suspended = createTestCourse("cs-del-suspended", CourseStatus.SUSPENDED);
         Course archived = createTestCourse("cs-del-archived", CourseStatus.ARCHIVED);
 
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(pending.getId()));
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(suspended.getId()));
-        assertStatus(HttpStatus.CONFLICT, () -> courseService.deleteCourse(archived.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(pending.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(suspended.getId()));
+        assertStatus(HttpStatus.CONFLICT, () -> courseCommandService.deleteCourse(archived.getId()));
     }
 
     @Test
     @WithMockUser(username = "cs-editor@example.com")
     void deleteCourse_SuccessByEditor() {
         Course c = createTestCourse("cs-del-by-editor", CourseStatus.DRAFT);
-        courseService.deleteCourse(c.getId());
+        courseCommandService.deleteCourse(c.getId());
         assertThat(courseRepository.existsById(c.getId())).isFalse();
     }
 
@@ -541,7 +542,7 @@ class CourseServiceTests {
         Provider suspended = createSuspendedProviderOwnedBy(owner);
         Course c = createTestCourse(suspended, "cs-get-suspended-anon", CourseStatus.PUBLISHED);
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> courseService.getCourse(c.getId()));
+        assertStatus(HttpStatus.NOT_FOUND, () -> courseQueryService.getCourse(c.getId()));
     }
 
     @Test
@@ -550,7 +551,7 @@ class CourseServiceTests {
         Provider suspended = createSuspendedProviderOwnedBy(owner);
         Course c = createTestCourse(suspended, "cs-get-suspended-owner", CourseStatus.PUBLISHED);
 
-        assertThat(courseService.getCourse(c.getId()).slug()).isEqualTo("cs-get-suspended-owner");
+        assertThat(courseQueryService.getCourse(c.getId()).slug()).isEqualTo("cs-get-suspended-owner");
     }
 
     @Test
@@ -559,13 +560,13 @@ class CourseServiceTests {
         Course c = createTestCourse("cs-forbidden-slug", CourseStatus.DRAFT);
 
         CreateCourseRequest createReq = new CreateCourseRequest("T", "cs-f1", "D", "https://example.com", platform.getId(), null, null, null, null, null, null, null);
-        assertStatus(HttpStatus.FORBIDDEN, () -> courseService.createCourse(provider.getId(), createReq));
+        assertStatus(HttpStatus.FORBIDDEN, () -> courseCommandService.createCourse(provider.getId(), createReq));
 
         UpdateCourseRequest updateReq = new UpdateCourseRequest("T", "cs-f2", "D", "https://example.com", platform.getId(), null, null, null, null, null, null, null);
-        assertStatus(HttpStatus.FORBIDDEN, () -> courseService.updateCourse(c.getId(), updateReq));
+        assertStatus(HttpStatus.FORBIDDEN, () -> courseCommandService.updateCourse(c.getId(), updateReq));
 
-        assertStatus(HttpStatus.FORBIDDEN, () -> courseService.submitCourse(c.getId()));
-        assertStatus(HttpStatus.FORBIDDEN, () -> courseService.deleteCourse(c.getId()));
+        assertStatus(HttpStatus.FORBIDDEN, () -> courseCommandService.submitCourse(c.getId()));
+        assertStatus(HttpStatus.FORBIDDEN, () -> courseCommandService.deleteCourse(c.getId()));
     }
 
     @Test
@@ -586,7 +587,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.createCourse(provider.getId(), request));
+        assertStatus(HttpStatus.BAD_REQUEST, () -> courseCommandService.createCourse(provider.getId(), request));
     }
 
     @Test
@@ -607,7 +608,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        CourseDetailResponse created = courseService.createCourse(provider.getId(), request);
+        CourseDetailResponse created = courseCommandService.createCourse(provider.getId(), request);
         assertThat(created.description()).isNull();
 
         Course refreshed = courseRepository.findById(created.id()).orElseThrow();
@@ -634,7 +635,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        CourseDetailResponse updated = courseCommandService.updateCourse(c.getId(), request);
         assertThat(updated.description()).isNull();
 
         Course refreshed = courseRepository.findById(c.getId()).orElseThrow();
@@ -659,7 +660,7 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        CourseDetailResponse created = courseService.createCourse(provider.getId(), request);
+        CourseDetailResponse created = courseCommandService.createCourse(provider.getId(), request);
         assertThat(created.paymentType()).isEqualTo(PaymentType.ONE_TIME);
         assertThat(created.amount()).isNull();
 
