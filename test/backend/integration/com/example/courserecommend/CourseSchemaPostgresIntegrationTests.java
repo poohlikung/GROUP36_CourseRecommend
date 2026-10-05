@@ -84,8 +84,8 @@ class CourseSchemaPostgresIntegrationTests {
     void courseEffortHoursMustBePositive() {
         assertThatThrownBy(() -> jdbcTemplate.update("""
                 INSERT INTO courses (provider_id, platform_id, title, slug, url, effort_hours)
-                VALUES (1, 3, 'Zero Hours', 'schema-zero-hours', 'https://mooc.chula.ac.th/zero', 0)
-                """))
+                VALUES (?, ?, 'Zero Hours', 'schema-zero-hours', 'https://mooc.chula.ac.th/zero', 0)
+                """, seedProviderId(), seedPlatformId()))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -93,15 +93,16 @@ class CourseSchemaPostgresIntegrationTests {
     void courseStatusMustBeKnownValue() {
         assertThatThrownBy(() -> jdbcTemplate.update("""
                 INSERT INTO courses (provider_id, platform_id, title, slug, url, status)
-                VALUES (1, 3, 'Bad Status', 'schema-bad-status', 'https://mooc.chula.ac.th/bad', 'DELETED')
-                """))
+                VALUES (?, ?, 'Bad Status', 'schema-bad-status', 'https://mooc.chula.ac.th/bad', 'DELETED')
+                """, seedProviderId(), seedPlatformId()))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void providerWithCoursesCannotBeDeleted() {
-        // seed V2: provider 5 (Harvard Online) เป็นเจ้าของคอร์ส CS50
-        assertThatThrownBy(() -> jdbcTemplate.update("DELETE FROM providers WHERE id = 5"))
+        // seed V2: Harvard Online เป็นเจ้าของคอร์ส CS50
+        long providerWithCourses = idBySlug("providers", "harvard-online");
+        assertThatThrownBy(() -> jdbcTemplate.update("DELETE FROM providers WHERE id = ?", providerWithCourses))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -109,30 +110,47 @@ class CourseSchemaPostgresIntegrationTests {
     void deletingCourseRemovesItsPriceAndCategoryLinksButKeepsCategory() {
         long courseId = insertCourse("schema-cascade-delete");
         jdbcTemplate.update("INSERT INTO course_prices (course_id, payment_type, amount) VALUES (?, 'FREE', 0)", courseId);
-        jdbcTemplate.update("INSERT INTO course_categories (course_id, category_id) VALUES (?, 1)", courseId);
+        long categoryId = idBySlug("categories", "programming");
+        jdbcTemplate.update("INSERT INTO course_categories (course_id, category_id) VALUES (?, ?)", courseId, categoryId);
 
         jdbcTemplate.update("DELETE FROM courses WHERE id = ?", courseId);
 
         assertThat(count("SELECT count(*) FROM course_prices WHERE course_id = ?", courseId)).isZero();
         assertThat(count("SELECT count(*) FROM course_categories WHERE course_id = ?", courseId)).isZero();
-        assertThat(count("SELECT count(*) FROM categories WHERE id = ?", 1L)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM categories WHERE id = ?", categoryId)).isEqualTo(1);
     }
 
     @Test
     void providerMemberMustBeUniquePerProviderAndUser() {
-        // seed V2: user 2 เป็น OWNER ของ provider 1 อยู่แล้ว
+        // seed V2: instructor.cs@kku.ac.th เป็น OWNER ของ Chulalongkorn University อยู่แล้ว
+        long userId = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE email = 'instructor.cs@kku.ac.th'", Long.class);
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO provider_members (provider_id, user_id, member_role) VALUES (1, 2, 'EDITOR')"))
+                "INSERT INTO provider_members (provider_id, user_id, member_role) VALUES (?, ?, 'EDITOR')",
+                seedProviderId(), userId))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private long insertCourse(String slug) {
-        // provider 1 = Chulalongkorn University, platform 3 = Chula MOOC จาก seed V2
         return jdbcTemplate.queryForObject("""
                 INSERT INTO courses (provider_id, platform_id, title, slug, url)
-                VALUES (1, 3, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?)
                 RETURNING id
-                """, Long.class, "Schema test " + slug, slug, "https://mooc.chula.ac.th/" + slug);
+                """, Long.class, seedProviderId(), seedPlatformId(),
+                "Schema test " + slug, slug, "https://mooc.chula.ac.th/" + slug);
+    }
+
+    // หา ID จาก slug ของ seed V2 แทนการฝังเลข ID ไว้ในเทสต์
+    private long seedProviderId() {
+        return idBySlug("providers", "chulalongkorn-university");
+    }
+
+    private long seedPlatformId() {
+        return idBySlug("platforms", "chula-mooc");
+    }
+
+    private long idBySlug(String table, String slug) {
+        return jdbcTemplate.queryForObject("SELECT id FROM " + table + " WHERE slug = ?", Long.class, slug);
     }
 
     private int count(String sql, Object... args) {

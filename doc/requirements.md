@@ -13,10 +13,10 @@
 | --- | --- | --- | --- | --- | :---: |
 | 2 | Spring Boot 3.x, Java 17+, Maven | 07 | `code/backend/pom.xml` (Spring Boot 3.5, Java 21), `mvnw` | build ผ่านจาก clone ใหม่ | ✅ |
 | 2 | SQL + Spring Data JPA | 06 | `repository/`, `domain/entity/`, PostgreSQL | entity map กับ schema ผ่าน `ddl-auto=validate` | ✅ |
-| 2 | REST API + Swagger/OpenAPI | 03, 25 | `springdoc` ใน `pom.xml`, https://coursehub-backend-ahz2.onrender.com/swagger-ui.html | เปิด Swagger UI ได้ทั้ง local และ public URL | ✅ |
+| 2 | REST API + Swagger/OpenAPI | 03, 25 | `springdoc` ใน `pom.xml`, `https://coursehub-backend-ahz2.onrender.com/swagger-ui.html` | เปิด Swagger UI ได้ทั้ง local และ public URL | ✅ |
 | 2 | Frontend (React) | 07 | `code/frontend/` (React + TypeScript + Vite) | หน้าเว็บเรียก API จริง | ✅ |
 | 2 | JUnit 5 + Mockito (+ Spring Boot Test) | ทุก task | `test/backend/unit`, `test/backend/integration` | เทสต์ผ่านใน CI | 🟡 มี JUnit/Spring Boot Test/MockMvc/Testcontainers; Mockito unit test ยังน้อย |
-| 2, 11 | Deploy บน Cloud | 07, 23, 25 | Backend: https://coursehub-backend-ahz2.onrender.com (Render, Docker) + PostgreSQL บน Neon; Flyway V1–V2 migrate สำเร็จ, `GET /api/v1/system/liveness` ตอบ 200 | public URL ใช้งานได้วันนำเสนอ | 🟡 backend และ DB ใช้งานได้แล้ว ยังไม่มี frontend บน Vercel และยังไม่มี URL ใน README |
+| 2, 11 | Deploy บน Cloud | 07, 23, 25 | Backend: `https://coursehub-backend-ahz2.onrender.com` (Render, Docker) + PostgreSQL บน Neon; Flyway V1–V2 migrate สำเร็จ, `GET /api/v1/system/liveness` ตอบ 200 | public URL ใช้งานได้วันนำเสนอ | 🟡 backend และ DB ใช้งานได้แล้ว ยังไม่มี frontend บน Vercel และยังไม่มี URL ใน README |
 | 3 | Layered Architecture ห้ามข้าม layer | 03 | Controller → Service → Repository ในทุก feature, `doc/decisions/0001-*.md` | ไม่มี Controller เรียก Repository ตรง | ✅ |
 | 4 | SOLID พร้อม `doc/solid-analysis.md` | 21 | — | ระบุไฟล์/บรรทัด/เหตุผลครบ 5 ข้อ | ⬜ |
 | 5.1 | Layered, MVC, Repository, Service Layer, DTO + Mapper, DI | 03, 21 | `doc/decisions/0001-*.md`, DTO ใน `*/dto/`, constructor injection | อธิบายใน `doc/design-patterns.md` | 🟡 มีในโค้ด ยังไม่มีเอกสารรวม |
