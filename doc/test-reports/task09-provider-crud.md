@@ -48,7 +48,7 @@ npm run build
 
 `GET /api/v1/providers/{id}` และ `GET /api/v1/providers/slug/{slug}` เดิมคืนข้อมูล Provider ทุกสถานะให้ทุกคน ซึ่งไม่ตรงกับกฎที่ซ่อนคอร์สของ Provider ที่ไม่ `ACTIVE` จากผู้ใช้ทั่วไป จึงปรับดังนี้:
 
-1. [ProviderService.java](../../code/backend/src/main/java/com/example/courserecommend/provider/ProviderService.java) คืน `404` เมื่อ Provider ไม่ใช่ `ACTIVE` และผู้เรียกไม่ใช่ `OWNER`/`EDITOR` ของ Provider นั้นหรือ Admin (ตรวจผ่าน `ProviderOwnershipService.isEditorOrOwner`) ใช้ `404` แทน `403` เพื่อไม่เปิดเผยว่ามี Provider นี้อยู่
+1. [ProviderServiceImpl.java](../../code/backend/src/main/java/com/example/courserecommend/provider/ProviderServiceImpl.java) คืน `404` เมื่อ Provider ไม่ใช่ `ACTIVE` และผู้เรียกไม่ใช่ `OWNER`/`EDITOR` ของ Provider นั้นหรือ Admin (ตรวจผ่าน `ProviderOwnershipService.isEditorOrOwner`) ใช้ `404` แทน `403` เพื่อไม่เปิดเผยว่ามี Provider นี้อยู่
 2. ลบบทบาท `VIEWER` ออกจาก type และหน้า Provider ฝั่ง frontend เพราะ backend มีเพียง `OWNER` และ `EDITOR`
 
 | ชุดทดสอบ | จำนวนเคส | ผลลัพธ์ | เคสที่เพิ่ม |
