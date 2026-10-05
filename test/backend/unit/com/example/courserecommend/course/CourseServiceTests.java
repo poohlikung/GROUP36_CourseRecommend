@@ -284,7 +284,7 @@ class CourseServiceTests {
 
     @Test
     @WithMockUser(username = "cs-editor@example.com")
-    void updateCourse_SuspendedOrArchivedCourseBadRequest() {
+    void updateCourse_SuspendedOrArchivedCourseConflict() {
         Course suspended = createTestCourse("cs-update-suspended", CourseStatus.SUSPENDED);
         Course archived = createTestCourse("cs-update-archived", CourseStatus.ARCHIVED);
 
@@ -303,8 +303,8 @@ class CourseServiceTests {
                 Set.of()
         );
 
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(suspended.getId(), request));
-        assertStatus(HttpStatus.BAD_REQUEST, () -> courseService.updateCourse(archived.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.updateCourse(suspended.getId(), request));
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.updateCourse(archived.getId(), request));
     }
 
     @Test
@@ -375,6 +375,57 @@ class CourseServiceTests {
                 .findFirst().orElseThrow();
         assertThat(log.getOldStatus()).isEqualTo(CourseStatus.DRAFT.name());
         assertThat(log.getNewStatus()).isEqualTo(CourseStatus.PENDING.name());
+    }
+
+    @Test
+    @WithMockUser(username = "cs-editor@example.com")
+    void updateCourse_WithoutPaymentType_KeepsExistingPrice() {
+        Course c = createTestCourse("cs-update-keep-price", CourseStatus.DRAFT);
+        c.getPrice().setPaymentType(PaymentType.ONE_TIME);
+        c.getPrice().setAmount(new BigDecimal("1290.00"));
+        courseRepository.save(c);
+
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Renamed Paid Course",
+                "cs-update-keep-price",
+                "Desc",
+                "https://example.com/keep-price",
+                platform.getId(),
+                null,
+                null,
+                20,
+                null,
+                null,
+                null,
+                null
+        );
+
+        CourseDetailResponse updated = courseService.updateCourse(c.getId(), request);
+        assertThat(updated.title()).isEqualTo("Renamed Paid Course");
+        assertThat(updated.paymentType()).isEqualTo(PaymentType.ONE_TIME);
+        assertThat(updated.amount()).isEqualByComparingTo("1290.00");
+        assertThat(updated.currency()).isEqualTo("THB");
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void submitCourse_ConflictWhenProviderPending() {
+        provider.setStatus(ProviderStatus.PENDING);
+        providerRepository.save(provider);
+        Course c = createTestCourse("cs-submit-pending-provider", CourseStatus.DRAFT);
+
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertThat(courseRepository.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(CourseStatus.DRAFT);
+    }
+
+    @Test
+    @WithMockUser(username = "cs-owner@example.com")
+    void submitCourse_ConflictWhenProviderSuspended() {
+        Provider suspended = createSuspendedProviderOwnedBy(owner);
+        Course c = createTestCourse(suspended, "cs-submit-suspended-provider", CourseStatus.DRAFT);
+
+        assertStatus(HttpStatus.CONFLICT, () -> courseService.submitCourse(c.getId()));
+        assertThat(courseRepository.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(CourseStatus.DRAFT);
     }
 
     @Test

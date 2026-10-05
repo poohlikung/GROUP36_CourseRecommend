@@ -325,6 +325,61 @@ class CourseControllerTests {
 
     @Test
     @WithMockUser(username = "cctrl-owner@example.com")
+    void submitCourse_WhenProviderPending_Returns409() throws Exception {
+        provider.setStatus(ProviderStatus.PENDING);
+        providerRepository.save(provider);
+        Course course = createTestCourse("cctrl-submit-pending-prov", CourseStatus.DRAFT);
+
+        mockMvc.perform(post("/api/v1/courses/" + course.getId() + "/submissions")
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
+    void updateCourse_WithoutPaymentType_KeepsExistingPrice() throws Exception {
+        Course course = createTestCourse("cctrl-keep-price", CourseStatus.DRAFT);
+        course.getPrice().setPaymentType(PaymentType.SUBSCRIPTION);
+        course.getPrice().setAmount(new BigDecimal("1750.00"));
+        courseRepository.save(course);
+
+        String body = """
+                {"title":"Renamed Course","slug":"cctrl-keep-price",
+                 "url":"https://example.com/cctrl-keep-price","platformId":%d}
+                """.formatted(platform.getId());
+
+        mockMvc.perform(put("/api/v1/courses/" + course.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Renamed Course"))
+                .andExpect(jsonPath("$.paymentType").value("SUBSCRIPTION"))
+                .andExpect(jsonPath("$.amount").value(1750.00));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
+    void updateCourse_CurrencyTooLong_Returns400() throws Exception {
+        Course course = createTestCourse("cctrl-long-currency", CourseStatus.DRAFT);
+
+        String body = """
+                {"title":"Course","slug":"cctrl-long-currency",
+                 "url":"https://example.com/cctrl-long-currency","platformId":%d,
+                 "paymentType":"ONE_TIME","amount":100,"currency":"THAI-BAHT-CURRENCY"}
+                """.formatted(platform.getId());
+
+        mockMvc.perform(put("/api/v1/courses/" + course.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("currency"));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
     void deleteCourse_SuccessWhenDraftReturns204() throws Exception {
         Course course = createTestCourse("cctrl-delete-course", CourseStatus.DRAFT);
 
