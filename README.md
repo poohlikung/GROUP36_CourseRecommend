@@ -4,7 +4,7 @@
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |
 | 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | | |
-| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider CRUD Backend + UI, Database Schema (Flyway) |
+| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD Backend + UI, Database Schema (Flyway) |
 | 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth/User/Profile Backend + UI |
 | 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | | |
 
@@ -80,6 +80,33 @@ Invoke-RestMethod "$base/api/v1/providers/1/members" -Method Post -WebSession $m
 ```
 
 Swagger/OpenAPI ที่ `/swagger-ui.html` และ `/v3/api-docs` ระบุ session cookie, CSRF header, payload และสถานะตอบกลับของทั้งสาม endpoint
+
+## การจัดการคอร์สเรียน (Course CRUD - UC12, UC13, UC14)
+
+สมาชิกทีมผู้ให้บริการที่เป็น `OWNER` หรือ `EDITOR` สามารถจัดการคอร์สเรียนของสถาบันตนเองได้ โดยมี Use Cases และเงื่อนไขทางธุรกิจดังนี้:
+- **สร้างคอร์สใหม่ (UC12 - Create Course Draft)**: บันทึกข้อมูลคอร์สเรียนโดยเริ่มต้นที่สถานะ `DRAFT` เสมอ พร้อมกำหนดราคาลงตาราง `course_prices` (รองรับ `FREE`, `ONE_TIME`, `SUBSCRIPTION`) และเชื่อมโยงหมวดหมู่ (`categories`)
+- **แก้ไขคอร์สเรียน (UC12 - Edit Course)**: สมาชิกที่เป็น `OWNER` หรือ `EDITOR` สามารถปรับปรุงข้อมูลทั่วไป แพลตฟอร์ม ราคา และหมวดหมู่ของคอร์สในสถาบันตนเองได้ โดย Slug ต้องไม่ซ้ำกับคอร์สอื่นในระบบ คอร์สที่ `PUBLISHED` หรือ `PENDING` จะกลับเป็น `DRAFT` หลังแก้ไขเพื่อให้ต้องส่งตรวจใหม่ (หน้าเว็บแสดงคำเตือนก่อนบันทึก) และแก้ไขคอร์ส `SUSPENDED` หรือ `ARCHIVED` ไม่ได้ (ตอบ `409`) ถ้าคำขอไม่ส่ง `paymentType` ระบบจะคงราคาเดิมไว้
+- **ส่งคอร์สให้ตรวจสอบ (UC13 - Submit Course for Moderation)**: ผู้สร้างหรือผู้ดูแลสามารถส่งคอร์สที่อยู่ในสถานะ `DRAFT` หรือ `REVISION_REQUESTED` เข้าสู่กระบวนการตรวจอนุมัติ โดย Provider ต้องมีสถานะ `ACTIVE` (ได้รับการอนุมัติตาม UC16) ระบบจะเปลี่ยนสถานะเป็น `PENDING` เพื่อรอการตรวจสอบจากผู้ดูแลระบบ หาก Provider ยัง `PENDING` หรือถูก `SUSPENDED` จะตอบ `409 Conflict`
+- **ลบคอร์สดราฟต์ (UC14 - Delete Course Draft)**: สามารถลบได้เฉพาะคอร์สที่อยู่ในสถานะ `DRAFT` ไม่เคยเผยแพร่ (ตรวจจาก `audit_logs`) และต้องไม่มีรีวิวในระบบเท่านั้น หากคอร์สเคยเผยแพร่แล้วหรือมีรีวิวค้างอยู่ ระบบจะปฏิเสธคำขอลบด้วยสถานะ `409 Conflict`
+- ทุกการสร้าง แก้ไข ส่งตรวจ และลบคอร์ส จะถูกบันทึกประวัติการกระทำลงในตาราง `audit_logs` เสมอ
+
+| คำขอ | ผลสำเร็จ | เงื่อนไข / สิทธิ์ |
+| --- | --- | --- |
+| `POST /api/v1/providers/{providerId}/courses` | `201` พร้อม `Location: /api/v1/courses/{id}` | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น (สร้างคอร์สดราฟต์ใหม่) |
+| `GET /api/v1/providers/{providerId}/courses` | `200` รายการคอร์สทั้งหมดของ Provider | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น |
+| `GET /api/v1/courses/{id}` | `200` รายละเอียดคอร์ส | ทุกคนดูได้เมื่อคอร์ส `PUBLISHED` และ Provider `ACTIVE`; กรณีอื่นดูได้เฉพาะ `OWNER`/`EDITOR` หรือ Admin (คนอื่นได้ `404`) |
+| `PUT /api/v1/courses/{id}` | `200` ข้อมูลคอร์สที่แก้ไขแล้ว | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider เจ้าของคอร์ส |
+| `POST /api/v1/courses/{id}/submissions` | `200` ข้อมูลคอร์ส (สถานะเปลี่ยนเป็น `PENDING`) | เฉพาะคอร์สสถานะ `DRAFT` หรือ `REVISION_REQUESTED` และ Provider ต้อง `ACTIVE` (กรณีอื่นตอบ `409`) |
+| `DELETE /api/v1/courses/{id}` | `204` ไม่มี body | เฉพาะคอร์สสถานะ `DRAFT` ที่ไม่เคยเผยแพร่และไม่มีรีวิว (กรณีอื่นตอบ `409`) |
+
+### ส่วนต่อประสาน Course Management บนเว็บ
+- เข้าใช้งานได้ผ่านหน้า `/providers` โดยคลิกปุ่ม **"จัดการคอร์สเรียน"** บนการ์ดของสถาบันที่ผู้ใช้เป็น Owner หรือ Editor
+- แสดงรายการคอร์สของสถาบันพร้อม Badge สถานะ (`Draft`, `Pending`, `Published`, `Revision Requested`) รายละเอียดระดับความยาก ภาษา ระยะเวลาเรียน และรูปแบบราคา
+- มี Modal สำหรับสร้างคอร์สดราฟต์ใหม่ (UC12) พร้อม dropdown แพลตฟอร์มและปุ่มเลือกหมวดหมู่
+- มี Modal สำหรับแก้ไขคอร์สเรียน (UC12)
+- มีปุ่ม **"ส่งตรวจ"** (UC13) สำหรับคอร์สดราฟต์เพื่อเปลี่ยนสถานะเป็น Pending โดยปุ่มจะถูกปิดพร้อมข้อความอธิบายเมื่อ Provider ยังไม่ `ACTIVE`
+- มีปุ่ม **"ลบ"** (UC14) สำหรับคอร์สดราฟต์ พร้อมระบบยืนยัน และแจ้งเตือนข้อผิดพลาดหากติดเงื่อนไข
+
 
 Frontend ใช้ Vite proxy เรียก `/api` ไปยัง backend ในเครื่อง:
 
