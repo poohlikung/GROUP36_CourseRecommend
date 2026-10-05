@@ -1,6 +1,6 @@
 export type ProviderStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
 
-export type MemberRole = 'OWNER' | 'EDITOR' | 'VIEWER';
+export type MemberRole = 'OWNER' | 'EDITOR';
 
 export interface Provider {
   id: number;

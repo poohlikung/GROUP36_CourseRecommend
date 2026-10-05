@@ -17,6 +17,7 @@ import com.example.courserecommend.repository.CourseRepository;
 import com.example.courserecommend.repository.ProviderMemberRepository;
 import com.example.courserecommend.repository.ProviderRepository;
 import com.example.courserecommend.repository.UserRepository;
+import com.example.courserecommend.security.ProviderOwnershipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class ProviderService {
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
     private final AuthService authService;
+    private final ProviderOwnershipService ownershipService;
 
     @Transactional
     public ProviderResponse createProvider(String email, CreateProviderRequest request) {
@@ -91,14 +93,24 @@ public class ProviderService {
     public ProviderResponse getById(Long id) {
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบ Provider"));
-        return ProviderResponse.from(provider);
+        return ProviderResponse.from(requireVisible(provider));
     }
 
     @Transactional(readOnly = true)
     public ProviderResponse getBySlug(String slug) {
         Provider provider = providerRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบ Provider"));
-        return ProviderResponse.from(provider);
+        return ProviderResponse.from(requireVisible(provider));
+    }
+
+    // คนทั่วไปเห็นเฉพาะ Provider ที่ ACTIVE แบบเดียวกับกฎการมองเห็นคอร์ส
+    // สมาชิก (Owner/Editor) และ Admin ยังดู Provider ที่ PENDING/SUSPENDED ได้
+    private Provider requireVisible(Provider provider) {
+        if (provider.getStatus() != ProviderStatus.ACTIVE
+                && !ownershipService.isEditorOrOwner(provider.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบ Provider");
+        }
+        return provider;
     }
 
     @Transactional

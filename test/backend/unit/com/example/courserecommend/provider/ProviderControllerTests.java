@@ -132,7 +132,7 @@ class ProviderControllerTests {
     @WithMockUser(username = "ctrl-owner@example.com")
     void getByIdAndSlug_SuccessAndNotFound() throws Exception {
         user("ctrl-owner@example.com");
-        Provider p = provider("ctrl-get-test");
+        Provider p = activeProvider("ctrl-get-test");
 
         mockMvc.perform(get("/api/v1/providers/" + p.getId()))
                 .andExpect(status().isOk())
@@ -261,6 +261,11 @@ class ProviderControllerTests {
         return providerRepository.save(Provider.builder().name(slug).slug(slug).build());
     }
 
+    private Provider activeProvider(String slug) {
+        return providerRepository.save(Provider.builder().name(slug).slug(slug)
+                .status(ProviderStatus.ACTIVE).build());
+    }
+
     private User user(String email) {
         return userRepository.findByEmail(email).orElseGet(() ->
                 userRepository.save(new User(email, "unused-hash"))
@@ -272,8 +277,29 @@ class ProviderControllerTests {
     }
 
     @Test
+    void anonymousUserGetsNotFoundForPendingProvider() throws Exception {
+        Provider p = provider("ctrl-anon-pending");
+
+        mockMvc.perform(get("/api/v1/providers/" + p.getId()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/providers/slug/ctrl-anon-pending"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "ctrl-pending-owner@example.com")
+    void ownerCanGetOwnPendingProvider() throws Exception {
+        Provider p = provider("ctrl-owner-pending");
+        member(p, user("ctrl-pending-owner@example.com"), MemberRole.OWNER);
+
+        mockMvc.perform(get("/api/v1/providers/" + p.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
     void anonymousUserCanGetProviderByIdAndSlug() throws Exception {
-        Provider p = provider("ctrl-anon-get-test");
+        Provider p = activeProvider("ctrl-anon-get-test");
 
         mockMvc.perform(get("/api/v1/providers/" + p.getId()))
                 .andExpect(status().isOk())
