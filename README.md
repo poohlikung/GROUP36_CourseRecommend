@@ -41,8 +41,8 @@
 | --- | --- | --- |
 | `POST /api/v1/providers` | `201` พร้อม `Location: /api/v1/providers/{id}` | ผู้ใช้ล็อกอิน (สร้าง Provider ใหม่, ได้รับบทบาท `OWNER`) |
 | `GET /api/v1/providers/me` | `200` รายการ Provider ที่เป็นสมาชิก | ผู้ใช้ล็อกอิน (แสดง Provider ที่ตนเป็น Owner หรือ Editor) |
-| `GET /api/v1/providers/{id}` | `200` ข้อมูล Provider | ทุกคน / สมาชิก |
-| `GET /api/v1/providers/slug/{slug}` | `200` ข้อมูล Provider | ทุกคน / สมาชิก |
+| `GET /api/v1/providers/{id}` | `200` ข้อมูล Provider | ทุกคนดูได้เมื่อ Provider `ACTIVE`; สถานะอื่นดูได้เฉพาะ `OWNER`/`EDITOR` หรือ Admin (คนอื่นได้ `404`) |
+| `GET /api/v1/providers/slug/{slug}` | `200` ข้อมูล Provider | เงื่อนไขเดียวกับ `GET /api/v1/providers/{id}` |
 | `PUT /api/v1/providers/{id}` | `200` ข้อมูลที่แก้ไขแล้ว | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น |
 | `DELETE /api/v1/providers/{id}` | `204` ไม่มี body | เฉพาะ `OWNER` และต้องไม่มีคอร์สค้างอยู่ (หากมีคอร์สจะตอบ `409`) |
 

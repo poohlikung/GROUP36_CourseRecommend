@@ -1,11 +1,11 @@
 # Task 09 — Provider CRUD backend และ UI: Test report
 
-- วันที่รัน: 2 ตุลาคม 2026
+- วันที่รัน: 2 ตุลาคม 2026 (อัปเดตผลล่าสุด 5 ตุลาคม 2026)
 - Branch: `keattisak_6733800729_01`
-- Backend: Spring Boot 3.5.16, Java 21, JUnit 5, Mockito, MockMvc
+- Backend: Spring Boot 3.5.16, Java 21, JUnit 5, Spring Boot Test, MockMvc, H2 (in-memory)
 - Frontend: React 18, TypeScript, Vite, Vitest, React Testing Library
 
-## 1. ผลทดสอบ Backend (22/22 ผ่านทั้งหมด)
+## 1. ผลทดสอบ Backend (รอบแรก 22/22, ล่าสุด 34/34 ผ่านทั้งหมด)
 
 รันจากโฟลเดอร์ `code/backend` ด้วยคำสั่ง:
 ```bash
@@ -36,10 +36,23 @@ npm run build
 ## 3. สรุปการแก้ไขตามข้อเสนอแนะจากการรีวิวโค้ด (PR #15 Review Follow-up)
 
 1. **ความปลอดภัยของ URL เว็บไซต์ (`websiteUrl`)**:
-   - เพิ่ม `@Pattern(regexp = "^(https?://.*)?$", message = "URL เว็บไซต์ต้องขึ้นต้นด้วย http:// หรือ https://")` ใน [CreateProviderRequest.java](file:///c:/Principles/Project/code/backend/src/main/java/com/example/courserecommend/provider/dto/CreateProviderRequest.java) และ [UpdateProviderRequest.java](file:///c:/Principles/Project/code/backend/src/main/java/com/example/courserecommend/provider/dto/UpdateProviderRequest.java)
-   - เพิ่มฟังก์ชัน `isSafeHttpUrl` ใน [ProviderPage.tsx](file:///c:/Principles/Project/code/frontend/src/pages/ProviderPage.tsx) เพื่อกรองก่อนเรนเดอร์แท็ก `<a>`
-   - เพิ่มเทสต์ตรวจสอบการปฏิเสธ scheme อันตรายใน [ProviderControllerTests.java](file:///c:/Principles/Project/test/backend/unit/com/example/courserecommend/provider/ProviderControllerTests.java) และ [provider-flow.test.tsx](file:///c:/Principles/Project/test/frontend/provider-flow.test.tsx)
+   - เพิ่ม `@Pattern(regexp = "^(https?://.*)?$", message = "URL เว็บไซต์ต้องขึ้นต้นด้วย http:// หรือ https://")` ใน [CreateProviderRequest.java](../../code/backend/src/main/java/com/example/courserecommend/provider/dto/CreateProviderRequest.java) และ [UpdateProviderRequest.java](../../code/backend/src/main/java/com/example/courserecommend/provider/dto/UpdateProviderRequest.java)
+   - เพิ่มฟังก์ชัน `isSafeHttpUrl` ใน [ProviderPage.tsx](../../code/frontend/src/pages/ProviderPage.tsx) เพื่อกรองก่อนเรนเดอร์แท็ก `<a>`
+   - เพิ่มเทสต์ตรวจสอบการปฏิเสธ scheme อันตรายใน [ProviderControllerTests.java](../../test/backend/unit/com/example/courserecommend/provider/ProviderControllerTests.java) และ [provider-flow.test.tsx](../../test/frontend/provider-flow.test.tsx)
 2. **การล้างค่าข้อมูล (`null` normalization)**:
-   - ปรับปรุง [ProviderService.java](file:///c:/Principles/Project/code/backend/src/main/java/com/example/courserecommend/provider/ProviderService.java) ให้แปลงค่าว่าง (`isBlank()`) เป็น `null` สำหรับฟิลด์ description และ websiteUrl
-   - ปรับปรุง [ProviderPage.tsx](file:///c:/Principles/Project/code/frontend/src/pages/ProviderPage.tsx) ให้ส่งค่าว่าง `""` แทน `undefined` เมื่อผู้ใช้ล้างข้อมูลในฟอร์ม
-   - เพิ่มเทสต์ตรวจสอบการล้างค่าใน [ProviderServiceTests.java](file:///c:/Principles/Project/test/backend/unit/com/example/courserecommend/provider/ProviderServiceTests.java) และ [ProviderControllerTests.java](file:///c:/Principles/Project/test/backend/unit/com/example/courserecommend/provider/ProviderControllerTests.java)
+   - ปรับปรุง [ProviderService.java](../../code/backend/src/main/java/com/example/courserecommend/provider/ProviderService.java) ให้แปลงค่าว่าง (`isBlank()`) เป็น `null` สำหรับฟิลด์ description และ websiteUrl
+   - ปรับปรุง [ProviderPage.tsx](../../code/frontend/src/pages/ProviderPage.tsx) ให้ส่งค่าว่าง `""` แทน `undefined` เมื่อผู้ใช้ล้างข้อมูลในฟอร์ม
+   - เพิ่มเทสต์ตรวจสอบการล้างค่าใน [ProviderServiceTests.java](../../test/backend/unit/com/example/courserecommend/provider/ProviderServiceTests.java) และ [ProviderControllerTests.java](../../test/backend/unit/com/example/courserecommend/provider/ProviderControllerTests.java)
+
+## 4. ปรับการมองเห็น Provider ให้สอดคล้องกับกฎของคอร์ส (5 ตุลาคม 2026)
+
+`GET /api/v1/providers/{id}` และ `GET /api/v1/providers/slug/{slug}` เดิมคืนข้อมูล Provider ทุกสถานะให้ทุกคน ซึ่งไม่ตรงกับกฎที่ซ่อนคอร์สของ Provider ที่ไม่ `ACTIVE` จากผู้ใช้ทั่วไป จึงปรับดังนี้:
+
+1. [ProviderService.java](../../code/backend/src/main/java/com/example/courserecommend/provider/ProviderService.java) คืน `404` เมื่อ Provider ไม่ใช่ `ACTIVE` และผู้เรียกไม่ใช่ `OWNER`/`EDITOR` ของ Provider นั้นหรือ Admin (ตรวจผ่าน `ProviderOwnershipService.isEditorOrOwner`) ใช้ `404` แทน `403` เพื่อไม่เปิดเผยว่ามี Provider นี้อยู่
+2. ลบบทบาท `VIEWER` ออกจาก type และหน้า Provider ฝั่ง frontend เพราะ backend มีเพียง `OWNER` และ `EDITOR`
+
+| ชุดทดสอบ | จำนวนเคส | ผลลัพธ์ | เคสที่เพิ่ม |
+| --- | :---: | :---: | --- |
+| `ProviderServiceTests` | 18 | ผ่าน 18/18 | Provider `PENDING`/`SUSPENDED` เป็น 404 สำหรับคนไม่ล็อกอินและคนนอกทีม, สมาชิกและ Admin ยังดูได้ |
+| `ProviderControllerTests` | 16 | ผ่าน 16/16 | คนไม่ล็อกอินได้ 404 ทั้ง by id และ by slug, Owner ดู Provider `PENDING` ของตนได้ (200) |
+| Vitest ทั้งหมด | 23 | ผ่าน 23/23 | — |
