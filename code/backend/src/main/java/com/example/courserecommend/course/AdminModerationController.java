@@ -22,27 +22,28 @@ import java.util.List;
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 public class AdminModerationController {
-    private final AdminModerationService moderationService;
+    private final CourseModerationService courseModerationService;
+    private final ProviderVerificationService providerVerificationService;
 
     @GetMapping("/courses")
     public List<CourseDetailResponse> listCourses(@RequestParam(defaultValue = "PENDING") CourseStatus status) {
-        return moderationService.listCourses(status);
+        return courseModerationService.listCourses(status);
     }
 
     @PostMapping("/courses/{id}/moderation-decisions")
     public CourseDetailResponse decideCourse(@PathVariable Long id,
             @Valid @RequestBody CourseModerationRequest request) {
-        return moderationService.decideCourse(id, request);
+        return courseModerationService.decideCourse(id, request);
     }
 
     @GetMapping("/providers")
     public List<AdminProviderResponse> listProviders(@RequestParam(defaultValue = "PENDING") ProviderStatus status) {
-        return moderationService.listProviders(status);
+        return providerVerificationService.listProviders(status);
     }
 
     @PostMapping("/providers/{id}/verification-decisions")
     public AdminProviderResponse decideProvider(@PathVariable Long id,
             @Valid @RequestBody ProviderVerificationRequest request) {
-        return moderationService.decideProvider(id, request);
+        return providerVerificationService.decideProvider(id, request);
     }
 }

@@ -186,6 +186,39 @@ class AdminModerationControllerTests {
                 .isEqualTo(ProviderStatus.ACTIVE);
     }
 
+    @Test
+    @WithMockUser(username = "moderation-admin@example.com", roles = "ADMIN")
+    void suspendingProviderRequiresReasonAndRecordsOneDecision() throws Exception {
+        int seenVersion = provider.getVersion();
+        String path = "/api/v1/admin/providers/{id}/verification-decisions";
+
+        mockMvc.perform(post(path, provider.getId()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"SUSPEND\",\"expectedVersion\":" + seenVersion
+                                + ",\"reason\":\" \"}"))
+                .andExpect(status().isBadRequest());
+        assertThat(providerRepository.findById(provider.getId()).orElseThrow().getStatus())
+                .isEqualTo(ProviderStatus.ACTIVE);
+        assertThat(auditLogRepository.findAll()).isEmpty();
+
+        mockMvc.perform(post(path, provider.getId()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"SUSPEND\",\"expectedVersion\":" + seenVersion
+                                + ",\"reason\":\"  ตรวจพบข้อมูลไม่ถูกต้อง  \"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+        assertThat(auditLogRepository.findAll()).singleElement().satisfies(log -> {
+            assertThat(log.getAction()).isEqualTo("PROVIDER_SUSPEND");
+            assertThat(log.getReason()).isEqualTo("ตรวจพบข้อมูลไม่ถูกต้อง");
+        });
+
+        mockMvc.perform(post(path, provider.getId()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"RESTORE\",\"expectedVersion\":" + seenVersion + "}"))
+                .andExpect(status().isConflict());
+        assertThat(auditLogRepository.findAll()).hasSize(1);
+    }
+
     private Course course(CourseStatus status) {
         return courseRepository.saveAndFlush(Course.builder()
                 .provider(provider).platform(platform).title("Moderation Course")
