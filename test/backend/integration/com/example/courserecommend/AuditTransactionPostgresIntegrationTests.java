@@ -30,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -354,6 +355,63 @@ class AuditTransactionPostgresIntegrationTests {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE entity_type = 'COURSE' AND entity_id = ?",
                 Long.class, courseId)).isEqualTo(auditCount);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM courses WHERE slug = ?", Long.class, create.slug())).isZero();
+    }
+
+    @Test
+    void concurrentCourseEditsCommitOnlyOnePriceAndAudit() throws Exception {
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", courseId);
+        jdbc.update("INSERT INTO course_prices (course_id, payment_type, amount, currency) "
+                + "VALUES (?, 'ONE_TIME', 10, 'THB')", courseId);
+        var bothLoaded = new CyclicBarrier(2);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var first = executor.submit(() -> competingEdit(bothLoaded, "First edit", 100));
+            var second = executor.submit(() -> competingEdit(bothLoaded, "Second edit", 200));
+            List<RuntimeException> failures = java.util.Arrays.asList(first.get(25, TimeUnit.SECONDS),
+                    second.get(25, TimeUnit.SECONDS));
+            assertThat(failures.stream().filter(failure -> failure == null).count()).isEqualTo(1);
+            assertThat(failures.stream().filter(failure -> failure != null).toList())
+                    .singleElement().isInstanceOf(OptimisticLockingFailureException.class);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+
+        Map<String, Object> course = jdbc.queryForMap("SELECT title, version FROM courses WHERE id = ?", courseId);
+        String title = (String) course.get("title");
+        assertThat(title).isIn("First edit", "Second edit");
+        assertThat((Integer) course.get("version")).isGreaterThan(0);
+        assertThat(jdbc.queryForObject("SELECT amount FROM course_prices WHERE course_id = ?",
+                java.math.BigDecimal.class, courseId))
+                .isEqualByComparingTo(title.equals("First edit") ? "100" : "200");
+        assertThat(auditRows()).singleElement()
+                .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_UPDATED"));
+    }
+
+    private RuntimeException competingEdit(CyclicBarrier bothLoaded, String title, int amount) {
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(ownerEmail, "unused",
+                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))));
+        SecurityContextHolder.setContext(context);
+        try {
+            transaction.executeWithoutResult(status -> {
+                assertThat(entityManager.find(Course.class, courseId).getVersion()).isZero();
+                try {
+                    bothLoaded.await(10, TimeUnit.SECONDS);
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Competing edits did not start together", exception);
+                }
+                courseCommands.updateCourse(courseId, new UpdateCourseRequest(title, courseSlug, null,
+                        "https://example.com/course", platformId, null, null, 4,
+                        com.example.courserecommend.domain.enums.PaymentType.ONE_TIME,
+                        java.math.BigDecimal.valueOf(amount), "THB", null));
+            });
+            return null;
+        } catch (RuntimeException exception) {
+            return exception;
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private int approveInCompetingTransaction(CyclicBarrier bothLoaded) {
