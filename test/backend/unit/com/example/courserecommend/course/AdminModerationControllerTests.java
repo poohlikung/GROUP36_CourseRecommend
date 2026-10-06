@@ -6,6 +6,7 @@ import com.example.courserecommend.domain.entity.Provider;
 import com.example.courserecommend.domain.entity.User;
 import com.example.courserecommend.domain.enums.CourseStatus;
 import com.example.courserecommend.domain.enums.ProviderStatus;
+import com.example.courserecommend.domain.enums.UserRole;
 import com.example.courserecommend.repository.AuditLogRepository;
 import com.example.courserecommend.repository.CourseRepository;
 import com.example.courserecommend.repository.PlatformRepository;
@@ -19,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +47,9 @@ class AdminModerationControllerTests {
 
     @BeforeEach
     void setUp() {
-        userRepository.save(new User("moderation-admin@example.com", "unused-hash"));
+        User admin = new User("moderation-admin@example.com", "unused-hash");
+        ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
+        userRepository.save(admin);
         userRepository.save(new User("moderation-learner@example.com", "unused-hash"));
         provider = providerRepository.save(Provider.builder()
                 .name("Moderation Provider").slug("moderation-provider")
@@ -62,6 +66,13 @@ class AdminModerationControllerTests {
         mockMvc.perform(get("/api/v1/admin/courses")
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
                                 .user("moderation-learner@example.com").roles("LEARNER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "moderation-learner@example.com", roles = "ADMIN")
+    void staleSessionAuthorityCannotBypassDatabaseRole() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/courses"))
                 .andExpect(status().isForbidden());
     }
 

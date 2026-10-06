@@ -12,6 +12,7 @@ import com.example.courserecommend.domain.entity.Provider;
 import com.example.courserecommend.domain.entity.User;
 import com.example.courserecommend.domain.enums.CourseStatus;
 import com.example.courserecommend.domain.enums.ProviderStatus;
+import com.example.courserecommend.domain.enums.UserRole;
 import com.example.courserecommend.repository.AuditLogRepository;
 import com.example.courserecommend.repository.CourseRepository;
 import com.example.courserecommend.repository.ProviderRepository;
@@ -105,7 +106,11 @@ public class AdminModerationService {
                 .noneMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "เฉพาะ Admin เท่านั้น");
         }
-        return ownershipService.currentUser();
+        User user = ownershipService.currentUser();
+        if (user.getRole() != UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "เฉพาะ Admin เท่านั้น");
+        }
+        return user;
     }
 
     private static void requireCurrentVersion(Integer actual, Integer expected) {

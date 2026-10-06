@@ -50,4 +50,22 @@ class FlywayMigrationIntegrationTests {
 
         assertThat(tableCount).isEqualTo(12);
     }
+
+    @Test
+    void flywayAddsCourseModerationColumns() {
+        Integer columnCount = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND ((table_name = 'courses' AND column_name = 'moderation_reason')
+                    OR (table_name = 'audit_logs' AND column_name = 'reason'))
+                """, Integer.class);
+        Integer migrationCount = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM flyway_schema_history
+                WHERE version = '3' AND success = true
+                """, Integer.class);
+
+        assertThat(columnCount).isEqualTo(2);
+        assertThat(migrationCount).isEqualTo(1);
+    }
 }
