@@ -3,6 +3,8 @@ package com.example.courserecommend.course;
 import com.example.courserecommend.course.dto.CourseDetailResponse;
 import com.example.courserecommend.course.dto.CreateCourseRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
+import com.example.courserecommend.course.event.CourseEventPublisher;
+import com.example.courserecommend.course.event.CourseStatusChangedEvent;
 import com.example.courserecommend.course.workflow.CourseWorkflow;
 import com.example.courserecommend.domain.entity.*;
 import com.example.courserecommend.domain.enums.CourseLanguage;
@@ -43,6 +45,7 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
     private final ProviderOwnershipService ownershipService;
     private final CourseUrlPolicy courseUrlPolicy;
     private final CourseMapper courseMapper;
+    private final CourseEventPublisher courseEventPublisher;
 
     @Transactional
     @Override
@@ -189,6 +192,10 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
 
         AuditLog audit = new AuditLog(actor, "COURSE_UPDATED", ENTITY_TYPE, course.getId(), oldStatus.name(), course.getStatus().name());
         auditLogRepository.save(audit);
+        if (oldStatus != course.getStatus()) {
+            courseEventPublisher.publish(new CourseStatusChangedEvent(course.getId(), actor.getId(),
+                    audit.getAction(), oldStatus, course.getStatus()));
+        }
 
         return courseMapper.toDetailResponse(course);
     }
@@ -212,6 +219,8 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
 
         AuditLog audit = new AuditLog(actor, "COURSE_SUBMITTED", ENTITY_TYPE, course.getId(), oldStatus.name(), CourseStatus.PENDING.name());
         auditLogRepository.save(audit);
+        courseEventPublisher.publish(new CourseStatusChangedEvent(course.getId(), actor.getId(),
+                audit.getAction(), oldStatus, nextStatus));
 
         return courseMapper.toDetailResponse(course);
     }
