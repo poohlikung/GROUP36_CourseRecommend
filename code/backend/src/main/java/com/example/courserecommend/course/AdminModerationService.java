@@ -34,12 +34,13 @@ public class AdminModerationService {
     private final ProviderRepository providerRepository;
     private final AuditLogRepository auditLogRepository;
     private final ProviderOwnershipService ownershipService;
+    private final CourseMapper courseMapper;
 
     @Transactional(readOnly = true)
     public List<CourseDetailResponse> listCourses(CourseStatus status) {
         requireAdmin();
         return courseRepository.findAllByStatusWithDetails(status).stream()
-                .map(CourseDetailResponse::from).toList();
+                .map(courseMapper::toDetailResponse).toList();
     }
 
     @Transactional
@@ -64,7 +65,7 @@ public class AdminModerationService {
         courseRepository.saveAndFlush(course);
         auditLogRepository.save(new AuditLog(actor, "COURSE_" + request.decision().name(),
                 "COURSE", id, oldStatus.name(), nextStatus.name(), reason));
-        return CourseDetailResponse.from(course);
+        return courseMapper.toDetailResponse(course);
     }
 
     @Transactional(readOnly = true)

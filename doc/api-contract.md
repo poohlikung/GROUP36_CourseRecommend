@@ -6,7 +6,9 @@
 
 - Base path: `/api/v1` ใช้ชื่อแบบ resource-based เช่น `/providers/{providerId}/courses`
 - Layer: `Controller` รับ request และตรวจ `@Valid` → `Service` ตรวจสิทธิ์ กฎธุรกิจ และ `@Transactional` → `Repository` (Spring Data JPA) ไม่มี Controller เรียก Repository ตรง
-- API รับและส่ง **DTO** (`*Request`, `*Response`) ไม่ serialize Entity โดยตรง
+- Controller ขึ้นกับ interface ของ service ไม่ใช่คลาสจริง: `ProviderController` → `ProviderService` (impl: `ProviderServiceImpl`), `CourseController` → `CourseQueryService` สำหรับการอ่าน และ `CourseCommandService` สำหรับการเปลี่ยนข้อมูล (impl: `CourseServiceImpl`)
+- API รับและส่ง **DTO** (`*Request`, `*Response`) ไม่ serialize Entity โดยตรง การแปลง Entity → DTO อยู่ใน `ProviderMapper` และ `CourseMapper`
+- กฎตรวจลิงก์คอร์สตามโดเมนของ Platform แยกอยู่ใน `CourseUrlPolicy`
 - ยืนยันตัวตนด้วย session cookie (`JSESSIONID`) ของ Spring Security
 - คำขอที่เปลี่ยนข้อมูล (`POST`, `PUT`, `DELETE`) ต้องส่ง CSRF token ที่ได้จาก `GET /api/v1/auth/csrf` ใน header ตามค่า `headerName` ที่ตอบกลับ (`X-XSRF-TOKEN`)
 - ทุกการสร้าง แก้ไข ส่งตรวจ และลบ บันทึกลงตาราง `audit_logs` ใน transaction เดียวกับงานหลัก
@@ -142,5 +144,7 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 | `test/backend/unit/.../provider/ProviderServiceTests.java` | กฎธุรกิจของ Provider และ audit log |
 | `test/backend/unit/.../course/CourseControllerTests.java` | status code, validation, สิทธิ์ และกฎสถานะของ Course ผ่าน HTTP |
 | `test/backend/unit/.../course/CourseServiceTests.java` | กฎธุรกิจของ Course, ราคา, หมวดหมู่ และ audit log |
+| `test/backend/unit/.../course/CourseServiceImplMockitoTests.java` | กฎส่งตรวจ/ลบของ Course แบบ unit test ด้วย Mockito (ไม่ใช้ Spring และ DB) |
+| `test/backend/unit/.../course/CourseUrlPolicyTests.java`, `CourseMapperTests.java` | กฎ URL ตามโดเมน Platform และการแปลง Entity → DTO |
 | `test/backend/integration/.../ApiErrorContractIntegrationTests.java` | รูปแบบ error กลาง |
 | `test/backend/integration/.../CourseSchemaPostgresIntegrationTests.java` | constraint ของตาราง Provider/Course บน PostgreSQL จริง |

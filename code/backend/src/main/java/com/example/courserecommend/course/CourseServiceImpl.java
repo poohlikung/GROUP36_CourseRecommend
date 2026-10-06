@@ -24,15 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class CourseService {
+public class CourseServiceImpl implements CourseQueryService, CourseCommandService {
 
     private static final String ENTITY_TYPE = "COURSE";
 
@@ -43,8 +41,11 @@ public class CourseService {
     private final ReviewRepository reviewRepository;
     private final AuditLogRepository auditLogRepository;
     private final ProviderOwnershipService ownershipService;
+    private final CourseUrlPolicy courseUrlPolicy;
+    private final CourseMapper courseMapper;
 
     @Transactional
+    @Override
     public CourseDetailResponse createCourse(Long providerId, CreateCourseRequest request) {
         ProviderMember member = ownershipService.requireEditorOrOwner(providerId);
         User actor = member.getUser();
@@ -58,7 +59,7 @@ public class CourseService {
         Platform platform = platformRepository.findById(request.platformId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่พบ Platform ที่ระบุ"));
 
-        validateCourseUrlWithPlatform(request.url(), platform);
+        courseUrlPolicy.requireAllowedUrl(request.url(), platform);
 
         Set<Category> categories = resolveCategories(request.categoryIds());
 
@@ -95,10 +96,11 @@ public class CourseService {
         AuditLog audit = new AuditLog(actor, "COURSE_CREATED", ENTITY_TYPE, course.getId(), null, CourseStatus.DRAFT.name());
         auditLogRepository.save(audit);
 
-        return CourseDetailResponse.from(course);
+        return courseMapper.toDetailResponse(course);
     }
 
     @Transactional(readOnly = true)
+    @Override
     public CourseDetailResponse getCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ"));
@@ -107,20 +109,22 @@ public class CourseService {
         if (!publiclyVisible && !ownershipService.isEditorOrOwner(course.getProvider().getId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบคอร์สที่ต้องการ");
         }
-        return CourseDetailResponse.from(course);
+        return courseMapper.toDetailResponse(course);
     }
 
     @Transactional(readOnly = true)
+    @Override
     public List<CourseDetailResponse> listCoursesByProvider(Long providerId) {
         if (!providerRepository.existsById(providerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ไม่พบ Provider ที่ระบุ");
         }
         ownershipService.requireEditorOrOwner(providerId);
         List<Course> courses = courseRepository.findByProviderIdWithDetails(providerId);
-        return courses.stream().map(CourseDetailResponse::from).toList();
+        return courses.stream().map(courseMapper::toDetailResponse).toList();
     }
 
     @Transactional
+    @Override
     public CourseDetailResponse updateCourse(Long id, UpdateCourseRequest request) {
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
@@ -139,7 +143,7 @@ public class CourseService {
         Platform platform = platformRepository.findById(request.platformId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่พบ Platform ที่ระบุ"));
 
-        validateCourseUrlWithPlatform(request.url(), platform);
+        courseUrlPolicy.requireAllowedUrl(request.url(), platform);
 
         course.setTitle(request.title().trim());
         course.setSlug(newSlug);
@@ -186,10 +190,11 @@ public class CourseService {
         AuditLog audit = new AuditLog(actor, "COURSE_UPDATED", ENTITY_TYPE, course.getId(), oldStatus.name(), course.getStatus().name());
         auditLogRepository.save(audit);
 
-        return CourseDetailResponse.from(course);
+        return courseMapper.toDetailResponse(course);
     }
 
     @Transactional
+    @Override
     public CourseDetailResponse submitCourse(Long id) {
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
@@ -208,10 +213,11 @@ public class CourseService {
         AuditLog audit = new AuditLog(actor, "COURSE_SUBMITTED", ENTITY_TYPE, course.getId(), oldStatus.name(), CourseStatus.PENDING.name());
         auditLogRepository.save(audit);
 
-        return CourseDetailResponse.from(course);
+        return courseMapper.toDetailResponse(course);
     }
 
     @Transactional
+    @Override
     public void deleteCourse(Long id) {
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
@@ -232,34 +238,6 @@ public class CourseService {
         auditLogRepository.save(audit);
 
         courseRepository.delete(course);
-    }
-
-    private void validateCourseUrlWithPlatform(String rawUrl, Platform platform) {
-        if (rawUrl == null || rawUrl.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL ต้องไม่ว่างเปล่า");
-        }
-        try {
-            URI uri = URI.create(rawUrl.trim());
-            String scheme = uri.getScheme();
-            String host = uri.getHost();
-            if (scheme == null || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL ต้องขึ้นต้นด้วย http:// หรือ https://");
-            }
-            if (host == null || host.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL ไม่ถูกต้อง");
-            }
-            String allowedHost = platform.getAllowedHost();
-            if (allowedHost != null && !allowedHost.isBlank()) {
-                String normalizedHost = host.toLowerCase(Locale.ROOT);
-                String normalizedAllowedHost = allowedHost.toLowerCase(Locale.ROOT);
-                if (!normalizedHost.equals(normalizedAllowedHost) && !normalizedHost.endsWith("." + normalizedAllowedHost)) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "URL คอร์สต้องตรงกับโดเมนของแพลตฟอร์ม (" + allowedHost + ")");
-                }
-            }
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "รูปแบบ URL ไม่ถูกต้อง");
-        }
     }
 
     private Set<Category> resolveCategories(Set<Long> categoryIds) {
