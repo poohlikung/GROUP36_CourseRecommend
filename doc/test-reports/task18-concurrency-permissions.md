@@ -10,4 +10,8 @@
 
 รัน `mvn test` ใน `code/backend`: 239 tests, 0 failures, 0 errors, 0 skipped
 
+ภาพหน้าจอผลรันจากเครื่องผู้พัฒนา:
+
+![ผลรัน Maven ผ่าน 239 เทสต์และ BUILD SUCCESS](task18-local-test-run.png)
+
 เทสต์อยู่ใน `AuditTransactionPostgresIntegrationTests` และใช้ service/API จริงกับ PostgreSQL ไม่ได้จำลอง transaction หรือ repository
