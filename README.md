@@ -6,7 +6,7 @@
 | 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | | |
 | 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD Backend + UI, Database Schema (Flyway) |
 | 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth/User/Profile Backend + UI |
-| 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | | |
+| 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Course Moderation & Provider Verification Backend + UI |
 
 ## เริ่มระบบบนเครื่อง
 
