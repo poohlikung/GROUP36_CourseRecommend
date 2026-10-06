@@ -53,6 +53,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -386,6 +387,35 @@ class AuditTransactionPostgresIntegrationTests {
                 .isEqualByComparingTo(title.equals("First edit") ? "100" : "200");
         assertThat(auditRows()).singleElement()
                 .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_UPDATED"));
+    }
+
+    @Test
+    void failedCreateAuditRollsBackCoursePriceAndCategories() {
+        prepare(Operation.COURSE_EDIT);
+        long categoryId = jdbc.queryForObject("SELECT id FROM categories ORDER BY id LIMIT 1", Long.class);
+        String slug = "rollback-create-" + UUID.randomUUID();
+        var create = new CreateCourseRequest("Rollback course", slug, null,
+                "https://example.com/rollback-course", platformId, null, null, 5,
+                com.example.courserecommend.domain.enums.PaymentType.ONE_TIME,
+                java.math.BigDecimal.valueOf(150), "THB", Set.of(categoryId));
+        long coursesBefore = jdbc.queryForObject("SELECT count(*) FROM courses", Long.class);
+        long pricesBefore = jdbc.queryForObject("SELECT count(*) FROM course_prices", Long.class);
+        long linksBefore = jdbc.queryForObject("SELECT count(*) FROM course_categories", Long.class);
+
+        jdbc.execute("ALTER TABLE audit_logs ADD CONSTRAINT reject_step18_create CHECK (action <> 'COURSE_CREATED')");
+        try {
+            assertThatThrownBy(() -> courseCommands.createCourse(providerId, create))
+                    .isInstanceOf(DataIntegrityViolationException.class)
+                    .hasStackTraceContaining("reject_step18_create");
+        } finally {
+            jdbc.execute("ALTER TABLE audit_logs DROP CONSTRAINT reject_step18_create");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses", Long.class)).isEqualTo(coursesBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM course_prices", Long.class)).isEqualTo(pricesBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM course_categories", Long.class)).isEqualTo(linksBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses WHERE slug = ?", Long.class, slug)).isZero();
+        assertThat(auditRows()).isEmpty();
     }
 
     private RuntimeException competingEdit(CyclicBarrier bothLoaded, String title, int amount) {
