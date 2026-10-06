@@ -107,6 +107,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
                         .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/course-matches")
+                        .permitAll()
                         .requestMatchers("/api/v1/admin/**")
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**")
