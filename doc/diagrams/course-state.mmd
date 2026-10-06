@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> DRAFT: create
+    DRAFT --> PENDING: provider submits
+    REVISION_REQUESTED --> PENDING: provider resubmits
+    PENDING --> PUBLISHED: admin approves
+    PENDING --> REVISION_REQUESTED: admin requests revision
+    PUBLISHED --> SUSPENDED: admin suspends
+    SUSPENDED --> PUBLISHED: admin restores
+    PUBLISHED --> ARCHIVED: admin archives
+    SUSPENDED --> ARCHIVED: admin archives
+    PENDING --> DRAFT: provider edits
+    PUBLISHED --> DRAFT: provider edits
+    ARCHIVED --> [*]

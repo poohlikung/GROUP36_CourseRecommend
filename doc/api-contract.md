@@ -115,7 +115,24 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 
 ### 4.4 Response
 
-`CourseDetailResponse`: `id`, `providerId`, `providerName`, `providerSlug`, `platformId`, `platformName`, `platformSlug`, `title`, `slug`, `description`, `url`, `level`, `language`, `effortHours`, `status`, `paymentType`, `amount` (อาจเป็น `null`), `currency`, `categories` (`[{id, name, slug}]`), `createdAt`, `updatedAt`
+`CourseDetailResponse`: `id`, `providerId`, `providerName`, `providerSlug`, `platformId`, `platformName`, `platformSlug`, `title`, `slug`, `description`, `url`, `level`, `language`, `effortHours`, `status`, `version`, `moderationReason` (อาจเป็น `null`), `paymentType`, `amount` (อาจเป็น `null`), `currency`, `categories` (`[{id, name, slug}]`), `createdAt`, `updatedAt`
+
+### 4.5 Admin moderation (Task 15)
+
+ทุก endpoint ในตารางนี้ต้องเข้าสู่ระบบด้วยบทบาท `ADMIN`; คำขอ POST ต้องส่ง CSRF token เช่นเดียวกับ API อื่น
+
+| Method และ path | ผลลัพธ์ |
+| --- | --- |
+| `GET /api/v1/admin/courses?status=PENDING` | รายการคอร์สตามสถานะพร้อม `version` และรายละเอียดที่ใช้ตรวจ |
+| `POST /api/v1/admin/courses/{id}/moderation-decisions` | เปลี่ยนสถานะคอร์สและบันทึกผู้ตรวจ/เหตุผลใน `audit_logs` |
+| `GET /api/v1/admin/providers?status=PENDING` | รายการ Provider ตามสถานะพร้อม `version` |
+| `POST /api/v1/admin/providers/{id}/verification-decisions` | รับรอง/ระงับ/คืนสถานะ Provider และบันทึก AuditLog |
+
+คำขอตัดสินคอร์ส: `{ "decision": "REQUEST_REVISION", "expectedVersion": 0, "reason": "ลิงก์ต้นทางไม่ถูกต้อง" }` โดย `decision` คือ `APPROVE`, `REQUEST_REVISION`, `SUSPEND`, `RESTORE` หรือ `ARCHIVE` ตามสถานะปัจจุบัน เหตุผลบังคับเมื่อขอแก้ ระงับ หรือเก็บถาวร และคำตอบมี `moderationReason` เพื่อให้ Provider เห็นหมายเหตุล่าสุด
+
+คำขอตัดสิน Provider ใช้รูปแบบเดียวกัน โดย `decision` คือ `APPROVE` (`PENDING → ACTIVE`), `SUSPEND` (`ACTIVE → SUSPENDED`, ต้องมีเหตุผล) หรือ `RESTORE` (`SUSPENDED → ACTIVE`)
+
+`expectedVersion` ต้องตรงกับข้อมูลที่ Admin เปิดดู ถ้ามีคนเปลี่ยนข้อมูลไปแล้วหรือสถานะไม่รองรับคำสั่ง จะได้ `409 Conflict` และต้องโหลดรายการใหม่
 
 ## 5. เทสต์ที่ยืนยันสัญญานี้
 

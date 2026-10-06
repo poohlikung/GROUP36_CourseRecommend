@@ -33,6 +33,8 @@
   - คลาสสถานะ: `DraftState`, `PendingState`, `PublishedState`, `SuspendedState`, `ArchivedState`
   - จัดการการเปลี่ยนสถานะ (State Transition) และป้องกันการกระทำที่ไม่อนุญาตในแต่ละสถานะอย่างเป็นสัดส่วน
 
+**สถานะการทำจริง (Task 15, 6 ตุลาคม 2026):** `CourseWorkflowState` และ State ทั้ง 6 สถานะอยู่ใน `code/backend/src/main/java/com/example/courserecommend/course/workflow/`; มีเทสต์ใน `CourseWorkflowTests` และแผนภาพที่ `doc/diagrams/course-state.mmd` ส่วน Strategy และ Observer ในเอกสารนี้ยังเป็นแผนของ Task 19 และ 17 ตามลำดับ
+
 ### 3. Observer Pattern — ระบบตรวจจับและติดตามเหตุการณ์ (Metrics & Event Handling)
 - **ปัญหาจริง:** เมื่อคอร์สเรียนมีการเปลี่ยนสถานะสำคัญ (เช่น จากตรวจผ่านไปเป็น Published หรือถูกสั่งระงับ) ระบบจำเป็นต้องบันทึกสถิติ (Metrics) และทำงานเบื้องหลัง โดยไม่ต้องการให้ Service หลักต้องผูกติด (Tight Coupling) กับระบบติดตามเหล่านั้น
 - **การนำไปใช้:**
@@ -45,10 +47,10 @@
 ## 3. ผลลัพธ์และข้อพิจารณา (Consequences)
 
 ### ข้อดี:
-- ครบตามเกณฑ์ GoF 3 Patterns ในกลุ่มเดียวกัน (Behavioral) 100%
+- เมื่อทำ Strategy และ Observer ครบ จะตรงเกณฑ์ GoF 3 Patterns ในกลุ่มเดียวกัน (Behavioral)
 - แก้ปัญหาทางธุรกิจจริง ไม่ใช่การยัดเยียด Pattern เพื่อการสอบ
 - เป็นไปตามหลักการ SOLID (โดยเฉพาะ OCP, SRP และ DIP)
-- มี Class Diagram และ Unit Test ยืนยันการทำงานของแต่ละ Pattern ได้ชัดเจน
+- State มี Unit Test และ State Diagram แล้ว; Class Diagram และหลักฐานของ Strategy/Observer ต้องตามงานของแต่ละ Task
 
 ### ข้อจำกัด / สิ่งที่ต้องระวัง:
 - จำนวนคลาสในระบบเพิ่มขึ้น
