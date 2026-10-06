@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from '../auth/AuthContext';
 import { AppLayout } from '../components/AppLayout';
-import { ProtectedRoute, PublicOnlyRoute } from '../components/RouteGuards';
+import { AdminRoute, ProtectedRoute, PublicOnlyRoute } from '../components/RouteGuards';
 import { HomePage } from '../pages/HomePage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -10,6 +10,7 @@ import { ProfilePage } from '../pages/ProfilePage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { BookmarksPage } from '../pages/BookmarksPage';
 import { ProviderPage } from '../pages/ProviderPage';
+import { AdminPage } from '../pages/AdminPage';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
           <Route path="/providers" element={<ProtectedRoute><ProviderPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
