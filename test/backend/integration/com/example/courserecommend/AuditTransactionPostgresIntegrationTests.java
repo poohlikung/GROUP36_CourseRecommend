@@ -6,11 +6,13 @@ import com.example.courserecommend.course.ProviderVerificationService;
 import com.example.courserecommend.course.dto.CourseModerationRequest;
 import com.example.courserecommend.course.dto.ProviderVerificationRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
+import com.example.courserecommend.course.dto.CreateCourseRequest;
 import com.example.courserecommend.course.event.CourseStatusChangedEvent;
 import com.example.courserecommend.course.event.CourseMetricsListener;
 import com.example.courserecommend.course.workflow.CourseDecision;
 import com.example.courserecommend.domain.entity.Course;
 import com.example.courserecommend.domain.enums.CourseStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
@@ -63,6 +65,8 @@ import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -101,6 +105,7 @@ class AuditTransactionPostgresIntegrationTests {
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private ApplicationEvents events;
     @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
     @MockitoSpyBean private MeterRegistry meterRegistry;
 
     private TransactionTemplate transaction;
@@ -307,6 +312,48 @@ class AuditTransactionPostgresIntegrationTests {
                     .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_APPROVE"));
         });
         assertTransitionCount("COURSE_APPROVE", "PENDING", "PUBLISHED");
+    }
+
+    @Test
+    void revokedMemberCannotCreateEditSubmitOrDeleteCourse() throws Exception {
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", courseId);
+        var edit = new UpdateCourseRequest("Allowed edit", courseSlug, null,
+                "https://example.com/allowed-edit", platformId,
+                null, null, 4, null, null, null, null);
+        mockMvc.perform(put("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(edit)))
+                .andExpect(status().isOk());
+        Map<String, Object> before = jdbc.queryForMap("SELECT * FROM courses WHERE id = ?", courseId);
+        long auditCount = jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE entity_type = 'COURSE' AND entity_id = ?",
+                Long.class, courseId);
+
+        jdbc.update("DELETE FROM provider_members WHERE provider_id = ? AND user_id = ?",
+                providerId, ownerId);
+        var create = new CreateCourseRequest("Denied course", "denied-course-" + UUID.randomUUID(), null,
+                "https://example.com/denied", platformId, null, null, null, null, null, null, null);
+        mockMvc.perform(post("/api/v1/providers/{providerId}/courses", providerId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(edit)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/courses/{id}/submissions", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf()))
+                .andExpect(status().isForbidden());
+
+        assertThat(jdbc.queryForMap("SELECT * FROM courses WHERE id = ?", courseId)).isEqualTo(before);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE entity_type = 'COURSE' AND entity_id = ?",
+                Long.class, courseId)).isEqualTo(auditCount);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses WHERE slug = ?", Long.class, create.slug())).isZero();
     }
 
     private int approveInCompetingTransaction(CyclicBarrier bothLoaded) {
