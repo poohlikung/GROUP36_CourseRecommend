@@ -1,0 +1,26 @@
+name: Daily PR review to Google Chat
+
+on:
+  schedule:
+    # GitHub Actions uses UTC. 15:00 UTC is 12:00 in America/Montevideo (UTC-3).
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  review-new-pull-requests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Review new pull requests and notify Google Chat
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5-mini' }}
+          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+        run: node .github/scripts/review-new-prs.mjs
