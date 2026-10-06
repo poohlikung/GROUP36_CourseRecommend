@@ -45,17 +45,26 @@ public class AuditLog {
     @Column(name = "new_status", length = 30)
     private String newStatus;
 
+    @Column(name = "reason", length = 1000)
+    private String reason;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
     public AuditLog(User actor, String action, String entityType, Long entityId,
                     String oldStatus, String newStatus) {
+        this(actor, action, entityType, entityId, oldStatus, newStatus, null);
+    }
+
+    public AuditLog(User actor, String action, String entityType, Long entityId,
+                    String oldStatus, String newStatus, String reason) {
         this.actor = actor;
         this.action = action;
         this.entityType = entityType;
         this.entityId = entityId;
         this.oldStatus = oldStatus;
         this.newStatus = newStatus;
+        this.reason = reason;
     }
 }

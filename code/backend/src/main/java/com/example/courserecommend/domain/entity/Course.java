@@ -63,6 +63,9 @@ public class Course {
     @Builder.Default
     private CourseStatus status = CourseStatus.DRAFT;
 
+    @Column(name = "moderation_reason", length = 1000)
+    private String moderationReason;
+
     @Version
     @Column(nullable = false)
     @Builder.Default
