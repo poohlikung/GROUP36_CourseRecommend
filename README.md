@@ -125,3 +125,9 @@ npm run dev
 รายละเอียดคำขอและสถานะที่อนุญาตอยู่ใน `doc/api-contract.md` หัวข้อ Admin moderation
 
 คำอธิบายการทำงานทีละไฟล์อยู่ใน `doc/task15-course-moderation-guide.md`
+
+## AuditLog และ Observer metrics (Task 17)
+
+การเปลี่ยนสถานะกับ AuditLog บันทึกใน transaction เดียวกัน หากเขียน audit ไม่สำเร็จ ธุรกิจจะ rollback ส่วน Observer นับ counter `course.status.transitions` หลัง commit สำเร็จเท่านั้น แยกตาม `action`, `from`, `to` ถ้า metrics ล้มเหลวจะบันทึก error log และคำขอที่ commit แล้วตอบสำเร็จตามเดิม
+
+สถิติเก็บภายใน process และ reset เมื่อ restart แอป ดูการทำงาน แผนภาพ และวิธีทดสอบได้ใน [คู่มือ Task 17](doc/task17-audit-observer-guide.md) และ [รายงานผลทดสอบ](doc/test-reports/task17-audit-observer.md)

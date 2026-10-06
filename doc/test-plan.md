@@ -259,6 +259,30 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 - **When:** ระบบส่งข้อมูลผู้ใช้กลับมา
 - **Then:** Response ต้องไม่มี password, password hash หรือข้อมูลลับอื่น
 
+### TC-19 สถานะกับ AuditLog commit/rollback พร้อมกัน
+
+- **Given:** คำสั่ง moderation, submit, edit Course หรือ verification Provider ที่ผ่านกฎธุรกิจ
+- **When:** transaction สำเร็จ, PostgreSQL ปฏิเสธ audit INSERT หรือ outer caller ล้มเหลวหลัง flush
+- **Then:** สำเร็จแล้วสถานะ/version และ audit ถูกบันทึก; เมื่อ rollback ค่าธุรกิจทั้งหมดกลับเป็นเดิมและไม่มี audit ของคำสั่งนั้น ตรวจจาก transaction ใหม่
+
+### TC-20 Observer นับเฉพาะ transition ที่ commit สำเร็จ
+
+- **Given:** course status-change event ที่ส่งหลัง service เขียน audit
+- **When:** transaction ยังไม่ commit, commit สำเร็จ, rollback หรือส่ง event นอก transaction
+- **Then:** counter เพิ่มหนึ่งครั้งเฉพาะหลัง commit; ไม่เพิ่มก่อน commit/หลัง rollback/นอก transaction และไม่ส่ง event เมื่อแก้ข้อมูลที่สถานะเดิม
+
+### TC-21 คำขออนุมัติพร้อมกันไม่เพิ่ม audit/metrics ซ้ำ
+
+- **Given:** สอง transaction โหลดคอร์ส version เดียวกันก่อนแก้ไข
+- **When:** ทั้งสองเรียก API อนุมัติคอร์สพร้อมกัน
+- **Then:** ได้ 200 และ 409, สถานะใหม่บันทึกครั้งเดียว และมี audit กับ counter เพียงครั้งเดียว
+
+### TC-22 Metrics failure ไม่เปลี่ยนผลสำเร็จของธุรกิจ
+
+- **Given:** คำขออนุมัติผ่าน API ที่ธุรกิจ commit สำเร็จ
+- **When:** registry สร้าง counter ไม่ได้หรือ increment โยน RuntimeException
+- **Then:** API ตอบ 200, สถานะกับ audit ยังคงถูกบันทึก และมี error log พร้อม event context และ stack trace
+
 ## 9. ผู้รับผิดชอบและสถานะการทดสอบ
 
 ความหมายของสถานะ:
@@ -282,10 +306,16 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-11 Owner แก้ไข Provider | Provider | Unit, Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-12 ปฏิเสธผู้ไม่มีสิทธิ์แก้ Provider | Provider/Security | Unit, Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-13 สร้าง Course Draft | Course | Backend Integration, Frontend | ยังไม่มี | ยังไม่แล้ว |
-| TC-14 Admin อนุมัติ Course | Course/Admin | Unit, Backend Integration, E2E | ยังไม่มี | ยังไม่แล้ว |
+| TC-14 Admin อนุมัติ Course | Course/Admin | Backend Integration (H2/PostgreSQL) | `AdminModerationControllerTests`, `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
 | TC-15 ป้องกัน Review ซ้ำ | Review | Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-16 คะแนนเฉลี่ยจาก Review ที่เผยแพร่ | Review/Catalog | Backend Integration | `CatalogCourseIntegrationTests` ทดสอบคะแนนที่เผยแพร่ แต่ยังไม่ครอบคลุม PENDING และ REJECTED | ยังบ่เฮ็ด |
 | TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | ยังไม่มี | ยังไม่แล้ว |
 | TC-18 API ไม่เปิดเผยข้อมูลลับ | Backend/Security | Backend Integration | `AuthControllerIntegrationTests` ตรวจ password hash แล้ว แต่ยังไม่ครอบคลุมทุก API | ยังบ่เฮ็ด |
+| TC-19 Audit atomicity | Course/Provider/Audit | PostgreSQL Integration | `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
+| TC-20 Observer หลัง commit | Course/Observer | Unit, H2/PostgreSQL Integration | `CourseMetricsTransactionIntegrationTests`, `CourseEventPublicationIntegrationTests`, `AuditTransactionPostgresIntegrationTests`, `CourseMetricsListenerTests` | มีแล้ว |
+| TC-21 Concurrent moderation | Course/Admin | PostgreSQL Integration + MockMvc | `concurrentApiDecisionsOnSameVersionCommitExactlyOneAuditAndMetric` | มีแล้ว |
+| TC-22 Metrics failure | Course/Observer | Unit, PostgreSQL Integration + MockMvc | `metricFailureAfterCommitStillReturnsSuccessfulApiResponse`, `CourseMetricsListenerTests` | มีแล้ว |
+
+ผลจริงของ Task 17: [รายงานทดสอบ](test-reports/task17-audit-observer.md) และ [คู่มือสาธิต](task17-audit-observer-guide.md) Tests ของ Task 17 ใช้ transaction ที่ commit/rollback จริง ส่วน browser E2E ไม่รวมอยู่ในหลักฐานรอบนี้
 
 > หมายเหตุ: ให้ทีมแทนชื่อส่วนงานในคอลัมน์ “ส่วนงานรับผิดชอบ” ด้วยชื่อสมาชิกจริง เมื่อแบ่งเจ้าของ Provider, Course, Review และ Matcher เรียบร้อยแล้ว
