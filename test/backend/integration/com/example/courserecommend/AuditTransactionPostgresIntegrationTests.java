@@ -6,7 +6,9 @@ import com.example.courserecommend.course.ProviderVerificationService;
 import com.example.courserecommend.course.dto.CourseModerationRequest;
 import com.example.courserecommend.course.dto.ProviderVerificationRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
+import com.example.courserecommend.course.event.CourseStatusChangedEvent;
 import com.example.courserecommend.course.workflow.CourseDecision;
+import com.example.courserecommend.domain.enums.CourseStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -44,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("flyway-test")
 @Testcontainers
+@RecordApplicationEvents
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AuditTransactionPostgresIntegrationTests {
     private static final String REASON = "Please correct the course information";
@@ -67,6 +72,7 @@ class AuditTransactionPostgresIntegrationTests {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private EntityManager entityManager;
     @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired private ApplicationEvents events;
 
     private TransactionTemplate transaction;
     private long adminId;
@@ -126,6 +132,7 @@ class AuditTransactionPostgresIntegrationTests {
         invoke(operation);
 
         transaction.executeWithoutResult(status -> assertSuccessfulWrites(operation));
+        assertPublishedEvent(operation);
     }
 
     @ParameterizedTest
@@ -145,6 +152,7 @@ class AuditTransactionPostgresIntegrationTests {
         }
 
         assertRolledBack(operation, before);
+        assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
     }
 
     @ParameterizedTest
@@ -158,10 +166,23 @@ class AuditTransactionPostgresIntegrationTests {
             entityManager.flush();
             // Both writes really reached PostgreSQL before the caller failed.
             assertSuccessfulWrites(operation);
+            assertPublishedEvent(operation);
             throw new CallerFailure();
         })).isInstanceOf(CallerFailure.class);
 
         assertRolledBack(operation, before);
+        // Publication already happened; AFTER_COMMIT observers must ignore this rollback.
+        assertPublishedEvent(operation);
+    }
+
+    private void assertPublishedEvent(Operation operation) {
+        if (operation == Operation.PROVIDER_VERIFICATION) {
+            assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
+        } else {
+            assertThat(events.stream(CourseStatusChangedEvent.class)).containsExactly(
+                    new CourseStatusChangedEvent(courseId, actorId(operation), operation.action,
+                            CourseStatus.valueOf(operation.oldStatus), CourseStatus.valueOf(operation.newStatus)));
+        }
     }
 
     private void prepare(Operation operation) {
