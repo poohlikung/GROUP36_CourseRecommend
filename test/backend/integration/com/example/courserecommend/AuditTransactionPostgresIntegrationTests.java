@@ -7,17 +7,29 @@ import com.example.courserecommend.course.dto.CourseModerationRequest;
 import com.example.courserecommend.course.dto.ProviderVerificationRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
 import com.example.courserecommend.course.event.CourseStatusChangedEvent;
+import com.example.courserecommend.course.event.CourseMetricsListener;
 import com.example.courserecommend.course.workflow.CourseDecision;
+import com.example.courserecommend.domain.entity.Course;
 import com.example.courserecommend.domain.enums.CourseStatus;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +39,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -37,15 +51,28 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Uses real service proxies and committed PostgreSQL fixtures. There is deliberately no
  * test-managed @Transactional: assertions must see the result after the service boundary.
  */
 @SpringBootTest
+@AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 @ActiveProfiles("flyway-test")
 @Testcontainers
 @RecordApplicationEvents
@@ -73,6 +100,8 @@ class AuditTransactionPostgresIntegrationTests {
     @Autowired private EntityManager entityManager;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private ApplicationEvents events;
+    @Autowired private MockMvc mockMvc;
+    @MockitoSpyBean private MeterRegistry meterRegistry;
 
     private TransactionTemplate transaction;
     private long adminId;
@@ -86,6 +115,7 @@ class AuditTransactionPostgresIntegrationTests {
 
     @BeforeEach
     void createCommittedFixtures() {
+        meterRegistry.clear();
         transaction = new TransactionTemplate(transactionManager);
         transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         String suffix = UUID.randomUUID().toString();
@@ -133,6 +163,11 @@ class AuditTransactionPostgresIntegrationTests {
 
         transaction.executeWithoutResult(status -> assertSuccessfulWrites(operation));
         assertPublishedEvent(operation);
+        if (operation == Operation.PROVIDER_VERIFICATION) {
+            assertMetricsEmpty();
+        } else {
+            assertTransitionCount(operation.action, operation.oldStatus, operation.newStatus);
+        }
     }
 
     @ParameterizedTest
@@ -153,6 +188,7 @@ class AuditTransactionPostgresIntegrationTests {
 
         assertRolledBack(operation, before);
         assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
+        assertMetricsEmpty();
     }
 
     @ParameterizedTest
@@ -167,12 +203,149 @@ class AuditTransactionPostgresIntegrationTests {
             // Both writes really reached PostgreSQL before the caller failed.
             assertSuccessfulWrites(operation);
             assertPublishedEvent(operation);
+            assertMetricsEmpty();
             throw new CallerFailure();
         })).isInstanceOf(CallerFailure.class);
 
         assertRolledBack(operation, before);
         // Publication already happened; AFTER_COMMIT observers must ignore this rollback.
         assertPublishedEvent(operation);
+        assertMetricsEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "PENDING, APPROVE, PUBLISHED",
+            "PENDING, REQUEST_REVISION, REVISION_REQUESTED",
+            "PUBLISHED, SUSPEND, SUSPENDED",
+            "PUBLISHED, ARCHIVE, ARCHIVED",
+            "SUSPENDED, RESTORE, PUBLISHED",
+            "SUSPENDED, ARCHIVE, ARCHIVED"
+    })
+    void moderationMetricsWaitForPostgresCommit(CourseStatus oldStatus, CourseDecision decision,
+                                               CourseStatus newStatus) {
+        prepare(Operation.COURSE_MODERATION);
+        jdbc.update("UPDATE courses SET status = ? WHERE id = ?", oldStatus.name(), courseId);
+
+        transaction.executeWithoutResult(txStatus -> {
+            courseModeration.decideCourse(courseId, new CourseModerationRequest(decision, 0, REASON));
+            entityManager.flush();
+            assertMetricsEmpty();
+        });
+
+        transaction.executeWithoutResult(txStatus -> {
+            assertThat(businessRow(Operation.COURSE_MODERATION).get("status")).isEqualTo(newStatus.name());
+            assertThat(auditRows()).singleElement().satisfies(audit -> {
+                assertThat(audit.get("action")).isEqualTo("COURSE_" + decision.name());
+                assertThat(audit.get("old_status")).isEqualTo(oldStatus.name());
+                assertThat(audit.get("new_status")).isEqualTo(newStatus.name());
+            });
+        });
+        assertTransitionCount("COURSE_" + decision.name(), oldStatus.name(), newStatus.name());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void metricFailureAfterCommitStillReturnsSuccessfulApiResponse(boolean failIncrement, CapturedOutput output)
+            throws Exception {
+        if (failIncrement) {
+            Counter failedCounter = mock(Counter.class);
+            doThrow(new IllegalStateException("test metrics unavailable")).when(failedCounter).increment();
+            doReturn(failedCounter).when(meterRegistry).counter(CourseMetricsListener.TRANSITIONS_COUNTER,
+                    "action", "COURSE_APPROVE", "from", "PENDING", "to", "PUBLISHED");
+        } else {
+            doThrow(new IllegalStateException("test metrics unavailable")).when(meterRegistry)
+                    .counter(CourseMetricsListener.TRANSITIONS_COUNTER,
+                            "action", "COURSE_APPROVE", "from", "PENDING", "to", "PUBLISHED");
+        }
+
+        mockMvc.perform(approveRequest()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+        transaction.executeWithoutResult(txStatus -> {
+            assertThat(businessRow(Operation.COURSE_MODERATION).get("status")).isEqualTo("PUBLISHED");
+            assertThat(auditRows()).singleElement().satisfies(audit -> {
+                assertThat(audit.get("action")).isEqualTo("COURSE_APPROVE");
+                assertThat(audit.get("actor_user_id")).isEqualTo(adminId);
+                assertThat(audit.get("new_status")).isEqualTo("PUBLISHED");
+            });
+        });
+        assertThat(output.getAll()).contains("Failed to record course transition metric",
+                "courseId=" + courseId, "actorUserId=" + adminId, "action=COURSE_APPROVE",
+                "java.lang.IllegalStateException: test metrics unavailable");
+    }
+
+    @Test
+    void staleApiDecisionDoesNotChangeStateAuditOrMetrics() throws Exception {
+        Map<String, Object> before = snapshot(Operation.COURSE_MODERATION);
+        mockMvc.perform(approveRequest().content("{\"decision\":\"APPROVE\",\"expectedVersion\":99}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONFLICT"));
+
+        assertRolledBack(Operation.COURSE_MODERATION, before);
+        assertMetricsEmpty();
+    }
+
+    @Test
+    void concurrentApiDecisionsOnSameVersionCommitExactlyOneAuditAndMetric() throws Exception {
+        var executor = Executors.newFixedThreadPool(2);
+        var bothLoaded = new CyclicBarrier(2);
+        try {
+            var first = executor.submit(() -> approveInCompetingTransaction(bothLoaded));
+            var second = executor.submit(() -> approveInCompetingTransaction(bothLoaded));
+            assertThat(List.of(first.get(25, TimeUnit.SECONDS), second.get(25, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(200, 409);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+
+        transaction.executeWithoutResult(txStatus -> {
+            Map<String, Object> row = businessRow(Operation.COURSE_MODERATION);
+            assertThat(row.get("status")).isEqualTo("PUBLISHED");
+            assertThat(row.get("version")).isEqualTo(1);
+            assertThat(auditRows()).singleElement()
+                    .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_APPROVE"));
+        });
+        assertTransitionCount("COURSE_APPROVE", "PENDING", "PUBLISHED");
+    }
+
+    private int approveInCompetingTransaction(CyclicBarrier bothLoaded) {
+        try {
+            return transaction.execute(txStatus -> {
+                // Each real transaction caches version 0 before either request can update it.
+                // The service then reads that same persistence context, forcing an optimistic-lock race.
+                assertThat(entityManager.find(Course.class, courseId).getVersion()).isZero();
+                try {
+                    bothLoaded.await(10, TimeUnit.SECONDS);
+                    var response = mockMvc.perform(approveRequest()).andReturn().getResponse();
+                    if (response.getStatus() == 409) {
+                        assertThat(response.getContentAsString()).contains("\"code\":\"CONFLICT\"");
+                        txStatus.setRollbackOnly();
+                    }
+                    return response.getStatus();
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Concurrent approval failed", exception);
+                }
+            });
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder approveRequest() {
+        return post("/api/v1/admin/courses/{id}/moderation-decisions", courseId)
+                .with(user(adminEmail).roles("ADMIN")).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"decision\":\"APPROVE\",\"expectedVersion\":0}");
+    }
+
+    private void assertMetricsEmpty() {
+        assertThat(meterRegistry.find(CourseMetricsListener.TRANSITIONS_COUNTER).counters()).isEmpty();
+    }
+
+    private void assertTransitionCount(String action, String oldStatus, String newStatus) {
+        assertThat(meterRegistry.find(CourseMetricsListener.TRANSITIONS_COUNTER).counters()).hasSize(1);
+        assertThat(meterRegistry.get(CourseMetricsListener.TRANSITIONS_COUNTER)
+                .tags("action", action, "from", oldStatus, "to", newStatus).counter().count()).isEqualTo(1);
     }
 
     private void assertPublishedEvent(Operation operation) {
