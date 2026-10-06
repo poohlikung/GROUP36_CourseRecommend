@@ -43,6 +43,8 @@ public class CourseMapper {
                 course.getLanguage(),
                 course.getEffortHours(),
                 course.getStatus(),
+                course.getVersion(),
+                course.getModerationReason(),
                 paymentType,
                 amount,
                 currency,

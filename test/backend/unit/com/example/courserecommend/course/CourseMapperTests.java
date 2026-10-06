@@ -25,6 +25,8 @@ class CourseMapperTests {
         course.setPrice(CoursePrice.builder().course(course)
                 .paymentType(PaymentType.ONE_TIME).amount(new BigDecimal("1290.00")).currency("THB").build());
         course.setCategories(Set.of(Category.builder().id(3L).name("Web").slug("web").build()));
+        course.setVersion(7);
+        course.setModerationReason("Needs updated link");
 
         CourseDetailResponse response = mapper.toDetailResponse(course);
 
@@ -32,6 +34,8 @@ class CourseMapperTests {
         assertThat(response.providerSlug()).isEqualTo("acme");
         assertThat(response.platformSlug()).isEqualTo("coursera");
         assertThat(response.status()).isEqualTo(CourseStatus.DRAFT);
+        assertThat(response.version()).isEqualTo(7);
+        assertThat(response.moderationReason()).isEqualTo("Needs updated link");
         assertThat(response.paymentType()).isEqualTo(PaymentType.ONE_TIME);
         assertThat(response.amount()).isEqualByComparingTo("1290.00");
         assertThat(response.categories()).extracting(CourseDetailResponse.CategorySummary::slug).containsExactly("web");

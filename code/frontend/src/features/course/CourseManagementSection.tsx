@@ -440,6 +440,12 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   </p>
                 )}
 
+                {course.moderationReason && (
+                  <p className="mt-3 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                    เหตุผลจาก Admin: {course.moderationReason}
+                  </p>
+                )}
+
                 {course.categories && course.categories.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {course.categories.map((cat) => (

@@ -34,6 +34,8 @@ export interface CourseDetail {
   language: CourseLanguage;
   effortHours: number | null;
   status: CourseStatus;
+  version: number;
+  moderationReason: string | null;
   paymentType: PaymentType;
   amount: number | null;
   currency: string;

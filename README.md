@@ -117,3 +117,11 @@ npm run dev
 ```
 
 รันการตรวจสอบ frontend ด้วย `npm run typecheck`, `npm test` และ `npm run build` ส่วน backend ใช้ `code/backend/mvnw.cmd test` โดย integration test ของ PostgreSQL ต้องมี Docker ทำงาน
+
+## งานตรวจของ Admin (Task 15)
+
+บัญชี `ADMIN` เข้า `/admin` เพื่อดูคอร์สรอตรวจ อนุมัติ ขอให้แก้ไข ระงับ คืนสถานะ หรือเก็บถาวรคอร์ส และรับรอง/ระงับ Provider ได้ การขอแก้ไข ระงับ หรือเก็บถาวรต้องระบุเหตุผล เหตุผลล่าสุดจะแสดงในรายการคอร์สของ Provider ส่วนประวัติผู้ตรวจและเหตุผลเก็บใน `audit_logs` หากมีคนเปลี่ยนข้อมูลระหว่างที่เปิดหน้าไว้ ระบบตอบ `409` เพื่อให้โหลดข้อมูลใหม่
+
+รายละเอียดคำขอและสถานะที่อนุญาตอยู่ใน `doc/api-contract.md` หัวข้อ Admin moderation
+
+คำอธิบายการทำงานทีละไฟล์อยู่ใน `doc/task15-course-moderation-guide.md`

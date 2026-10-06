@@ -3,6 +3,7 @@ package com.example.courserecommend.course;
 import com.example.courserecommend.course.dto.CourseDetailResponse;
 import com.example.courserecommend.course.dto.CreateCourseRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
+import com.example.courserecommend.course.workflow.CourseWorkflow;
 import com.example.courserecommend.domain.entity.*;
 import com.example.courserecommend.domain.enums.CourseLanguage;
 import com.example.courserecommend.domain.enums.CourseLevel;
@@ -128,13 +129,10 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
 
-        if (course.getStatus() == CourseStatus.SUSPENDED || course.getStatus() == CourseStatus.ARCHIVED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "ไม่สามารถแก้ไขคอร์สที่ถูกระงับหรือเก็บถาวรได้");
-        }
-
         CourseStatus oldStatus = course.getStatus();
+        course.setStatus(CourseWorkflow.forStatus(oldStatus).edit());
         if (oldStatus == CourseStatus.PUBLISHED || oldStatus == CourseStatus.PENDING) {
-            course.setStatus(CourseStatus.DRAFT);
+            course.setModerationReason(null);
         }
 
         String newSlug = request.slug().trim().toLowerCase();
@@ -201,16 +199,15 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
 
-        if (course.getStatus() != CourseStatus.DRAFT && course.getStatus() != CourseStatus.REVISION_REQUESTED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "คอร์สต้องอยู่ในสถานะ DRAFT หรือ REVISION_REQUESTED เท่านั้นจึงจะส่งตรวจได้");
-        }
+        CourseStatus nextStatus = CourseWorkflow.forStatus(course.getStatus()).submit();
 
         if (course.getProvider().getStatus() != ProviderStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Provider ต้องได้รับการอนุมัติ (ACTIVE) ก่อนจึงจะส่งคอร์สเข้าตรวจได้");
         }
 
         CourseStatus oldStatus = course.getStatus();
-        course.setStatus(CourseStatus.PENDING);
+        course.setStatus(nextStatus);
+        course.setModerationReason(null);
         course = courseRepository.save(course);
 
         AuditLog audit = new AuditLog(actor, "COURSE_SUBMITTED", ENTITY_TYPE, course.getId(), oldStatus.name(), CourseStatus.PENDING.name());
@@ -225,7 +222,7 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
         Course course = ownershipService.requireCourseEditorOrOwner(id);
         User actor = ownershipService.currentUser();
 
-        if (course.getStatus() != CourseStatus.DRAFT) {
+        if (!CourseWorkflow.forStatus(course.getStatus()).canDelete()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ไม่สามารถลบคอร์สที่เผยแพร่หรือไม่อยู่ในสถานะ DRAFT ได้");
         }
 

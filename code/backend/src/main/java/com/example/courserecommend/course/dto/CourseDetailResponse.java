@@ -25,6 +25,8 @@ public record CourseDetailResponse(
         CourseLanguage language,
         Integer effortHours,
         CourseStatus status,
+        Integer version,
+        String moderationReason,
         PaymentType paymentType,
         BigDecimal amount,
         String currency,

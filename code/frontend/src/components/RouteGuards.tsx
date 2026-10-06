@@ -21,6 +21,12 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return children;
 }
 
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { status, user } = useAuth();
+  if (status !== 'authenticated') return null;
+  return user?.role === 'ADMIN' ? children : <Navigate to="/" replace />;
+}
+
 function PageStatus({ message }: { message: string }) {
   return (
     <main className="grid min-h-[60vh] place-items-center px-6" aria-live="polite">

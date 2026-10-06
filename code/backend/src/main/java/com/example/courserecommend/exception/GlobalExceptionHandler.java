@@ -7,6 +7,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -79,6 +80,12 @@ public class GlobalExceptionHandler {
         };
         String message = exception.getReason() == null ? status.getReasonPhrase() : exception.getReason();
         return error(status, code, message, request, List.of());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleOptimisticLock(HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "CONFLICT",
+                "ข้อมูลถูกแก้ไขแล้ว กรุณาโหลดรายการใหม่", request, List.of());
     }
 
     private ResponseEntity<ApiErrorResponse> error(
