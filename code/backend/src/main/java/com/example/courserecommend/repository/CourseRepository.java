@@ -19,6 +19,15 @@ import java.util.Optional;
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
+        @Query("SELECT DISTINCT c FROM Course c " +
+                        "JOIN FETCH c.provider provider " +
+                        "JOIN FETCH c.platform " +
+                        "LEFT JOIN FETCH c.price " +
+                        "LEFT JOIN FETCH c.categories " +
+                        "WHERE c.status = :courseStatus AND provider.status = :providerStatus")
+        List<Course> findMatcherCandidates(@Param("courseStatus") CourseStatus courseStatus,
+                                           @Param("providerStatus") ProviderStatus providerStatus);
+
         Optional<Course> findBySlug(String slug);
 
         boolean existsBySlug(String slug);

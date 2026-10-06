@@ -108,7 +108,7 @@ public class CatalogCourseService {
                 .toList();
     }
 
-    private CatalogCourseResponse toResponse(
+    public CatalogCourseResponse toResponse(
             Course course,
             CatalogRatingRepository.RatingSummary rating) {
         List<CatalogOptionResponse> categories = course.getCategories().stream()
