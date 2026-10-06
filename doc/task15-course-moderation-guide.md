@@ -19,19 +19,32 @@
 | `course/workflow/CourseDecision.java` | ชื่อคำตัดสินที่ API ยอมรับ เช่น `APPROVE` และ `REQUEST_REVISION` |
 | `course/workflow/CourseWorkflowState.java` | สัญญาว่าแต่ละสถานะต้องตอบคำสั่ง `submit`, `edit`, `moderate` และ `canDelete` อย่างไร; คำสั่งที่ไม่รองรับตอบ 409 |
 | `course/workflow/CourseWorkflow.java` | เก็บ State object ของทั้ง 6 สถานะ พฤติกรรมของแต่ละสถานะอยู่ในคลาสของมัน เช่น `PendingState` อนุมัติหรือขอแก้ไขได้ |
-| `course/CourseService.java` | งานเดิมของสมาชิก Provider เรียก State ก่อนแก้/ส่งตรวจ/ลบ และล้างหมายเหตุเก่าเมื่อส่งตรวจใหม่ |
+| `course/CourseServiceImpl.java` | งานเดิมของสมาชิก Provider เรียก State ก่อนแก้/ส่งตรวจ/ลบ และล้างหมายเหตุเก่าเมื่อส่งตรวจใหม่ |
 | `course/dto/CourseModerationRequest.java` | ตรวจรูปคำขอตัดสินคอร์ส: ต้องมีคำตัดสินและ `expectedVersion`; เหตุผลยาวไม่เกิน 1,000 ตัวอักษร |
 | `course/dto/ProviderVerificationRequest.java` | รูปคำขอรับรอง/ระงับ/คืนสถานะ Provider |
 | `course/dto/AdminProviderResponse.java` | ข้อมูล Provider สำหรับหน้า Admin รวม `version` |
 | `course/dto/CourseDetailResponse.java` | เพิ่ม `version` กับ `moderationReason` ในข้อมูลคอร์สที่ส่งให้ frontend |
-| `course/AdminModerationController.java` | รับ HTTP สำหรับรายการรอตรวจและคำตัดสิน แล้วส่งต่อให้ Service |
-| `course/AdminModerationService.java` | ตรวจบทบาท Admin ทั้งใน session และฐานข้อมูล รวมถึง version, กฎสถานะ และเหตุผล; เปลี่ยนสถานะพร้อมเขียน AuditLog ใน transaction เดียว |
+| `course/AdminModerationController.java` | รับ HTTP แล้วเรียก `CourseModerationService` หรือ `ProviderVerificationService` ผ่าน interface ตามงานที่ขอ |
+| `course/CourseModerationService.java` | สัญญาเฉพาะการอ่านคิวและตัดสินคอร์สของ Admin |
+| `course/CourseModerationServiceImpl.java` | ตรวจสถานะคอร์สกับ Provider, เปลี่ยนสถานะ และเขียน AuditLog ใน transaction เดียว |
+| `course/ProviderVerificationService.java` | สัญญาเฉพาะการอ่านคิวและรับรอง/ระงับ/คืนสถานะ Provider |
+| `course/ProviderVerificationServiceImpl.java` | ตรวจการเปลี่ยนสถานะ Provider และเขียน AuditLog ใน transaction เดียว |
+| `course/AdminActorResolver.java` | สัญญาสำหรับหาบัญชี Admin ที่กำลังทำรายการ |
+| `course/SecurityContextAdminActorResolver.java` | ตรวจบทบาท Admin ทั้งจาก session และบัญชีในฐานข้อมูล |
+| `course/ModerationRules.java` | ตรวจ version และปรับรูปแบบ/บังคับเหตุผลที่ใช้ร่วมกันทั้งสอง service |
 | `repository/ProviderRepository.java` | ดึง Provider ตามสถานะเพื่อแสดงคิวในหน้า Admin |
 | `domain/entity/Course.java` | เก็บเหตุผลล่าสุดที่ Provider ต้องเห็น; `@Version` เดิมใช้กันการเขียนทับข้อมูลเก่า |
 | `domain/entity/AuditLog.java` | เพิ่มเหตุผลลงประวัติถาวรของการตัดสินใจ |
 | `resources/db/migration/V3__audit_log_reason.sql` | เพิ่มคอลัมน์เหตุผลใน PostgreSQL โดยไม่ลบข้อมูลเดิม |
 | `security/SecurityConfig.java` | บังคับว่า `/api/v1/admin/**` ใช้ได้เฉพาะบทบาท `ADMIN` |
 | `exception/GlobalExceptionHandler.java` | แปลงกรณี version ชนกันเป็น HTTP 409 ที่ frontend อ่านได้ |
+
+### การแยกหน้าที่ตาม SOLID ใน Task 15
+
+- Controller พึ่งพา interface สองตัวที่มีเมธอดเฉพาะงานของตน (Interface Segregation และ Dependency Inversion)
+- Service ตรวจคอร์สกับ Service ตรวจ Provider รับผิดชอบกฎคนละชุด; การตรวจสิทธิ์ Admin และกฎร่วมอยู่คนละส่วน (Single Responsibility)
+- กฎเปลี่ยนสถานะคอร์สอยู่หลัง `CourseWorkflowState` ที่เพิ่ม State แยกได้โดยไม่ใส่เงื่อนไขทุกสถานะใน Controller หรือ Service (Open/Closed ในส่วนกฎสถานะ)
+- การบันทึกสถานะกับ AuditLog ยังอยู่ใน transaction เดียวของ service ที่ตัดสินรายการนั้น
 
 ## Frontend: อ่านทีละไฟล์
 

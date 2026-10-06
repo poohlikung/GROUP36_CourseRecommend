@@ -6,7 +6,7 @@
 
 - Base path: `/api/v1` ใช้ชื่อแบบ resource-based เช่น `/providers/{providerId}/courses`
 - Layer: `Controller` รับ request และตรวจ `@Valid` → `Service` ตรวจสิทธิ์ กฎธุรกิจ และ `@Transactional` → `Repository` (Spring Data JPA) ไม่มี Controller เรียก Repository ตรง
-- Controller ขึ้นกับ interface ของ service ไม่ใช่คลาสจริง: `ProviderController` → `ProviderService` (impl: `ProviderServiceImpl`), `CourseController` → `CourseQueryService` สำหรับการอ่าน และ `CourseCommandService` สำหรับการเปลี่ยนข้อมูล (impl: `CourseServiceImpl`)
+- Controller ขึ้นกับ interface ของ service ไม่ใช่คลาสจริง: `ProviderController` → `ProviderService` (impl: `ProviderServiceImpl`), `CourseController` → `CourseQueryService` สำหรับการอ่าน และ `CourseCommandService` สำหรับการเปลี่ยนข้อมูล (impl: `CourseServiceImpl`), `AdminModerationController` → `CourseModerationService` กับ `ProviderVerificationService` (impl แยกกัน)
 - API รับและส่ง **DTO** (`*Request`, `*Response`) ไม่ serialize Entity โดยตรง การแปลง Entity → DTO อยู่ใน `ProviderMapper` และ `CourseMapper`
 - กฎตรวจลิงก์คอร์สตามโดเมนของ Platform แยกอยู่ใน `CourseUrlPolicy`
 - ยืนยันตัวตนด้วย session cookie (`JSESSIONID`) ของ Spring Security
