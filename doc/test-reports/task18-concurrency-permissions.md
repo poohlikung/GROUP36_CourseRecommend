@@ -1,5 +1,7 @@
 # Task 18: Concurrency และสิทธิ์ในการแก้คอร์ส
 
+![สรุปผลทดสอบ Task 18](task18-summary.png)
+
 ตรวจวันที่ 7 ตุลาคม 2026 ด้วย PostgreSQL 16 ผ่าน Testcontainers
 
 | กรณี | สิ่งที่ตรวจ | ผล |
