@@ -17,13 +17,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CourseController {
 
-    private final CourseService courseService;
+    private final CourseQueryService courseQueryService;
+    private final CourseCommandService courseCommandService;
 
     @PostMapping("/providers/{providerId}/courses")
     public ResponseEntity<CourseDetailResponse> createCourse(
             @PathVariable Long providerId,
             @Valid @RequestBody CreateCourseRequest request) {
-        CourseDetailResponse response = courseService.createCourse(providerId, request);
+        CourseDetailResponse response = courseCommandService.createCourse(providerId, request);
         return ResponseEntity
                 .created(URI.create("/api/v1/courses/" + response.id()))
                 .body(response);
@@ -32,33 +33,33 @@ public class CourseController {
     @GetMapping("/providers/{providerId}/courses")
     public ResponseEntity<List<CourseDetailResponse>> listProviderCourses(
             @PathVariable Long providerId) {
-        return ResponseEntity.ok(courseService.listCoursesByProvider(providerId));
+        return ResponseEntity.ok(courseQueryService.listCoursesByProvider(providerId));
     }
 
     @GetMapping("/courses/{id}")
     public ResponseEntity<CourseDetailResponse> getCourse(
             @PathVariable Long id) {
-        return ResponseEntity.ok(courseService.getCourse(id));
+        return ResponseEntity.ok(courseQueryService.getCourse(id));
     }
 
     @PutMapping("/courses/{id}")
     public ResponseEntity<CourseDetailResponse> updateCourse(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCourseRequest request) {
-        return ResponseEntity.ok(courseService.updateCourse(id, request));
+        return ResponseEntity.ok(courseCommandService.updateCourse(id, request));
     }
 
     @PostMapping("/courses/{id}/submissions")
     public ResponseEntity<CourseDetailResponse> submitCourse(
             @PathVariable Long id) {
-        return ResponseEntity.ok(courseService.submitCourse(id));
+        return ResponseEntity.ok(courseCommandService.submitCourse(id));
     }
 
     @DeleteMapping("/courses/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> deleteCourse(
             @PathVariable Long id) {
-        courseService.deleteCourse(id);
+        courseCommandService.deleteCourse(id);
         return ResponseEntity.noContent().build();
     }
 }

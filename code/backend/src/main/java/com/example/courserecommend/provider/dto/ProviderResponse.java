@@ -1,6 +1,5 @@
 package com.example.courserecommend.provider.dto;
 
-import com.example.courserecommend.domain.entity.Provider;
 import com.example.courserecommend.domain.enums.ProviderStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,15 +21,4 @@ public record ProviderResponse(
         @Schema(description = "เวลาที่สร้าง") Instant createdAt,
 
         @Schema(description = "เวลาที่อัปเดตล่าสุด") Instant updatedAt) {
-    public static ProviderResponse from(Provider provider) {
-        return new ProviderResponse(
-                provider.getId(),
-                provider.getName(),
-                provider.getSlug(),
-                provider.getDescription(),
-                provider.getWebsiteUrl(),
-                provider.getStatus(),
-                provider.getCreatedAt(),
-                provider.getUpdatedAt());
-    }
 }
