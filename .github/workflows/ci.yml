@@ -46,3 +46,62 @@ jobs:
         run: npm test
       - name: Build frontend
         run: npm run build
+
+  deploy-backend:
+    name: Deploy backend to Render
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.CD_ENABLED == 'true'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-backend
+      cancel-in-progress: false
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Check Render deploy hook
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo '::error::Set the RENDER_DEPLOY_HOOK_URL repository secret before enabling CD.'
+            exit 1
+          fi
+      - name: Deploy the tested commit
+        run: |
+          separator='?'
+          case "$RENDER_DEPLOY_HOOK_URL" in
+            *\?*) separator='&' ;;
+          esac
+          curl --fail --show-error --silent --request POST "${RENDER_DEPLOY_HOOK_URL}${separator}ref=${GITHUB_SHA}"
+
+  deploy-frontend:
+    name: Deploy frontend to Vercel
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.CD_ENABLED == 'true'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-frontend
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check Vercel configuration
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo '::error::Set VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID repository secrets before enabling CD.'
+            exit 1
+          fi
+      - name: Install Vercel CLI
+        run: npm install --global vercel@54.1.0
+      - name: Pull production settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build deployment
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy prebuilt frontend
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
