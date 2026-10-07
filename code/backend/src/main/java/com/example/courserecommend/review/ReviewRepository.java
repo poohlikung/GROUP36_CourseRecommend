@@ -22,4 +22,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             Long courseId,
             ReviewStatus status,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"course", "user", "user.profile"})
+    Page<Review> findByStatus(ReviewStatus status, Pageable pageable);
 }

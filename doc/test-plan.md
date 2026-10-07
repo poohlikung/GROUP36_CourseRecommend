@@ -6,7 +6,7 @@
 - ทีมพัฒนา: กลุ่ม 36
 - เอกสาร: Test Plan และ Acceptance Criteria
 - สถานะ: Draft
-- วันที่ปรับปรุงล่าสุด: 27 ก.ย.
+- วันที่ปรับปรุงล่าสุด: 6 ตุลาคม 2026 (เพิ่มหลักฐาน Task 19 backend)
 
 ## วัตถุประสงค์
 
@@ -252,6 +252,10 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 - **Given:** ผู้ใช้ระบุงบประมาณ ภาษา และระดับที่ต้องการ
 - **When:** ผู้ใช้ส่งคำตอบแบบทดสอบ Matcher
 - **Then:** ระบบตัดคอร์สที่ไม่ตรงเงื่อนไขออกก่อนจัดอันดับ และแสดงเหตุผลของคอร์สที่แนะนำ
+- **และ:** ใช้เฉพาะ PUBLISHED/Provider ACTIVE; หมวดหมู่ ภาษา และระดับตรงค่าเลือก; FREE หรือ ONE_TIME ราคา THB ที่ทราบและไม่เกินงบ; subscription/ไม่ทราบราคา/ต่างสกุลไม่ผ่าน
+- **และ:** ใช้คะแนนเฉลี่ยจาก Strategy 3 ตัว ให้เวลาเป้าหมาย 4 สัปดาห์และใช้เฉพาะรีวิว PUBLISHED; effort ไม่ทราบ/ไม่มีรีวิวใช้ 50 พร้อมเหตุผล
+- **และ:** คิดคะแนนทุกคอร์สก่อนเลือกสูงสุด 3 อันดับ เรียงคะแนนจริงมากไปน้อยและ ID น้อยไปมากเมื่อคะแนนเท่ากัน ปัดสองตำแหน่งเฉพาะ response
+- **กรณีว่าง:** คืน 200, matches ว่างพร้อม constraint counts ที่อาจทับซ้อน ไม่ผ่อนเงื่อนไข; anonymous ต้องส่ง CSRF cookie/header และข้อมูลผิดตอบ error contract เดิม
 
 ### TC-18 API ไม่เปิดเผยข้อมูลลับ
 
@@ -327,7 +331,7 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-14 Admin อนุมัติ Course | Course/Admin | Backend Integration (H2/PostgreSQL) | `AdminModerationControllerTests`, `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
 | TC-15 ป้องกัน Review ซ้ำ | Review | Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-16 คะแนนเฉลี่ยจาก Review ที่เผยแพร่ | Review/Catalog | Backend Integration | `CatalogCourseIntegrationTests` ทดสอบคะแนนที่เผยแพร่ แต่ยังไม่ครอบคลุม PENDING และ REJECTED | ยังบ่เฮ็ด |
-| TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | ยังไม่มี | ยังไม่แล้ว |
+| TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | `ScoringStrategyContractTests`, `CourseMatcherServiceTests`, `CourseMatcherControllerTests`, `CourseMatcherPostgresIntegrationTests` | Backend มีแล้วใน Task 19 (62 กรณี); Frontend Task 20 ยังไม่ทำ |
 | TC-18 API ไม่เปิดเผยข้อมูลลับ | Backend/Security | Backend Integration | `AuthControllerIntegrationTests` ตรวจ password hash แล้ว แต่ยังไม่ครอบคลุมทุก API | ยังบ่เฮ็ด |
 | TC-19 Audit atomicity | Course/Provider/Audit | PostgreSQL Integration | `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
 | TC-20 Observer หลัง commit | Course/Observer | Unit, H2/PostgreSQL Integration | `CourseMetricsTransactionIntegrationTests`, `CourseEventPublicationIntegrationTests`, `AuditTransactionPostgresIntegrationTests`, `CourseMetricsListenerTests` | มีแล้ว |
@@ -340,5 +344,7 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 ผลจริงของ Task 17: [รายงานทดสอบ](test-reports/task17-audit-observer.md) และ [คู่มือสาธิต](task17-audit-observer-guide.md) Tests ของ Task 17 ใช้ transaction ที่ commit/rollback จริง ส่วน browser E2E ไม่รวมอยู่ในหลักฐานรอบนี้
 
 ผลจริงของ Task 18: [รายงานทดสอบ concurrency, permission และ rollback](test-reports/task18-concurrency-permissions.md)
+
+ผลจริงของ Task 19: [รายงานทดสอบ](test-reports/task19-matcher.md) และ [คู่มือสาธิต](task19-matcher-guide.md) PostgreSQL tests ตรวจ top 3 จาก 53 คอร์ส, คอร์สหลายหมวดหมู่, รีวิว PENDING/REJECTED ไม่ถูกนับ และจำนวน query คงที่; controller tests ตรวจ cookie/header CSRF จริงและ Swagger ส่วนหน้า quiz/results และ browser E2E อยู่ใน Task 20
 
 > หมายเหตุ: ให้ทีมแทนชื่อส่วนงานในคอลัมน์ “ส่วนงานรับผิดชอบ” ด้วยชื่อสมาชิกจริง เมื่อแบ่งเจ้าของ Provider, Course, Review และ Matcher เรียบร้อยแล้ว

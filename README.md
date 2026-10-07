@@ -126,8 +126,22 @@ npm run dev
 
 คำอธิบายการทำงานทีละไฟล์อยู่ใน `doc/task15-course-moderation-guide.md`
 
+## งานตรวจรีวิว (Task 16)
+
+ผู้เรียนที่เข้าสู่ระบบสร้างหรือแก้รีวิวของคอร์สที่เผยแพร่ได้ รีวิวใหม่และรีวิวที่แก้ไขจะกลับไปรอตรวจเสมอ รายการรีวิวสาธารณะและคะแนนเฉลี่ยนับเฉพาะรีวิวที่อนุมัติแล้ว
+
+Admin เข้า `/admin` ส่วน **รีวิว** เพื่อดูคิวรอตรวจ เลือกอนุมัติหรือปฏิเสธ การปฏิเสธต้องระบุเหตุผล ผู้เขียนรีวิวดูเหตุผลได้ผ่าน `GET /api/v1/courses/{courseId}/reviews/me` ผลตรวจบันทึกใน `audit_logs` และหากข้อมูลถูกแก้ระหว่างตรวจ API จะตอบ `409` ให้โหลดคิวใหม่
+
+คำอธิบาย API และการทดสอบอยู่ใน `doc/task16-review-moderation-guide.md`
+
 ## AuditLog และ Observer metrics (Task 17)
 
 การเปลี่ยนสถานะกับ AuditLog บันทึกใน transaction เดียวกัน หากเขียน audit ไม่สำเร็จ ธุรกิจจะ rollback ส่วน Observer นับ counter `course.status.transitions` หลัง commit สำเร็จเท่านั้น แยกตาม `action`, `from`, `to` ถ้า metrics ล้มเหลวจะบันทึก error log และคำขอที่ commit แล้วตอบสำเร็จตามเดิม
 
 สถิติเก็บภายใน process และ reset เมื่อ restart แอป ดูการทำงาน แผนภาพ และวิธีทดสอบได้ใน [คู่มือ Task 17](doc/task17-audit-observer-guide.md) และ [รายงานผลทดสอบ](doc/test-reports/task17-audit-observer.md)
+
+## Matcher Strategy backend (Task 19)
+
+`POST /api/v1/course-matches` รับ `categorySlug`, `level`, `language`, `budgetThb` และ `hoursPerWeek` ทุกคนเรียกได้หลังขอ CSRF token ระบบกรองคอร์สที่เผยแพร่จาก Provider active ตามหมวดหมู่/ระดับ/ภาษา/งบ แล้วใช้ Budget, Effort และ Review Quality Strategy จัดอันดับสูงสุด 3 คอร์สพร้อมคะแนนและเหตุผล
+
+รองรับคอร์สฟรีและราคาจ่ายครั้งเดียวที่ทราบเป็น THB; ประเมินเวลารวมโดยตั้งเป้าจบใน 4 สัปดาห์ หากไม่มีคอร์สผ่านจะคืนรายการว่างพร้อมข้อจำกัดโดยไม่ผ่อนเงื่อนไข หน้าจอ quiz/results อยู่ใน Task 20 ดู payload, สูตร, ตัวอย่าง PowerShell และ diagrams ใน [คู่มือ Task 19](doc/task19-matcher-guide.md), [รายงานทดสอบ](doc/test-reports/task19-matcher.md) และ [หลักฐาน Design Patterns](doc/design-patterns.md)

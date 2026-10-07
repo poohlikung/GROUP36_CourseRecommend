@@ -49,6 +49,13 @@ public class Review {
     @Column(columnDefinition = "TEXT")
     private String body;
 
+    @Version
+    @Column(nullable = false)
+    private Integer version = 0;
+
+    @Column(name = "moderation_reason", length = 1000)
+    private String moderationReason;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ReviewStatus status = ReviewStatus.PENDING;
@@ -86,6 +93,17 @@ public class Review {
         this.difficultyScore = difficultyScore;
         this.body = normalizeBody(body);
         this.status = ReviewStatus.PENDING;
+        this.moderationReason = null;
+    }
+
+    public void publish() {
+        this.status = ReviewStatus.PUBLISHED;
+        this.moderationReason = null;
+    }
+
+    public void reject(String reason) {
+        this.status = ReviewStatus.REJECTED;
+        this.moderationReason = reason;
     }
 
     private String normalizeBody(String value) {

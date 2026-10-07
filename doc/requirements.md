@@ -3,6 +3,7 @@
 ตารางนี้แมปข้อกำหนดจากใบงาน CP353002 และ use case ของระบบ เข้ากับ feature, task ในตารางงานทีม, หลักฐานใน repository และเกณฑ์ตรวจรับ
 
 - สถานะอ้างอิง branch `develop` และงานใน branch `keattisak_6733800729_01` ณ วันที่ 5 ตุลาคม 2026
+- อัปเดตหลักฐาน Matcher/GoF วันที่ 6 ตุลาคม 2026 จาก branch `supawat_6733800622_01`: Task 19 backend มีแล้วและรอรวมเข้า develop; Task 20 frontend ยังไม่ทำ
 - เลข Task ตรงกับตาราง "งานทีม CourseHub • 30 งาน"
 - สถานะ: ✅ มีหลักฐานใน repo แล้ว · 🟡 ทำแล้วบางส่วน · ⬜ ยังไม่เริ่ม
 - ต้องอัปเดตสถานะทุกครั้งที่งานที่เกี่ยวข้อง merge เข้า `develop`
@@ -20,7 +21,7 @@
 | 3 | Layered Architecture ห้ามข้าม layer | 03 | Controller → Service → Repository ในทุก feature, `doc/decisions/0001-*.md` | ไม่มี Controller เรียก Repository ตรง | ✅ |
 | 4 | SOLID พร้อม `doc/solid-analysis.md` | 21 | ตัวอย่างใน Provider/Course: D — Controller ขึ้นกับ interface `ProviderService`, `CourseQueryService`, `CourseCommandService`; I — แยก Query/Command ของ Course; S — แยก `CourseUrlPolicy`, `CourseMapper`, `ProviderMapper` ออกจาก service | ระบุไฟล์/บรรทัด/เหตุผลครบ 5 ข้อ | 🟡 มีหลักฐานในโค้ดบางส่วน ยังไม่มีเอกสาร |
 | 5.1 | Layered, MVC, Repository, Service Layer, DTO + Mapper, DI | 03, 21 | `doc/decisions/0001-*.md`, DTO ใน `*/dto/`, Mapper (`CourseMapper`, `ProviderMapper`, `ProfileMapper`), constructor injection | อธิบายใน `doc/design-patterns.md` | 🟡 มีในโค้ด ยังไม่มีเอกสารรวม |
-| 5.2 | GoF กลุ่มเดียว ≥ 3 แบบ (Behavioral: Strategy, State, Observer) | 15, 17, 19 | `doc/decisions/0003-*.md` | implementation + tests + class diagram | ⬜ |
+| 5.2 | GoF กลุ่มเดียว ≥ 3 แบบ (Behavioral: Strategy, State, Observer) | 15, 17, 19 | `doc/design-patterns.md`, `doc/decisions/0003-*.md`, class diagrams และรายงาน Task 15/17/19 | implementation + tests + class diagram | 🟡 ครบหลักฐานใน branch supawat; Task 17/19 รอรวมเข้า develop |
 | 6 | ≥ 6 ตาราง | 06 | `V1__init_schema.sql` (12 ตาราง) | `FlywayMigrationIntegrationTests` | ✅ |
 | 6 | One-to-One | 05, 06 | `users`–`user_profiles`, `courses`–`course_prices` (shared PK) | constraint ทดสอบบน PostgreSQL | ✅ `CourseSchemaPostgresIntegrationTests` |
 | 6 | One-to-Many / Many-to-Many | 06 | `providers`→`courses`, `course_categories` | FK และ cascade ตรงตามออกแบบ | ✅ |
@@ -48,7 +49,7 @@
 | Use case | Feature / API หลัก | Task | หลักฐาน | สถานะ |
 | --- | --- | --- | --- | :---: |
 | UC01 ค้นหา กรอง เปรียบเทียบคอร์ส | `GET /api/v1/courses`, `/catalog/categories`, `/catalog/platforms` | 12 | `CatalogController`, `CatalogPage.tsx`, `CatalogCourseIntegrationTests` | ✅ |
-| UC02 Course Matcher Quiz | `POST /api/v1/course-matches` | 19, 20 | — | ⬜ |
+| UC02 Course Matcher Quiz | `POST /api/v1/course-matches` | 19, 20 | `CourseMatcherController`, `ScoringStrategyContractTests`, `CourseMatcherPostgresIntegrationTests`, `doc/task19-matcher-guide.md` | 🟡 Task 19 backend ผ่าน tests ใน branch supawat; Task 20 quiz/results UI ยังไม่ทำ |
 | UC03 Career Roadmap | — | หลังส่งวิชา | — | ⬜ ไม่อยู่ในขอบเขตรอบส่งวิชา |
 | UC04 สมัครสมาชิก / เข้าสู่ระบบ | `/api/v1/auth/*` | 05 | `AuthController`, `LoginPage.tsx`, `RegisterPage.tsx`, `AuthControllerIntegrationTests` | ✅ |
 | UC05 จัดการโปรไฟล์ | `GET/PUT /api/v1/me/profile` | 05 | `ProfileController`, `ProfilePage.tsx` | ✅ |
@@ -63,6 +64,6 @@
 | UC14 ลบคอร์ส | `DELETE /api/v1/courses/{id}` | 11 | `CourseServiceImpl.deleteCourse` (เฉพาะ DRAFT ที่ไม่เคยเผยแพร่และไม่มีรีวิว) | ✅ |
 | UC15 Admin ตรวจและอนุมัติคอร์ส | `POST /api/v1/admin/courses/{id}/moderation-decisions` | 15 | — | ⬜ |
 | UC16 Admin รับรอง Provider | — | 15 | — | ⬜ |
-| UC17 Admin ตรวจรีวิว | `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | — | ⬜ |
+| UC17 Admin ตรวจรีวิว | `GET /api/v1/admin/reviews`, `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | `AdminReviewModerationController`, `ReviewModerationSection`, `AdminReviewModerationControllerTests` | ✅ |
 | UC18 จัดการหมวดหมู่ | — | — | seed หมวดหมู่ใน V2 | ⬜ |
 | UC19 ดู Audit Log | — | 17 | ตาราง `audit_logs` มีข้อมูลจาก Provider/Course แล้ว | 🟡 บันทึกแล้ว ยังไม่มีหน้าดู |

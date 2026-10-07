@@ -177,6 +177,8 @@ public class ReviewService {
                 review.getDifficultyScore(),
                 review.getBody(),
                 review.getStatus(),
+                review.getVersion(),
+                review.getModerationReason(),
                 review.getCreatedAt(),
                 review.getUpdatedAt()
         );

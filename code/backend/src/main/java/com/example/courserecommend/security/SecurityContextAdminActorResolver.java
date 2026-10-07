@@ -1,8 +1,7 @@
-package com.example.courserecommend.course;
+package com.example.courserecommend.security;
 
 import com.example.courserecommend.domain.entity.User;
 import com.example.courserecommend.domain.enums.UserRole;
-import com.example.courserecommend.security.ProviderOwnershipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;

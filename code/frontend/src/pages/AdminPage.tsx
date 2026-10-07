@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { getErrorMessage } from '../api/client';
 import { adminApi } from '../features/admin/adminApi';
+import { ReviewModerationSection } from '../features/admin/ReviewModerationSection';
 import type { AdminProvider, CourseDecision, ProviderDecision, ProviderStatus } from '../features/admin/adminApi';
 import type { CourseDetail, CourseStatus } from '../features/course/types';
 
@@ -170,6 +171,7 @@ export function AdminPage() {
           </article>
         ))}
       </section>
+      <ReviewModerationSection />
     </main>
   );
 }

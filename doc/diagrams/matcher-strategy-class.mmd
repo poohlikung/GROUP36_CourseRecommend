@@ -1,0 +1,61 @@
+classDiagram
+    class CourseMatcherController {
+        +match(CourseMatchRequest) CourseMatchesResponse
+    }
+    class CourseMatcherService {
+        -List~ScoringStrategy~ strategies
+        +match(MatchPreferences) CourseMatchesResponse
+    }
+    class EligibilityPolicy {
+        +rejectionReasons(Course, MatchPreferences) List~MatchReason~
+        +priceThb(Course) BigDecimal
+    }
+    class ScoringStrategy {
+        <<interface>>
+        +key() String
+        +score(ScoringInput) ScoringResult
+    }
+    class BudgetFitStrategy
+    class EffortFitStrategy {
+        +TARGET_WEEKS = 4
+    }
+    class ReviewQualityStrategy
+    class ScoringInput {
+        <<immutable record>>
+        BigDecimal priceThb
+        BigDecimal budgetThb
+        int hoursPerWeek
+        Integer effortHours
+        Double averageRating
+        long reviewCount
+    }
+    class ScoringResult {
+        <<immutable record>>
+        String strategy
+        double score
+        MatchReason reason
+    }
+    class CourseRepository {
+        +findMatcherCandidates(PUBLISHED, ACTIVE) List~Course~
+    }
+    class CategoryRepository {
+        +existsBySlug(slug) boolean
+    }
+    class CatalogRatingRepository {
+        +findPublishedRatings(courseIds) Map
+    }
+    class CatalogCourseService {
+        +toResponse(Course, RatingSummary) CatalogCourseResponse
+    }
+    CourseMatcherController --> CourseMatcherService
+    CourseMatcherService --> EligibilityPolicy : hard filters first
+    CourseMatcherService o-- ScoringStrategy : constructor injection
+    ScoringStrategy <|.. BudgetFitStrategy
+    ScoringStrategy <|.. EffortFitStrategy
+    ScoringStrategy <|.. ReviewQualityStrategy
+    ScoringStrategy ..> ScoringInput : accepts same contract
+    ScoringStrategy ..> ScoringResult : finite score 0 to 100
+    CourseMatcherService --> CourseRepository : fetch public candidates
+    CourseMatcherService --> CategoryRepository : validate goal
+    CourseMatcherService --> CatalogRatingRepository : grouped published reviews
+    CourseMatcherService --> CatalogCourseService : reuse safe catalog mapping
