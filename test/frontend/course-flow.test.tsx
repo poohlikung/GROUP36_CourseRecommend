@@ -516,3 +516,7 @@ describe('course management flow', () => {
     expect(screen.getByText(/คอร์สนี้จะกลับเป็นสถานะ Draft/)).toBeInTheDocument();
   });
 });
+
+vi.mock('../../code/frontend/src/api/system', () => ({
+  systemApi: { liveness: vi.fn().mockResolvedValue({ status: 'UP' }) },
+}));

@@ -66,3 +66,7 @@ describe('authentication flow', () => {
     expect(await screen.findByRole('heading', { name: 'ยินดีต้อนรับกลับ' })).toBeInTheDocument();
   });
 });
+
+vi.mock('../../code/frontend/src/api/system', () => ({
+  systemApi: { liveness: vi.fn().mockResolvedValue({ status: 'UP' }) },
+}));
