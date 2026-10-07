@@ -68,7 +68,6 @@ export const test = base.extend<{ actors: Actors }>({
           baseURL, recordVideo: { dir: testInfo.outputPath('videos') },
         });
         contexts.push(context);
-        await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
         const account = credentials(label);
         const response = await mutate(context.request, 'POST', '/api/v1/auth/register', account);
         expect(response.status(), await response.text()).toBe(201);
@@ -93,10 +92,7 @@ export const test = base.extend<{ actors: Actors }>({
           const screenshot = testInfo.outputPath(`${label}.png`);
           await actor.page.screenshot({ path: screenshot, fullPage: true });
           await testInfo.attach(`${label} screenshot`, { path: screenshot, contentType: 'image/png' });
-          const trace = testInfo.outputPath(`${label}-trace.zip`);
-          await actor.context.tracing.stop({ path: trace });
-          await testInfo.attach(`${label} trace`, { path: trace, contentType: 'application/zip' });
-        } else await actor.context.tracing.stop();
+        }
       }
       await Promise.all(contexts.map((context) => context.close()));
       for (const [label, actor] of Object.entries(actors)) {
