@@ -287,6 +287,24 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 - **When:** registry สร้าง counter ไม่ได้หรือ increment โยน RuntimeException
 - **Then:** API ตอบ 200, สถานะกับ audit ยังคงถูกบันทึก และมี error log พร้อม event context และ stack trace
 
+### TC-23 ถอนสมาชิกแล้วแก้คอร์สต่อไม่ได้
+
+- **Given:** เจ้าของแก้คอร์สผ่าน API สำเร็จ แล้วถูกถอนออกจาก Provider
+- **When:** บัญชีเดิมพยายามสร้าง แก้ ส่งตรวจ หรือลบคอร์ส
+- **Then:** ทุกคำสั่งได้ 403 และคอร์สกับ audit ไม่เปลี่ยน
+
+### TC-24 แก้คอร์สพร้อมกันไม่ทับข้อมูลกัน
+
+- **Given:** สอง transaction โหลดคอร์ส version เดียวกัน
+- **When:** ทั้งสองแก้ชื่อและราคาในเวลาเดียวกัน
+- **Then:** commit สำเร็จหนึ่งรายการ อีกหนึ่งรายการถูก optimistic locking ปฏิเสธ; ชื่อ ราคากับ audit เป็นของรายการที่สำเร็จเท่านั้น
+
+### TC-25 สร้างคอร์สล้มเหลวแล้วไม่เหลือข้อมูลบางส่วน
+
+- **Given:** การสร้างคอร์สใหม่พร้อมราคาและหมวดหมู่
+- **When:** PostgreSQL ปฏิเสธการบันทึก audit
+- **Then:** คอร์ส ราคา ความสัมพันธ์หมวดหมู่ และ audit ของคำสั่งนั้นไม่ถูกบันทึก
+
 ## 9. ผู้รับผิดชอบและสถานะการทดสอบ
 
 ความหมายของสถานะ:
@@ -319,8 +337,13 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-20 Observer หลัง commit | Course/Observer | Unit, H2/PostgreSQL Integration | `CourseMetricsTransactionIntegrationTests`, `CourseEventPublicationIntegrationTests`, `AuditTransactionPostgresIntegrationTests`, `CourseMetricsListenerTests` | มีแล้ว |
 | TC-21 Concurrent moderation | Course/Admin | PostgreSQL Integration + MockMvc | `concurrentApiDecisionsOnSameVersionCommitExactlyOneAuditAndMetric` | มีแล้ว |
 | TC-22 Metrics failure | Course/Observer | Unit, PostgreSQL Integration + MockMvc | `metricFailureAfterCommitStillReturnsSuccessfulApiResponse`, `CourseMetricsListenerTests` | มีแล้ว |
+| TC-23 ถอนสิทธิ์แก้คอร์ส | Course/Security | PostgreSQL Integration + MockMvc | `revokedMemberCannotCreateEditSubmitOrDeleteCourse` | มีแล้ว |
+| TC-24 Concurrent course edit | Course | PostgreSQL Integration | `concurrentCourseEditsCommitOnlyOnePriceAndAudit` | มีแล้ว |
+| TC-25 Create rollback | Course/Audit | PostgreSQL Integration | `failedCreateAuditRollsBackCoursePriceAndCategories` | มีแล้ว |
 
 ผลจริงของ Task 17: [รายงานทดสอบ](test-reports/task17-audit-observer.md) และ [คู่มือสาธิต](task17-audit-observer-guide.md) Tests ของ Task 17 ใช้ transaction ที่ commit/rollback จริง ส่วน browser E2E ไม่รวมอยู่ในหลักฐานรอบนี้
+
+ผลจริงของ Task 18: [รายงานทดสอบ concurrency, permission และ rollback](test-reports/task18-concurrency-permissions.md)
 
 ผลจริงของ Task 19: [รายงานทดสอบ](test-reports/task19-matcher.md) และ [คู่มือสาธิต](task19-matcher-guide.md) PostgreSQL tests ตรวจ top 3 จาก 53 คอร์ส, คอร์สหลายหมวดหมู่, รีวิว PENDING/REJECTED ไม่ถูกนับ และจำนวน query คงที่; controller tests ตรวจ cookie/header CSRF จริงและ Swagger ส่วนหน้า quiz/results และ browser E2E อยู่ใน Task 20
 

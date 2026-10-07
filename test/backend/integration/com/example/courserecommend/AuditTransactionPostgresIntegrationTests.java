@@ -6,11 +6,13 @@ import com.example.courserecommend.course.ProviderVerificationService;
 import com.example.courserecommend.course.dto.CourseModerationRequest;
 import com.example.courserecommend.course.dto.ProviderVerificationRequest;
 import com.example.courserecommend.course.dto.UpdateCourseRequest;
+import com.example.courserecommend.course.dto.CreateCourseRequest;
 import com.example.courserecommend.course.event.CourseStatusChangedEvent;
 import com.example.courserecommend.course.event.CourseMetricsListener;
 import com.example.courserecommend.course.workflow.CourseDecision;
 import com.example.courserecommend.domain.entity.Course;
 import com.example.courserecommend.domain.enums.CourseStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -50,6 +53,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -63,6 +67,8 @@ import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -101,6 +107,7 @@ class AuditTransactionPostgresIntegrationTests {
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private ApplicationEvents events;
     @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
     @MockitoSpyBean private MeterRegistry meterRegistry;
 
     private TransactionTemplate transaction;
@@ -307,6 +314,134 @@ class AuditTransactionPostgresIntegrationTests {
                     .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_APPROVE"));
         });
         assertTransitionCount("COURSE_APPROVE", "PENDING", "PUBLISHED");
+    }
+
+    @Test
+    void revokedMemberCannotCreateEditSubmitOrDeleteCourse() throws Exception {
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", courseId);
+        var edit = new UpdateCourseRequest("Allowed edit", courseSlug, null,
+                "https://example.com/allowed-edit", platformId,
+                null, null, 4, null, null, null, null);
+        mockMvc.perform(put("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(edit)))
+                .andExpect(status().isOk());
+        Map<String, Object> before = jdbc.queryForMap("SELECT * FROM courses WHERE id = ?", courseId);
+        long auditCount = jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE entity_type = 'COURSE' AND entity_id = ?",
+                Long.class, courseId);
+
+        jdbc.update("DELETE FROM provider_members WHERE provider_id = ? AND user_id = ?",
+                providerId, ownerId);
+        var create = new CreateCourseRequest("Denied course", "denied-course-" + UUID.randomUUID(), null,
+                "https://example.com/denied", platformId, null, null, null, null, null, null, null);
+        mockMvc.perform(post("/api/v1/providers/{providerId}/courses", providerId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(edit)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/courses/{id}/submissions", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/courses/{id}", courseId)
+                        .with(user(ownerEmail).roles("LEARNER")).with(csrf()))
+                .andExpect(status().isForbidden());
+
+        assertThat(jdbc.queryForMap("SELECT * FROM courses WHERE id = ?", courseId)).isEqualTo(before);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE entity_type = 'COURSE' AND entity_id = ?",
+                Long.class, courseId)).isEqualTo(auditCount);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses WHERE slug = ?", Long.class, create.slug())).isZero();
+    }
+
+    @Test
+    void concurrentCourseEditsCommitOnlyOnePriceAndAudit() throws Exception {
+        jdbc.update("UPDATE courses SET status = 'DRAFT' WHERE id = ?", courseId);
+        jdbc.update("INSERT INTO course_prices (course_id, payment_type, amount, currency) "
+                + "VALUES (?, 'ONE_TIME', 10, 'THB')", courseId);
+        var bothLoaded = new CyclicBarrier(2);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var first = executor.submit(() -> competingEdit(bothLoaded, "First edit", 100));
+            var second = executor.submit(() -> competingEdit(bothLoaded, "Second edit", 200));
+            List<RuntimeException> failures = java.util.Arrays.asList(first.get(25, TimeUnit.SECONDS),
+                    second.get(25, TimeUnit.SECONDS));
+            assertThat(failures.stream().filter(failure -> failure == null).count()).isEqualTo(1);
+            assertThat(failures.stream().filter(failure -> failure != null).toList())
+                    .singleElement().isInstanceOf(OptimisticLockingFailureException.class);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+        }
+
+        Map<String, Object> course = jdbc.queryForMap("SELECT title, version FROM courses WHERE id = ?", courseId);
+        String title = (String) course.get("title");
+        assertThat(title).isIn("First edit", "Second edit");
+        assertThat((Integer) course.get("version")).isGreaterThan(0);
+        assertThat(jdbc.queryForObject("SELECT amount FROM course_prices WHERE course_id = ?",
+                java.math.BigDecimal.class, courseId))
+                .isEqualByComparingTo(title.equals("First edit") ? "100" : "200");
+        assertThat(auditRows()).singleElement()
+                .satisfies(audit -> assertThat(audit.get("action")).isEqualTo("COURSE_UPDATED"));
+    }
+
+    @Test
+    void failedCreateAuditRollsBackCoursePriceAndCategories() {
+        prepare(Operation.COURSE_EDIT);
+        long categoryId = jdbc.queryForObject("SELECT id FROM categories ORDER BY id LIMIT 1", Long.class);
+        String slug = "rollback-create-" + UUID.randomUUID();
+        var create = new CreateCourseRequest("Rollback course", slug, null,
+                "https://example.com/rollback-course", platformId, null, null, 5,
+                com.example.courserecommend.domain.enums.PaymentType.ONE_TIME,
+                java.math.BigDecimal.valueOf(150), "THB", Set.of(categoryId));
+        long coursesBefore = jdbc.queryForObject("SELECT count(*) FROM courses", Long.class);
+        long pricesBefore = jdbc.queryForObject("SELECT count(*) FROM course_prices", Long.class);
+        long linksBefore = jdbc.queryForObject("SELECT count(*) FROM course_categories", Long.class);
+
+        jdbc.execute("ALTER TABLE audit_logs ADD CONSTRAINT reject_step18_create CHECK (action <> 'COURSE_CREATED')");
+        try {
+            assertThatThrownBy(() -> courseCommands.createCourse(providerId, create))
+                    .isInstanceOf(DataIntegrityViolationException.class)
+                    .hasStackTraceContaining("reject_step18_create");
+        } finally {
+            jdbc.execute("ALTER TABLE audit_logs DROP CONSTRAINT reject_step18_create");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses", Long.class)).isEqualTo(coursesBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM course_prices", Long.class)).isEqualTo(pricesBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM course_categories", Long.class)).isEqualTo(linksBefore);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM courses WHERE slug = ?", Long.class, slug)).isZero();
+        assertThat(auditRows()).isEmpty();
+    }
+
+    private RuntimeException competingEdit(CyclicBarrier bothLoaded, String title, int amount) {
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(ownerEmail, "unused",
+                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))));
+        SecurityContextHolder.setContext(context);
+        try {
+            transaction.executeWithoutResult(status -> {
+                assertThat(entityManager.find(Course.class, courseId).getVersion()).isZero();
+                try {
+                    bothLoaded.await(10, TimeUnit.SECONDS);
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Competing edits did not start together", exception);
+                }
+                courseCommands.updateCourse(courseId, new UpdateCourseRequest(title, courseSlug, null,
+                        "https://example.com/course", platformId, null, null, 4,
+                        com.example.courserecommend.domain.enums.PaymentType.ONE_TIME,
+                        java.math.BigDecimal.valueOf(amount), "THB", null));
+            });
+            return null;
+        } catch (RuntimeException exception) {
+            return exception;
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private int approveInCompetingTransaction(CyclicBarrier bothLoaded) {
