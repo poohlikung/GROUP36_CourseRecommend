@@ -8,6 +8,7 @@
 - สถานะ: ✅ มีหลักฐานใน repo แล้ว · 🟡 ทำแล้วบางส่วน · ⬜ ยังไม่เริ่ม
 - ต้องอัปเดตสถานะทุกครั้งที่งานที่เกี่ยวข้อง merge เข้า `develop`
 - เพิ่มหลักฐาน Task 22 วันที่ 7 ตุลาคม 2026 ใน branch `supawat_6733800622_01` สำหรับ PR เข้า develop: Playwright E2E learner/provider/admin และรายงานผลจริง
+- เพิ่มหลักฐาน Task 23: `code/frontend/vercel.json`, startup/session loading/retry, [คู่มือ Vercel](step23-vercel-guide.md) และ [รายงานทดสอบ](test-reports/step23-vercel.md); ยังไม่ยืนยัน Frontend URL หรือ HTTPS cookie บน Vercel จริง
 
 ## 1. ข้อกำหนดจากใบงาน
 
