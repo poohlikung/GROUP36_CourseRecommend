@@ -50,6 +50,7 @@ dist/
 dist-ssr/
 test/reports/e2e/
 *.local
+.vercel/
 
 # Environment variables
 .env
