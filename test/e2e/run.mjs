@@ -1,6 +1,6 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -71,13 +71,18 @@ try {
     await writeFile(`${reports}/environment.json`, JSON.stringify({
       commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim(),
       startedAt: new Date().toISOString(), node: process.version, platform: process.platform,
-      composeProject: project, browser: 'chromium', command: process.argv.join(' '),
+      composeProject: project, browser: 'chromium', playwright: require('@playwright/test/package.json').version,
+      command: process.argv.join(' '),
     }, null, 2));
     stackAttempted = true;
     await run('docker', [...composeArgs, 'up', '-d', '--build']);
     if (interrupted) throw new Error('E2E interrupted');
     await waitForBackend();
     await run(process.execPath, [cli, 'test', '--config', 'playwright.config.ts', ...process.argv.slice(2)]);
+    const { stats } = JSON.parse(await readFile(`${reports}/results.json`, 'utf8'));
+    if (!stats || stats.expected < 1 || stats.unexpected > 0 || stats.skipped > 0 || stats.flaky > 0) {
+      throw new Error(`E2E acceptance gate failed: ${JSON.stringify(stats)}`);
+    }
   }
 } catch (error) {
   failed = true;
