@@ -102,12 +102,12 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   }
 
   const response = await timedFetch(path, {
-      method,
-      credentials: 'include',
-      headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: options.signal,
-    }, options.timeoutMs);
+    method,
+    credentials: 'include',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: options.signal,
+  }, options.timeoutMs);
 
   if (!response.ok) {
     throw await toApiError(response);

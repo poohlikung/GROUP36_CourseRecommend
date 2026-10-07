@@ -31,4 +31,3 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   if (status !== 'authenticated') return null;
   return user?.role === 'ADMIN' ? children : <Navigate to="/" replace />;
 }
-
