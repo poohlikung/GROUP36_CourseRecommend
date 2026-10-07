@@ -1,4 +1,4 @@
-package com.example.courserecommend.course;
+package com.example.courserecommend.security;
 
 import com.example.courserecommend.domain.entity.User;
 

@@ -13,6 +13,7 @@ import com.example.courserecommend.domain.enums.CourseStatus;
 import com.example.courserecommend.domain.enums.ProviderStatus;
 import com.example.courserecommend.repository.AuditLogRepository;
 import com.example.courserecommend.repository.CourseRepository;
+import com.example.courserecommend.security.AdminActorResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

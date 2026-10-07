@@ -63,6 +63,6 @@
 | UC14 ลบคอร์ส | `DELETE /api/v1/courses/{id}` | 11 | `CourseServiceImpl.deleteCourse` (เฉพาะ DRAFT ที่ไม่เคยเผยแพร่และไม่มีรีวิว) | ✅ |
 | UC15 Admin ตรวจและอนุมัติคอร์ส | `POST /api/v1/admin/courses/{id}/moderation-decisions` | 15 | — | ⬜ |
 | UC16 Admin รับรอง Provider | — | 15 | — | ⬜ |
-| UC17 Admin ตรวจรีวิว | `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | — | ⬜ |
+| UC17 Admin ตรวจรีวิว | `GET /api/v1/admin/reviews`, `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | `AdminReviewModerationController`, `ReviewModerationSection`, `AdminReviewModerationControllerTests` | ✅ |
 | UC18 จัดการหมวดหมู่ | — | — | seed หมวดหมู่ใน V2 | ⬜ |
 | UC19 ดู Audit Log | — | 17 | ตาราง `audit_logs` มีข้อมูลจาก Provider/Course แล้ว | 🟡 บันทึกแล้ว ยังไม่มีหน้าดู |

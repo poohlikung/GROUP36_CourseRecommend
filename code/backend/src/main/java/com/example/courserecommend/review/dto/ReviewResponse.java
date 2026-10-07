@@ -14,6 +14,8 @@ public record ReviewResponse(
         Integer difficultyScore,
         String body,
         ReviewStatus status,
+        Integer version,
+        String moderationReason,
         Instant createdAt,
         Instant updatedAt
 ) {
