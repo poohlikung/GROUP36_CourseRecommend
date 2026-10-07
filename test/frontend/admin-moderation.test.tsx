@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../code/frontend/src/features/admin/adminApi', () => ({ adminApi: mocks }));
+vi.mock('../../code/frontend/src/features/admin/ReviewModerationSection', () => ({
+  ReviewModerationSection: () => null,
+}));
 
 const pendingCourse: CourseDetail = {
   id: 11, providerId: 2, providerName: 'School', providerSlug: 'school',
