@@ -288,14 +288,15 @@ export function ProviderPage() {
       {!loading && !listError && providers.length > 0 && (
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           {providers.map((p) => (
-            <div
+            <article
               key={p.id}
+              aria-labelledby={`provider-title-${p.id}`}
               className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">{p.name}</h2>
+                    <h2 id={`provider-title-${p.id}`} className="text-lg font-bold text-slate-900">{p.name}</h2>
                     <p className="font-mono text-xs text-slate-500">slug: {p.slug}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
@@ -357,7 +358,7 @@ export function ProviderPage() {
                   </button>
                 )}
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}

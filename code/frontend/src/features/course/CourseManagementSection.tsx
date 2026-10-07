@@ -401,14 +401,15 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {!loading && !error && courses.length > 0 && (
         <div className="grid gap-5 md:grid-cols-2">
           {courses.map((course) => (
-            <div
+            <article
               key={course.id}
+              aria-labelledby={`managed-course-title-${course.id}`}
               className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">{course.title}</h3>
+                    <h3 id={`managed-course-title-${course.id}`} className="text-base font-bold text-slate-900">{course.title}</h3>
                     <p className="font-mono text-xs text-slate-500">slug: {course.slug}</p>
                   </div>
                   <div>{getCourseStatusBadge(course.status)}</div>
@@ -502,7 +503,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   )}
                 </div>
               )}
-            </div>
+            </article>
           ))}
         </div>
       )}
