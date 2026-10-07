@@ -25,6 +25,7 @@ export function AppLayout() {
         <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4" aria-label="เมนูหลัก">
           <Link to="/" className="text-xl font-black tracking-tight text-cyan-700">CourseHub</Link>
           <div className="flex items-center gap-3 text-sm font-medium">
+            <NavLink to="/match" className="rounded-lg px-3 py-2 hover:bg-slate-100">หาคอร์สที่ใช่</NavLink>
             {status === 'authenticated' && user ? (
               <>
                 {user.role === 'ADMIN' && <NavLink to="/admin" className="rounded-lg px-3 py-2 hover:bg-slate-100">งานตรวจ Admin</NavLink>}
