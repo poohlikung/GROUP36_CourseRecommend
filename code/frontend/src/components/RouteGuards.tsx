@@ -14,10 +14,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return children;
 }
 
-export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+export function PublicOnlyRoute({ children, authenticatedTo = '/' }: {
+  children: React.ReactNode;
+  authenticatedTo?: string;
+}) {
   const { status } = useAuth();
+  const location = useLocation();
+  const destination = (location.state as { from?: string } | null)?.from ?? authenticatedTo;
   if (status === 'loading') return <PageStatus message="กำลังตรวจสอบการเข้าสู่ระบบ…" />;
-  if (status === 'authenticated') return <Navigate to="/" replace />;
+  if (status === 'authenticated') return <Navigate to={destination} replace />;
   return children;
 }
 

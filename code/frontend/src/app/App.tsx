@@ -11,6 +11,7 @@ import { RegisterPage } from '../pages/RegisterPage';
 import { BookmarksPage } from '../pages/BookmarksPage';
 import { ProviderPage } from '../pages/ProviderPage';
 import { AdminPage } from '../pages/AdminPage';
+import { MatcherPage } from '../pages/MatcherPage';
 
 export function App() {
   return (
@@ -19,8 +20,9 @@ export function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<CatalogPage />} />
+          <Route path="/match" element={<MatcherPage />} />
           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-          <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+          <Route path="/register" element={<PublicOnlyRoute authenticatedTo="/profile"><RegisterPage /></PublicOnlyRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
           <Route path="/providers" element={<ProtectedRoute><ProviderPage /></ProtectedRoute>} />

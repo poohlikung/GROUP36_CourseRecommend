@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: coursehub_e2e
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e-local-only
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d coursehub_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  backend:
+    build:
+      context: ../../code/backend
+      dockerfile: ../../test/e2e/backend.Dockerfile
+    ports:
+      - "127.0.0.1:18080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/coursehub_e2e
+      DATABASE_USERNAME: e2e
+      DATABASE_PASSWORD: e2e-local-only
+      SESSION_COOKIE_SECURE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,0 +1,16 @@
+{
+  "name": "coursehub-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node run.mjs",
+    "test:headed": "node run.mjs --headed",
+    "test:list": "node run.mjs --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.3"
+  }
+}

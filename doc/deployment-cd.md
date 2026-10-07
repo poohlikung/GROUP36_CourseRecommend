@@ -1,6 +1,6 @@
 # Continuous deployment (CD)
 
-CI checks every pull request to `develop` or `main`. After a reviewed PR is merged into `develop`, the same workflow runs the backend and frontend checks again. When both pass and `CD_ENABLED` is `true`, it sends that commit to Render and builds/deploys the frontend to Vercel. A failed check prevents both deployments. Direct pushes to `main` run CI only.
+CI checks every pull request to `develop` or `main`. After a reviewed PR is merged into `develop`, the same workflow runs the backend, frontend and Playwright E2E checks again. When all three pass and `CD_ENABLED` is `true`, it sends that commit to Render and builds/deploys the frontend to Vercel. A failed check prevents both deployments. Direct pushes to `main` run CI only.
 
 The public architecture follows [ADR 0004](decisions/0004-spa-frontend-and-deployment-strategy.md): React/Vite on Vercel Hobby, Spring Boot on Render Free, PostgreSQL on Neon Free. `code/frontend/vercel.json` forwards `/api/*` to the existing Render backend and serves `index.html` for client-side routes. The proxy target is the backend URL currently recorded in `doc/requirements.md`; update it if the Render service URL changes.
 
@@ -16,7 +16,7 @@ The public architecture follows [ADR 0004](decisions/0004-spa-frontend-and-deplo
 
 ## Verify and operate
 
-- Merge a reviewed PR into `develop`. In GitHub Actions, confirm `Backend tests` and `Frontend tests and build` pass, followed by `Deploy backend to Render` and `Deploy frontend to Vercel`.
+- Merge a reviewed PR into `develop`. In GitHub Actions, confirm `Backend tests`, `Frontend tests and build`, and `Learner provider admin E2E` pass, followed by `Deploy backend to Render` and `Deploy frontend to Vercel`.
 - The Render hook confirms that a deploy was accepted; it does not prove that the new version is serving yet. Confirm the deploy reaches Live in Render and check `/api/v1/system/liveness` on its public URL.
 - Open the Vercel production URL. Refresh a nested route such as `/match` and call `/api/v1/system/liveness` on the **Vercel** domain to confirm the SPA fallback and API rewrite work. Render Free may take time to wake after inactivity.
 - If a deploy fails, inspect that platform's deploy logs. Fix the issue in a new PR; do not push directly to `develop`. To pause further production deploys, set `CD_ENABLED=false` while CI remains available.

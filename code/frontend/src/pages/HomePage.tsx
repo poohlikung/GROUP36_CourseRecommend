@@ -11,12 +11,10 @@ export function HomePage() {
         <p className="mt-5 text-lg leading-8 text-slate-300">
           ค้นหาและเปรียบเทียบคอร์สจากหลายแพลตฟอร์ม ก่อนเลือกเส้นทางการเรียนรู้ที่เหมาะกับคุณ
         </p>
-        <Link
-          className="mt-8 inline-flex rounded-xl bg-cyan-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950"
-          to="/courses"
-        >
-          สำรวจคอร์สทั้งหมด
-        </Link>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link className="inline-flex rounded-xl bg-cyan-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950" to="/match">หาคอร์สที่ใช่</Link>
+          <Link className="inline-flex rounded-xl border border-slate-500 px-6 py-3 font-bold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950" to="/courses">สำรวจคอร์สทั้งหมด</Link>
+        </div>
       </section>
     </main>
   );

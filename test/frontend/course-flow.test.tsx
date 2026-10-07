@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, StrictMode } from 'react';
 
 import { AuthProvider } from '../../code/frontend/src/auth/AuthContext';
 import { ProviderPage } from '../../code/frontend/src/pages/ProviderPage';
+import { CourseManagementSection } from '../../code/frontend/src/features/course/CourseManagementSection';
 import { cleanup, MemoryRouter, render, screen, userEvent, waitFor } from '../../code/frontend/src/test/test-utils';
 import type { CourseDetail } from '../../code/frontend/src/features/course/types';
 import type { MyProvider } from '../../code/frontend/src/features/provider/types';
@@ -126,6 +128,29 @@ describe('course management flow', () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  it('does not overwrite a selected platform when an aborted option request finishes late', async () => {
+    const options = {
+      platforms: [
+        { id: 1, name: 'Coursera', slug: 'coursera' },
+        { id: 2, name: 'Udemy', slug: 'udemy' },
+      ],
+      categories: [],
+    };
+    let resolveOldRequest!: (value: typeof options) => void;
+    mocks.getCatalogOptions
+      .mockImplementationOnce(() => new Promise<typeof options>((resolve) => { resolveOldRequest = resolve; }))
+      .mockResolvedValueOnce(options);
+    mocks.listByProvider.mockResolvedValue([]);
+    render(<StrictMode><CourseManagementSection provider={mockProvider} onBack={() => {}} /></StrictMode>);
+    const user = userEvent.setup();
+    await user.click(screen.getAllByRole('button', { name: 'เพิ่มคอร์สใหม่' })[0]);
+    const platform = await screen.findByLabelText(/แพลตฟอร์ม/);
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Udemy' })).toBeInTheDocument());
+    await user.selectOptions(platform, '2');
+    await act(async () => { resolveOldRequest(options); });
+    expect(platform).toHaveValue('2');
   });
 
   it('navigates to course management and renders course list with status badges', async () => {
