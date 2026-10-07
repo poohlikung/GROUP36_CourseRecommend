@@ -14,18 +14,26 @@ export function ReviewModerationSection() {
   const [reload, setReload] = useState(0);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const visibleReviews = !loading && !error && reviews?.page === page ? reviews : null;
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setReviews(null);
     reviewApi.list(status, page, controller.signal)
       .then((result) => { if (!controller.signal.aborted) setReviews(result); })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(getErrorMessage(cause)); })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted) {
+          setReviews(null);
+          setError(getErrorMessage(cause));
+        }
+      })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [status, page, reload]);
 
   async function decide(review: AdminReview, decision: ReviewDecision) {
+    if (!visibleReviews || busyId !== null || review.status !== 'PENDING') return;
     setBusyId(review.id);
     setError('');
     setMessage('');
@@ -33,14 +41,15 @@ export function ReviewModerationSection() {
       await reviewApi.decide(review, decision, reasons[review.id] ?? '');
       setMessage(`บันทึกผลตรวจรีวิวของ ${review.reviewerDisplayName} แล้ว`);
       setReasons((current) => ({ ...current, [review.id]: '' }));
-      if (reviews?.content.length === 1 && page > 0) {
+      setReviews(null);
+      if (visibleReviews.content.length === 1 && page > 0) {
         setPage(page - 1);
       } else {
         setReload((value) => value + 1);
       }
     } catch (cause) {
       setError(getErrorMessage(cause));
-      setReload((value) => value + 1);
+      setReviews(null);
     } finally {
       setBusyId(null);
     }
@@ -65,8 +74,10 @@ export function ReviewModerationSection() {
       {message && <p role="status" className="rounded-lg bg-green-50 p-3 text-green-800">{message}</p>}
       {error && <p role="alert" className="text-red-700">{error}</p>}
       {loading && <p className="text-slate-500">กำลังโหลดรีวิว…</p>}
-      {!loading && reviews?.content.length === 0 && !error && <p className="text-slate-500">ไม่มีรีวิวในสถานะนี้</p>}
-      {reviews?.content.map((review) => (
+      {error && !loading && <button type="button" onClick={() => { setError(''); setReload((value) => value + 1); }}
+        className="rounded border px-3 py-2">ลองโหลดใหม่</button>}
+      {visibleReviews?.content.length === 0 && <p className="text-slate-500">ไม่มีรีวิวในสถานะนี้</p>}
+      {visibleReviews?.content.map((review) => (
         <article key={review.id} className="space-y-3 rounded-xl border bg-white p-5 shadow-sm">
           <h3 className="text-lg font-semibold">{review.courseTitle}</h3>
           <p>ผู้รีวิว: {review.reviewerDisplayName} · สถานะ: {review.status}</p>
@@ -82,9 +93,9 @@ export function ReviewModerationSection() {
                   className="mt-1 block w-full rounded border p-2" />
               </label>
               <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={busyId !== null} onClick={() => void decide(review, 'APPROVE')}
+                <button type="button" disabled={loading || !!error || busyId !== null} onClick={() => void decide(review, 'APPROVE')}
                   className="rounded bg-cyan-700 px-3 py-2 text-white disabled:opacity-50">อนุมัติรีวิว</button>
-                <button type="button" disabled={busyId !== null || !(reasons[review.id] ?? '').trim()}
+                <button type="button" disabled={loading || !!error || busyId !== null || !(reasons[review.id] ?? '').trim()}
                   onClick={() => void decide(review, 'REJECT')}
                   className="rounded bg-rose-700 px-3 py-2 text-white disabled:opacity-50">ปฏิเสธรีวิว</button>
               </div>
@@ -92,11 +103,11 @@ export function ReviewModerationSection() {
           )}
         </article>
       ))}
-      {reviews && reviews.totalPages > 1 && (
+      {visibleReviews && visibleReviews.totalPages > 1 && (
         <div className="flex items-center gap-3">
-          <button type="button" disabled={reviews.first || loading} onClick={() => setPage((value) => value - 1)}>ก่อนหน้า</button>
-          <span>หน้า {reviews.page + 1} จาก {reviews.totalPages}</span>
-          <button type="button" disabled={reviews.last || loading} onClick={() => setPage((value) => value + 1)}>ถัดไป</button>
+          <button type="button" disabled={visibleReviews.first || loading} onClick={() => { setReviews(null); setPage((value) => value - 1); }}>ก่อนหน้า</button>
+          <span>หน้า {visibleReviews.page + 1} จาก {visibleReviews.totalPages}</span>
+          <button type="button" disabled={visibleReviews.last || loading} onClick={() => { setReviews(null); setPage((value) => value + 1); }}>ถัดไป</button>
         </div>
       )}
     </section>
