@@ -95,7 +95,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             List<ApiFieldError> fieldErrors) {
         ResponseEntity.BodyBuilder response = ResponseEntity.status(status);
-        if (request.getRequestURI().matches("/api/v1/providers/[^/]+/members(?:/[^/]+)?")) {
+        if (request.getRequestURI().matches("/api/v1/providers/[^/]+/members(?:/[^/]+)?")
+                || request.getRequestURI().equals("/api/v1/course-matches")) {
             response.cacheControl(CacheControl.noStore());
         }
         return response.body(ApiErrorResponse.of(status.value(), code, message,

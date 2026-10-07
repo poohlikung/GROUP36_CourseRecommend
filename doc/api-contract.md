@@ -1,6 +1,6 @@
-# API Contract — Provider และ Course
+# API Contract — Provider, Course และ Matcher
 
-เอกสารนี้สรุปสัญญาของ REST API ส่วน Provider (UC09, UC10) และ Course (UC12–UC14) ตามโค้ดใน `provider/` และ `course/` ของ backend รายละเอียดทุก endpoint (schema, ตัวอย่าง, การทดลองเรียก) ดูได้จาก Swagger UI ที่ `/swagger-ui.html` และ OpenAPI JSON ที่ `/v3/api-docs`
+เอกสารนี้สรุปสัญญาของ REST API ส่วน Provider (UC09, UC10), Course (UC12–UC14) และ Matcher (UC02 backend Task 19) ตามโค้ดใน `provider/`, `course/` และ `matcher/` ของ backend รายละเอียดทุก endpoint (schema, ตัวอย่าง, การทดลองเรียก) ดูได้จาก Swagger UI ที่ `/swagger-ui.html` และ OpenAPI JSON ที่ `/v3/api-docs`
 
 ## 1. หลักการร่วม
 
@@ -163,3 +163,17 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 | `test/backend/unit/.../course/CourseUrlPolicyTests.java`, `CourseMapperTests.java` | กฎ URL ตามโดเมน Platform และการแปลง Entity → DTO |
 | `test/backend/integration/.../ApiErrorContractIntegrationTests.java` | รูปแบบ error กลาง |
 | `test/backend/integration/.../CourseSchemaPostgresIntegrationTests.java` | constraint ของตาราง Provider/Course บน PostgreSQL จริง |
+
+## 6. Course Matcher (Task 19)
+
+| Method และ path | สิทธิ์ | สำเร็จ | ข้อผิดพลาด |
+| --- | --- | --- | --- |
+| `POST /api/v1/course-matches` | ทุกคน รวม anonymous; ต้องส่ง CSRF cookie/header | `200` + `CourseMatchesResponse`; ไม่เกิน 3 อันดับหรือ matches ว่างพร้อม constraints | 400 validation/หมวดหมู่ไม่มีจริง, 403 CSRF; session บัญชีถูกระงับใช้ 401 ตาม security filter เดิม |
+
+Request บังคับ `categorySlug` (หมวดหมู่ที่มีจริง, ≤100 ตัวอักษร), `level`, `language`, `budgetThb` (0–99999999.99, ทศนิยม ≤2) และ `hoursPerWeek` (JSON จำนวนเต็ม 1–168) ทุก response ใช้ `Cache-Control: no-store` และข้อผิดพลาดใช้ error contract กลาง
+
+`CourseMatchesResponse` มี `matches: [{course,score,scoreBreakdown,reasons}]` และ `constraints: [{code,message,excludedCourseCount}]` โดย `course` ใช้ CatalogCourseResponse เดิม, คะแนนย่อยเป็น `{strategy,score}`, เหตุผลเป็น `{code,message}`; constraints ใช้เฉพาะผลว่างและนับข้อจำกัดอย่างอิสระ จึงมีจำนวนทับซ้อนได้
+
+กรอง PUBLISHED/Provider ACTIVE, หมวดหมู่/ระดับ/ภาษา และงบก่อนคิดคะแนน รองรับ FREE หรือ ONE_TIME ที่ทราบราคา THB; ไม่ผ่อนเงื่อนไขเมื่อผลว่าง ใช้ Budget/Effort/Review Quality คะแนนเฉลี่ยน้ำหนักเท่ากัน และเป้าหมายเวลา 4 สัปดาห์ รายละเอียดสูตร ตัวอย่าง request/response และ CSRF อยู่ใน [คู่มือ Matcher](task19-matcher-guide.md)
+
+หลักฐาน: `CourseMatcherControllerTests`, `CourseMatcherServiceTests`, `ScoringStrategyContractTests` และ `CourseMatcherPostgresIntegrationTests`; [ผลทดสอบจริง](test-reports/task19-matcher.md) หน้าจอ quiz/results ยังอยู่ใน Task 20

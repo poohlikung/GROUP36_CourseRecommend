@@ -1,0 +1,31 @@
+classDiagram
+    class CourseServiceImpl
+    class CourseModerationServiceImpl
+    class CourseWorkflow {
+        -Map STATES
+        +forStatus(CourseStatus) CourseWorkflowState
+    }
+    class CourseWorkflowState {
+        <<interface>>
+        +status() CourseStatus
+        +submit() CourseStatus
+        +edit() CourseStatus
+        +moderate(CourseDecision) CourseStatus
+        +canDelete() boolean
+    }
+    class DraftState
+    class PendingState
+    class PublishedState
+    class RevisionRequestedState
+    class SuspendedState
+    class ArchivedState
+    CourseServiceImpl --> CourseWorkflow : edit, submit, delete
+    CourseModerationServiceImpl --> CourseWorkflow : moderate
+    CourseWorkflow o-- CourseWorkflowState : registry by persisted status
+    CourseWorkflowState <|.. DraftState
+    CourseWorkflowState <|.. PendingState
+    CourseWorkflowState <|.. PublishedState
+    CourseWorkflowState <|.. RevisionRequestedState
+    CourseWorkflowState <|.. SuspendedState
+    CourseWorkflowState <|.. ArchivedState
+    note for CourseWorkflow "State classes are private static nested classes in CourseWorkflow.java; service checks ownership before transition"
