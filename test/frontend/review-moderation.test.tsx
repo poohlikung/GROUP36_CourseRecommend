@@ -52,4 +52,39 @@ describe('review moderation section', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'สถานะรีวิว' }), 'PUBLISHED');
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith('PUBLISHED', 0, expect.any(AbortSignal)));
   });
+
+  it('hides old reviews and decisions while the next page loads or fails', async () => {
+    const user = userEvent.setup();
+    const firstPage = { ...pendingPage, totalElements: 2, totalPages: 2, last: false };
+    const nextReview = { ...pendingReview, id: 22, courseTitle: 'Vue Course', version: 1 };
+    const nextPage = {
+      ...firstPage, content: [nextReview], page: 1, first: false, last: true,
+    };
+    let rejectNextPage: (error: Error) => void = () => {};
+    mocks.list.mockReset();
+    mocks.list.mockResolvedValueOnce(firstPage);
+    mocks.list.mockImplementationOnce(() => new Promise((_, reject) => {
+      rejectNextPage = reject;
+    }));
+    mocks.list.mockResolvedValueOnce(nextPage);
+
+    render(<ReviewModerationSection />);
+    expect(await screen.findByText('React Course')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'ถัดไป' }));
+    expect(screen.getByText('กำลังโหลดรีวิว…')).toBeInTheDocument();
+    expect(screen.queryByText('React Course')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'อนุมัติรีวิว' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ปฏิเสธรีวิว' })).not.toBeInTheDocument();
+
+    rejectNextPage(new Error('โหลดหน้าถัดไปไม่สำเร็จ'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('โหลดหน้าถัดไปไม่สำเร็จ');
+    expect(screen.queryByText('React Course')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'อนุมัติรีวิว' })).not.toBeInTheDocument();
+    expect(mocks.decide).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'ลองโหลดใหม่' }));
+    expect(await screen.findByText('Vue Course')).toBeInTheDocument();
+    expect(screen.queryByText('React Course')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'อนุมัติรีวิว' })).toBeEnabled();
+  });
 });
