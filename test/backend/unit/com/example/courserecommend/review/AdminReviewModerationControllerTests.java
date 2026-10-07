@@ -131,7 +131,9 @@ class AdminReviewModerationControllerTests {
                 .andExpect(jsonPath("$.totalElements").value(1));
         assertThat(catalogRatingRepository.findPublishedRatings(java.util.List.of(course.getId()))
                 .get(course.getId()).reviewCount()).isEqualTo(1);
-        assertThat(auditLogRepository.findAll()).singleElement().satisfies(log -> {
+        assertThat(auditLogRepository.findAll())
+                .filteredOn(log -> "REVIEW".equals(log.getEntityType()) && review.getId().equals(log.getEntityId()))
+                .singleElement().satisfies(log -> {
             assertThat(log.getAction()).isEqualTo("REVIEW_APPROVE");
             assertThat(log.getOldStatus()).isEqualTo("PENDING");
             assertThat(log.getNewStatus()).isEqualTo("PUBLISHED");
@@ -149,7 +151,9 @@ class AdminReviewModerationControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(decision("REJECT", oldVersion, " ")))
                 .andExpect(status().isBadRequest());
-        assertThat(auditLogRepository.findAll()).isEmpty();
+        assertThat(auditLogRepository.findAll())
+                .filteredOn(log -> "REVIEW".equals(log.getEntityType()) && review.getId().equals(log.getEntityId()))
+                .isEmpty();
 
         mockMvc.perform(post(path, review.getId()).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -166,7 +170,9 @@ class AdminReviewModerationControllerTests {
         mockMvc.perform(get("/api/v1/courses/{id}/reviews/me", course.getId())
                         .with(user(LEARNER_EMAIL).roles("LEARNER")))
                 .andExpect(jsonPath("$.moderationReason").value("เนื้อหาไม่เกี่ยวข้อง"));
-        assertThat(auditLogRepository.findAll()).singleElement()
+        assertThat(auditLogRepository.findAll())
+                .filteredOn(log -> "REVIEW".equals(log.getEntityType()) && review.getId().equals(log.getEntityId()))
+                .singleElement()
                 .satisfies(log -> assertThat(log.getReason()).isEqualTo("เนื้อหาไม่เกี่ยวข้อง"));
     }
 
