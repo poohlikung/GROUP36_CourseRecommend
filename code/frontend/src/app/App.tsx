@@ -22,7 +22,7 @@ export function App() {
           <Route path="/courses" element={<CatalogPage />} />
           <Route path="/match" element={<MatcherPage />} />
           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-          <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+          <Route path="/register" element={<PublicOnlyRoute authenticatedTo="/profile"><RegisterPage /></PublicOnlyRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
           <Route path="/providers" element={<ProtectedRoute><ProviderPage /></ProtectedRoute>} />

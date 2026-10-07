@@ -77,18 +77,19 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   }
 
   useEffect(() => {
+    const controller = new AbortController();
     loadCourses();
-    getCatalogOptions()
+    getCatalogOptions(controller.signal)
       .then(({ platforms: p, categories: c }) => {
+        if (controller.signal.aborted) return;
         setPlatforms(p);
         setCategories(c);
-        if (p.length > 0 && formPlatformId === 0) {
-          setFormPlatformId(p[0].id);
-        }
+        setFormPlatformId((current) => current === 0 && p.length > 0 ? p[0].id : current);
       })
       .catch(() => {
         // Option load failure will be apparent if dropdowns are empty
       });
+    return () => controller.abort();
   }, [provider.id]);
 
   function openCreateModal() {
@@ -401,14 +402,15 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {!loading && !error && courses.length > 0 && (
         <div className="grid gap-5 md:grid-cols-2">
           {courses.map((course) => (
-            <div
+            <article
               key={course.id}
+              aria-labelledby={`managed-course-title-${course.id}`}
               className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">{course.title}</h3>
+                    <h3 id={`managed-course-title-${course.id}`} className="text-base font-bold text-slate-900">{course.title}</h3>
                     <p className="font-mono text-xs text-slate-500">slug: {course.slug}</p>
                   </div>
                   <div>{getCourseStatusBadge(course.status)}</div>
@@ -502,7 +504,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   )}
                 </div>
               )}
-            </div>
+            </article>
           ))}
         </div>
       )}

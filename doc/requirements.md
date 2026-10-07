@@ -7,6 +7,7 @@
 - เลข Task ตรงกับตาราง "งานทีม CourseHub • 30 งาน"
 - สถานะ: ✅ มีหลักฐานใน repo แล้ว · 🟡 ทำแล้วบางส่วน · ⬜ ยังไม่เริ่ม
 - ต้องอัปเดตสถานะทุกครั้งที่งานที่เกี่ยวข้อง merge เข้า `develop`
+- เพิ่มหลักฐาน Task 22 วันที่ 7 ตุลาคม 2026 ใน branch `supawat_6733800622_01` สำหรับ PR เข้า develop: Playwright E2E learner/provider/admin และรายงานผลจริง
 
 ## 1. ข้อกำหนดจากใบงาน
 
@@ -42,6 +43,7 @@
 | 11 | Dockerfile + docker-compose.yml | 07, 25 | `code/backend/Dockerfile`, `docker-compose.yml` | `docker compose up` รัน DB + backend ได้ | 🟡 compose ยังไม่มี frontend |
 | 11 | CI/CD (คะแนนพิเศษ) | 26 | `.github/workflows/ci.yml` | Build → Test ผ่านทุก PR, Deploy อัตโนมัติ | 🟡 มี Build/Test ยังไม่มี Deploy |
 | 14 | Test report | 26 | `doc/test-reports/` | รวมผลทุกคน | 🟡 มีรายงานราย task |
+| 14 | End-to-end learner/provider/admin | 22 | `test/e2e/specs/`, `doc/task22-e2e-guide.md`, `doc/test-reports/task22-e2e.md` | Chromium + backend/PostgreSQL จริง; ทั้ง 10 scenarios ผ่านซ้ำจาก DB ใหม่ ไม่มี skipped/flaky | ✅ มีใน branch supawat; รอ PR เข้า develop |
 | 14 | Slide ใน `doc/slide/` | 28 | — | — | ⬜ |
 
 ## 2. Use case → feature
