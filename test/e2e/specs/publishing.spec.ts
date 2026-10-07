@@ -24,16 +24,16 @@ test('provider registers and publishes a course through admin approval, then lea
   await decideCourseUI(admin.page, course.title, 'อนุมัติเผยแพร่');
   expect((await getCourse(provider, course.id)).status).toBe('PUBLISHED');
   const publicCourse = await searchCourse(learner.page, course.title, true);
-  await learner.page.getByLabel('หมวดหมู่', { exact: true }).selectOption('programming');
-  await learner.page.getByLabel('ภาษา', { exact: true }).selectOption('THAI');
-  await learner.page.getByLabel('ระดับ', { exact: true }).selectOption('BEGINNER');
+  await learner.page.getByRole('combobox', { name: /^หมวดหมู่/ }).selectOption('programming');
+  await learner.page.getByRole('combobox', { name: /^ภาษา/ }).selectOption('THAI');
+  await learner.page.getByRole('combobox', { name: /^ระดับ/ }).selectOption('BEGINNER');
   const filtered = learner.page.waitForResponse((r) => {
     const url = new URL(r.url());
     return url.pathname === '/api/v1/courses' && url.searchParams.get('q') === course.title
       && url.searchParams.get('category') === 'programming' && url.searchParams.get('language') === 'THAI'
       && url.searchParams.get('level') === 'BEGINNER' && url.searchParams.get('paymentType') === 'FREE';
   });
-  await learner.page.getByLabel('รูปแบบราคา', { exact: true }).selectOption('FREE');
+  await learner.page.getByRole('combobox', { name: /^รูปแบบราคา/ }).selectOption('FREE');
   expect((await filtered).status()).toBe(200);
   await expect(publicCourse).toBeVisible();
   await expect(publicCourse.getByRole('link', { name: `ดูคอร์ส ${course.title}`, exact: true })).toHaveAttribute('href', course.url);
@@ -43,7 +43,7 @@ test('provider registers and publishes a course through admin approval, then lea
     return url.pathname === '/api/v1/courses' && url.searchParams.get('q') === course.title
       && url.searchParams.get('language') === 'ENGLISH';
   });
-  await learner.page.getByLabel('ภาษา', { exact: true }).selectOption('ENGLISH');
+  await learner.page.getByRole('combobox', { name: /^ภาษา/ }).selectOption('ENGLISH');
   expect((await excluded).status()).toBe(200);
   await expect(publicCourse).toHaveCount(0);
 });

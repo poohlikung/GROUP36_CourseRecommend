@@ -140,8 +140,10 @@ export async function prepareCourse(provider: Actor, admin: Actor, published = t
     level: 'BEGINNER', language: 'THAI', effortHours: 8,
     paymentType: 'FREE', amount: 0, currency: 'THB',
   }, 201);
-  if (!published) return course;
-  const pending = await jsonMutation<CourseDetail>(provider, 'POST', `/api/v1/courses/${course.id}/submissions`);
+  if (!published) return getCourse(provider, course.id);
+  await jsonMutation<CourseDetail>(provider, 'POST', `/api/v1/courses/${course.id}/submissions`);
+  // Read after commit, like the admin queue: mutation DTOs can precede JPA's version increment.
+  const pending = await getCourse(provider, course.id);
   return jsonMutation(admin, 'POST', `/api/v1/admin/courses/${course.id}/moderation-decisions`, {
     decision: 'APPROVE', expectedVersion: pending.version,
   });
