@@ -30,6 +30,7 @@ interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
+  timeoutMs?: number;
 }
 
 interface CsrfTokenResponse {
@@ -38,7 +39,7 @@ interface CsrfTokenResponse {
 }
 
 async function getCsrfToken(signal?: AbortSignal): Promise<CsrfTokenResponse> {
-  const response = await fetch('/api/v1/auth/csrf', {
+  const response = await timedFetch('/api/v1/auth/csrf', {
     credentials: 'include',
     headers: { Accept: 'application/json' },
     signal,
@@ -48,6 +49,34 @@ async function getCsrfToken(signal?: AbortSignal): Promise<CsrfTokenResponse> {
     throw await toApiError(response);
   }
   return response.json() as Promise<CsrfTokenResponse>;
+}
+
+async function timedFetch(path: string, init: RequestInit, timeoutMs = 30_000): Promise<Response> {
+  const controller = new AbortController();
+  const parent = init.signal;
+  const abort = () => controller.abort(parent?.reason);
+  if (parent?.aborted) abort();
+  else parent?.addEventListener('abort', abort, { once: true });
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const response = await fetch(path, { ...init, signal: controller.signal });
+    // Consume the body within the timeout as well as the response headers.
+    const body = await response.arrayBuffer();
+    return new Response(response.status === 204 || response.status === 205 || response.status === 304 ? null : body, {
+      status: response.status, statusText: response.statusText, headers: response.headers,
+    });
+  } catch (error) {
+    if (parent?.aborted) throw error;
+    throw new ApiError(0, timedOut ? 'REQUEST_TIMEOUT' : 'NETWORK_ERROR',
+      timedOut ? 'ระบบตอบกลับช้า กรุณาลองใหม่' : 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่');
+  } finally {
+    clearTimeout(timer);
+    parent?.removeEventListener('abort', abort);
+  }
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -72,18 +101,13 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     headers.set(csrf.headerName, csrf.token);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(path, {
+  const response = await timedFetch(path, {
       method,
       credentials: 'include',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: options.signal,
-    });
-  } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่');
-  }
+    }, options.timeoutMs);
 
   if (!response.ok) {
     throw await toApiError(response);
