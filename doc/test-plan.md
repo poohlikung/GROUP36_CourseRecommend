@@ -6,7 +6,7 @@
 - ทีมพัฒนา: กลุ่ม 36
 - เอกสาร: Test Plan และ Acceptance Criteria
 - สถานะ: Draft
-- วันที่ปรับปรุงล่าสุด: 6 ตุลาคม 2026 (เพิ่มหลักฐาน Task 19 backend)
+- วันที่ปรับปรุงล่าสุด: 7 ตุลาคม 2026 (เพิ่ม Task 22 learner/provider/admin E2E)
 
 ## วัตถุประสงค์
 
@@ -58,9 +58,9 @@
 - Vitest
 - React Testing Library
 
-### End-to-End Test
+### End-to-End Test (Task 22)
 
-ใช้ทดสอบเส้นทางการใช้งานจริงตั้งแต่หน้าเว็บ ส่งคำขอไปยัง Backend และบันทึกข้อมูลลงฐานข้อมูล
+ใช้ Playwright + Chromium ทดสอบเส้นทางการใช้งานจริงตั้งแต่หน้าเว็บ ส่งคำขอไปยัง Backend และบันทึกข้อมูลลง PostgreSQL ที่แยกใน Docker ดูวิธีรันและขอบเขต browser/API ใน [คู่มือ Task 22](task22-e2e-guide.md) และ [รายงานผลจริง](test-reports/task22-e2e.md)
 
 ตัวอย่างเส้นทางสำคัญ:
 
@@ -69,6 +69,8 @@
 - Admin อนุมัติคอร์ส
 - ผู้เรียนค้นหาและบันทึกคอร์ส
 - ผู้เรียนเขียนรีวิวและ Admin อนุมัติรีวิว
+
+Task 22 ทดสอบครบ 10 scenarios ใน `test/e2e/specs/` รวม guest/session, admin/ownership/CSRF, publish/revision, bookmark ข้ามบัญชี, review moderation และ Matcher ผลสำเร็จต้องไม่มี failed/skipped/flaky test และรันซ้ำจากฐานข้อมูลใหม่ได้ ขั้นตอนผู้เรียนสร้าง/แก้รีวิวใช้ API จริง เพราะยังไม่มี UI ส่วน Admin ตรวจรีวิวและคะแนน Catalog ตรวจผ่าน browser
 
 ## Test Environment
 
@@ -327,10 +329,10 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-10 เห็นเฉพาะ Bookmark ของตนเอง | Bookmark | Backend Integration | `BookmarkIntegrationTests` | มีแล้ว |
 | TC-11 Owner แก้ไข Provider | Provider | Unit, Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-12 ปฏิเสธผู้ไม่มีสิทธิ์แก้ Provider | Provider/Security | Unit, Backend Integration | ยังไม่มี | ยังไม่แล้ว |
-| TC-13 สร้าง Course Draft | Course | Backend Integration, Frontend | ยังไม่มี | ยังไม่แล้ว |
+| TC-13 สร้าง Course Draft | Course | Frontend, E2E | `course-flow.test.tsx`, `test/e2e/specs/publishing.spec.ts` | มีแล้วใน Task 22 |
 | TC-14 Admin อนุมัติ Course | Course/Admin | Backend Integration (H2/PostgreSQL) | `AdminModerationControllerTests`, `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
-| TC-15 ป้องกัน Review ซ้ำ | Review | Backend Integration | ยังไม่มี | ยังไม่แล้ว |
-| TC-16 คะแนนเฉลี่ยจาก Review ที่เผยแพร่ | Review/Catalog | Backend Integration | `CatalogCourseIntegrationTests` ทดสอบคะแนนที่เผยแพร่ แต่ยังไม่ครอบคลุม PENDING และ REJECTED | ยังบ่เฮ็ด |
+| TC-15 ป้องกัน Review ซ้ำ | Review | E2E ผ่าน API จริง | `test/e2e/specs/learner.spec.ts` ตรวจคำขอซ้ำได้ 409 | มีแล้วใน Task 22 |
+| TC-16 คะแนนเฉลี่ยจาก Review ที่เผยแพร่ | Review/Catalog | Backend Integration, E2E | `CatalogCourseIntegrationTests`, `test/e2e/specs/learner.spec.ts` ตรวจ pending/published/แก้กลับ pending/rejected และคะแนน Catalog | มีแล้วใน Task 22 |
 | TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | `ScoringStrategyContractTests`, `CourseMatcherServiceTests`, `CourseMatcherControllerTests`, `CourseMatcherPostgresIntegrationTests`, `matcher-flow.test.tsx` | Backend มีแล้วใน Task 19; Frontend Task 20 ผ่าน flow tests 2 กรณีและ browser smoke test กับ backend/PostgreSQL จริง |
 | TC-18 API ไม่เปิดเผยข้อมูลลับ | Backend/Security | Backend Integration | `AuthControllerIntegrationTests` ตรวจ password hash แล้ว แต่ยังไม่ครอบคลุมทุก API | ยังบ่เฮ็ด |
 | TC-19 Audit atomicity | Course/Provider/Audit | PostgreSQL Integration | `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
