@@ -1,5 +1,6 @@
 package com.example.courserecommend.course;
 
+import com.example.courserecommend.course.event.CourseEventPublisher;
 import com.example.courserecommend.domain.entity.AuditLog;
 import com.example.courserecommend.domain.entity.Course;
 import com.example.courserecommend.domain.entity.Platform;
@@ -48,6 +49,7 @@ class CourseServiceImplMockitoTests {
     @Mock private ReviewRepository reviewRepository;
     @Mock private AuditLogRepository auditLogRepository;
     @Mock private ProviderOwnershipService ownershipService;
+    @Mock private CourseEventPublisher courseEventPublisher;
     @Spy private CourseUrlPolicy courseUrlPolicy = new CourseUrlPolicy();
     @Spy private CourseMapper courseMapper = new CourseMapper();
 

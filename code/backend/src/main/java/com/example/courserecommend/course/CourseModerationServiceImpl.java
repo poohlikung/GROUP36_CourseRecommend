@@ -2,6 +2,8 @@ package com.example.courserecommend.course;
 
 import com.example.courserecommend.course.dto.CourseDetailResponse;
 import com.example.courserecommend.course.dto.CourseModerationRequest;
+import com.example.courserecommend.course.event.CourseEventPublisher;
+import com.example.courserecommend.course.event.CourseStatusChangedEvent;
 import com.example.courserecommend.course.workflow.CourseDecision;
 import com.example.courserecommend.course.workflow.CourseWorkflow;
 import com.example.courserecommend.domain.entity.AuditLog;
@@ -27,6 +29,7 @@ public class CourseModerationServiceImpl implements CourseModerationService {
     private final AuditLogRepository auditLogRepository;
     private final AdminActorResolver adminActorResolver;
     private final CourseMapper courseMapper;
+    private final CourseEventPublisher courseEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,8 +60,10 @@ public class CourseModerationServiceImpl implements CourseModerationService {
         course.setStatus(nextStatus);
         course.setModerationReason(nextStatus == CourseStatus.PUBLISHED ? null : reason);
         courseRepository.saveAndFlush(course);
-        auditLogRepository.save(new AuditLog(actor, "COURSE_" + request.decision().name(),
+        String action = "COURSE_" + request.decision().name();
+        auditLogRepository.save(new AuditLog(actor, action,
                 "COURSE", id, oldStatus.name(), nextStatus.name(), reason));
+        courseEventPublisher.publish(new CourseStatusChangedEvent(id, actor.getId(), action, oldStatus, nextStatus));
         return courseMapper.toDetailResponse(course);
     }
 }

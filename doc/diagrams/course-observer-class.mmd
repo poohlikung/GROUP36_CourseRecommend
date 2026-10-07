@@ -1,0 +1,48 @@
+classDiagram
+    class CourseServiceImpl {
+        +submitCourse(id)
+        +updateCourse(id, request)
+    }
+    class CourseModerationServiceImpl {
+        +decideCourse(id, request)
+    }
+    class AuditLogRepository {
+        <<Repository>>
+        +save(audit)
+    }
+    class CourseStatusChangedEvent {
+        <<immutable record>>
+        Long courseId
+        Long actorUserId
+        String action
+        CourseStatus oldStatus
+        CourseStatus newStatus
+    }
+    class CourseEventPublisher {
+        +publish(event)
+    }
+    class ApplicationEventPublisher {
+        <<Spring interface>>
+        +publishEvent(event)
+    }
+    class CourseMetricsListener {
+        +onStatusChanged(event)
+    }
+    class MetricsConfig {
+        +meterRegistry()
+    }
+    class MeterRegistry {
+        +counter(name, tags)
+    }
+    class SimpleMeterRegistry
+    CourseServiceImpl --> AuditLogRepository : same transaction
+    CourseModerationServiceImpl --> AuditLogRepository : same transaction
+    CourseServiceImpl --> CourseEventPublisher : changed status only
+    CourseModerationServiceImpl --> CourseEventPublisher
+    CourseEventPublisher ..> CourseStatusChangedEvent : publishes
+    CourseEventPublisher --> ApplicationEventPublisher : MANDATORY transaction
+    ApplicationEventPublisher ..> CourseMetricsListener : Spring AFTER_COMMIT callback
+    CourseMetricsListener ..> CourseStatusChangedEvent : observes snapshot
+    CourseMetricsListener --> MeterRegistry : increments bounded counter
+    MetricsConfig ..> SimpleMeterRegistry : fallback if registry absent
+    MeterRegistry <|-- SimpleMeterRegistry
