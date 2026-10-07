@@ -331,7 +331,7 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-14 Admin อนุมัติ Course | Course/Admin | Backend Integration (H2/PostgreSQL) | `AdminModerationControllerTests`, `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
 | TC-15 ป้องกัน Review ซ้ำ | Review | Backend Integration | ยังไม่มี | ยังไม่แล้ว |
 | TC-16 คะแนนเฉลี่ยจาก Review ที่เผยแพร่ | Review/Catalog | Backend Integration | `CatalogCourseIntegrationTests` ทดสอบคะแนนที่เผยแพร่ แต่ยังไม่ครอบคลุม PENDING และ REJECTED | ยังบ่เฮ็ด |
-| TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | `ScoringStrategyContractTests`, `CourseMatcherServiceTests`, `CourseMatcherControllerTests`, `CourseMatcherPostgresIntegrationTests` | Backend มีแล้วใน Task 19 (62 กรณี); Frontend Task 20 ยังไม่ทำ |
+| TC-17 Matcher กรองก่อนจัดอันดับ | Matcher | Unit, Backend Integration, Frontend | `ScoringStrategyContractTests`, `CourseMatcherServiceTests`, `CourseMatcherControllerTests`, `CourseMatcherPostgresIntegrationTests`, `matcher-flow.test.tsx` | Backend มีแล้วใน Task 19; Frontend Task 20 ทดสอบ flow ด้วย API mock ผ่านแล้ว 2 กรณี ยังไม่มี browser E2E กับ backend จริง |
 | TC-18 API ไม่เปิดเผยข้อมูลลับ | Backend/Security | Backend Integration | `AuthControllerIntegrationTests` ตรวจ password hash แล้ว แต่ยังไม่ครอบคลุมทุก API | ยังบ่เฮ็ด |
 | TC-19 Audit atomicity | Course/Provider/Audit | PostgreSQL Integration | `AuditTransactionPostgresIntegrationTests` | มีแล้ว |
 | TC-20 Observer หลัง commit | Course/Observer | Unit, H2/PostgreSQL Integration | `CourseMetricsTransactionIntegrationTests`, `CourseEventPublicationIntegrationTests`, `AuditTransactionPostgresIntegrationTests`, `CourseMetricsListenerTests` | มีแล้ว |
@@ -345,6 +345,8 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 
 ผลจริงของ Task 18: [รายงานทดสอบ concurrency, permission และ rollback](test-reports/task18-concurrency-permissions.md)
 
-ผลจริงของ Task 19: [รายงานทดสอบ](test-reports/task19-matcher.md) และ [คู่มือสาธิต](task19-matcher-guide.md) PostgreSQL tests ตรวจ top 3 จาก 53 คอร์ส, คอร์สหลายหมวดหมู่, รีวิว PENDING/REJECTED ไม่ถูกนับ และจำนวน query คงที่; controller tests ตรวจ cookie/header CSRF จริงและ Swagger ส่วนหน้า quiz/results และ browser E2E อยู่ใน Task 20
+ผลจริงของ Task 19: [รายงานทดสอบ](test-reports/task19-matcher.md) และ [คู่มือสาธิต](task19-matcher-guide.md) PostgreSQL tests ตรวจ top 3 จาก 53 คอร์ส, คอร์สหลายหมวดหมู่, รีวิว PENDING/REJECTED ไม่ถูกนับ และจำนวน query คงที่; controller tests ตรวจ cookie/header CSRF จริงและ Swagger
+
+ผลจริงของ Task 20: [คู่มือหน้าแบบทดสอบ](task20-matcher-ui-guide.md) และ `matcher-flow.test.tsx` ตรวจการส่งคำตอบและแสดงผลผ่าน API mock; browser E2E กับ backend จริงยังไม่ได้ทำ
 
 > หมายเหตุ: ให้ทีมแทนชื่อส่วนงานในคอลัมน์ “ส่วนงานรับผิดชอบ” ด้วยชื่อสมาชิกจริง เมื่อแบ่งเจ้าของ Provider, Course, Review และ Matcher เรียบร้อยแล้ว
