@@ -68,4 +68,21 @@ class FlywayMigrationIntegrationTests {
         assertThat(columnCount).isEqualTo(2);
         assertThat(migrationCount).isEqualTo(1);
     }
+
+    @Test
+    void flywayAddsReviewModerationColumns() {
+        Integer columnCount = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'reviews'
+                  AND column_name IN ('version', 'moderation_reason')
+                """, Integer.class);
+        Integer migrationCount = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM flyway_schema_history
+                WHERE version = '4' AND success = true
+                """, Integer.class);
+
+        assertThat(columnCount).isEqualTo(2);
+        assertThat(migrationCount).isEqualTo(1);
+    }
 }
