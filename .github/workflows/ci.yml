@@ -46,3 +46,36 @@ jobs:
         run: npm test
       - name: Build frontend
         run: npm run build
+
+  e2e:
+    name: Learner provider admin E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            code/frontend/package-lock.json
+            test/e2e/package-lock.json
+      - name: Install frontend and E2E dependencies
+        run: |
+          npm ci --prefix code/frontend
+          npm ci --prefix test/e2e
+      - name: Install Chromium and browser dependencies
+        working-directory: test/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Check E2E types
+        run: npm run typecheck --prefix test/e2e
+      - name: Run E2E against isolated PostgreSQL and backend
+        run: npm run test:e2e --prefix code/frontend
+      - name: Upload E2E reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursehub-e2e-${{ github.run_attempt }}
+          path: test/reports/e2e/
+          retention-days: 7
+          if-no-files-found: warn
