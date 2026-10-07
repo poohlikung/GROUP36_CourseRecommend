@@ -77,18 +77,19 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   }
 
   useEffect(() => {
+    const controller = new AbortController();
     loadCourses();
-    getCatalogOptions()
+    getCatalogOptions(controller.signal)
       .then(({ platforms: p, categories: c }) => {
+        if (controller.signal.aborted) return;
         setPlatforms(p);
         setCategories(c);
-        if (p.length > 0 && formPlatformId === 0) {
-          setFormPlatformId(p[0].id);
-        }
+        setFormPlatformId((current) => current === 0 && p.length > 0 ? p[0].id : current);
       })
       .catch(() => {
         // Option load failure will be apparent if dropdowns are empty
       });
+    return () => controller.abort();
   }, [provider.id]);
 
   function openCreateModal() {
