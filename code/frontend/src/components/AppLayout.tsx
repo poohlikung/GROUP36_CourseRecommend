@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { SystemStatus } from './SystemStatus';
 
 import { getErrorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -7,6 +8,8 @@ import { useAuth } from '../auth/AuthContext';
 export function AppLayout() {
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const unavailable = status === 'loading' || status === 'error';
   const [logoutError, setLogoutError] = useState('');
 
   async function handleLogout() {
@@ -44,13 +47,14 @@ export function AppLayout() {
                 <NavLink to="/register" className="rounded-lg bg-cyan-700 px-4 py-2 text-white hover:bg-cyan-600">สมัครสมาชิก</NavLink>
               </>
             ) : (
-              <span className="text-slate-500">กำลังตรวจสอบบัญชี…</span>
+              <span className="text-slate-500">{status === 'error' ? 'เชื่อมต่อระบบไม่ได้' : 'กำลังเตรียมระบบ…'}</span>
             )}
           </div>
         </nav>
         {logoutError && <p className="mx-auto max-w-6xl px-5 pb-3 text-sm text-red-700" role="alert">{logoutError}</p>}
       </header>
-      <Outlet />
+      {unavailable && <SystemStatus />}
+      {(!unavailable || location.pathname === '/') && <Outlet />}
     </div>
   );
 }
