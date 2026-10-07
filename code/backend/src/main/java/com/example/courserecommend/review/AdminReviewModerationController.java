@@ -2,10 +2,16 @@ package com.example.courserecommend.review;
 
 import com.example.courserecommend.domain.enums.ReviewStatus;
 import com.example.courserecommend.review.dto.AdminReviewPageResponse;
+import com.example.courserecommend.review.dto.AdminReviewResponse;
+import com.example.courserecommend.review.dto.ReviewModerationRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,5 +28,11 @@ public class AdminReviewModerationController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
         return moderationService.listReviews(status, page, size);
+    }
+
+    @PostMapping("/{id}/moderation-decisions")
+    public AdminReviewResponse decideReview(@PathVariable Long id,
+            @Valid @RequestBody ReviewModerationRequest request) {
+        return moderationService.decideReview(id, request);
     }
 }
