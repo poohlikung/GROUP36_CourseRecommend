@@ -29,8 +29,8 @@
 | `course/CourseModerationServiceImpl.java` | ตรวจสถานะคอร์สกับ Provider, เปลี่ยนสถานะ และเขียน AuditLog ใน transaction เดียว |
 | `course/ProviderVerificationService.java` | สัญญาเฉพาะการอ่านคิวและรับรอง/ระงับ/คืนสถานะ Provider |
 | `course/ProviderVerificationServiceImpl.java` | ตรวจการเปลี่ยนสถานะ Provider และเขียน AuditLog ใน transaction เดียว |
-| `course/AdminActorResolver.java` | สัญญาสำหรับหาบัญชี Admin ที่กำลังทำรายการ |
-| `course/SecurityContextAdminActorResolver.java` | ตรวจบทบาท Admin ทั้งจาก session และบัญชีในฐานข้อมูล |
+| `security/AdminActorResolver.java` | สัญญาสำหรับหาบัญชี Admin ที่กำลังทำรายการ; Task 16 ใช้ร่วมกัน |
+| `security/SecurityContextAdminActorResolver.java` | ตรวจบทบาท Admin ทั้งจาก session และบัญชีในฐานข้อมูล |
 | `course/ModerationRules.java` | ตรวจ version และปรับรูปแบบ/บังคับเหตุผลที่ใช้ร่วมกันทั้งสอง service |
 | `repository/ProviderRepository.java` | ดึง Provider ตามสถานะเพื่อแสดงคิวในหน้า Admin |
 | `domain/entity/Course.java` | เก็บเหตุผลล่าสุดที่ Provider ต้องเห็น; `@Version` เดิมใช้กันการเขียนทับข้อมูลเก่า |

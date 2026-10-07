@@ -136,6 +136,21 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 
 `expectedVersion` ต้องตรงกับข้อมูลที่ Admin เปิดดู ถ้ามีคนเปลี่ยนข้อมูลไปแล้วหรือสถานะไม่รองรับคำสั่ง จะได้ `409 Conflict` และต้องโหลดรายการใหม่
 
+### 4.6 รีวิวและการตรวจรีวิว (Task 16)
+
+| Method และ path | สิทธิ์และผลลัพธ์ |
+| --- | --- |
+| `GET /api/v1/courses/{courseId}/reviews?page=0&size=10` | ทุกคนอ่านได้เฉพาะรีวิว `PUBLISHED` ของคอร์สที่เผยแพร่และ Provider ที่ยัง active |
+| `GET /api/v1/courses/{courseId}/reviews/me` | ผู้เขียนอ่านรีวิวของตนรวมสถานะและเหตุผลที่ถูกปฏิเสธ |
+| `POST /api/v1/courses/{courseId}/reviews` | ผู้เรียนสร้างรีวิว `PENDING`; คอร์สละ 1 รีวิวต่อบัญชี |
+| `PUT /api/v1/courses/{courseId}/reviews/me` | ผู้เขียนแก้รีวิวเดิม แล้วกลับเป็น `PENDING` และล้างเหตุผลเดิม |
+| `GET /api/v1/admin/reviews?status=PENDING&page=0&size=10` | Admin ดูคิวแบบแบ่งหน้า; เลือกสถานะ `PENDING`, `PUBLISHED`, `REJECTED` ได้ |
+| `POST /api/v1/admin/reviews/{id}/moderation-decisions` | Admin อนุมัติหรือปฏิเสธรีวิวที่ `PENDING` พร้อมบันทึก AuditLog |
+
+คำขอตัดสิน: `{ "decision": "REJECT", "expectedVersion": 0, "reason": "ข้อความไม่เกี่ยวกับคอร์ส" }` ใช้ `APPROVE` หรือ `REJECT`; การปฏิเสธต้องมีเหตุผลไม่เกิน 1,000 ตัวอักษร และต้องส่ง `expectedVersion` ที่ได้จากคิว หาก version เปลี่ยนหรือรีวิวไม่ได้รอตรวจแล้วจะได้ `409 Conflict` คำขอ POST/PUT ต้องมี CSRF token
+
+คะแนนเฉลี่ยใน catalog คำนวณจากรีวิว `PUBLISHED` เท่านั้น จึงเปลี่ยนตามผลอนุมัติหรือการแก้ไขรีวิว
+
 ## 5. เทสต์ที่ยืนยันสัญญานี้
 
 | ไฟล์ | สิ่งที่ตรวจ |
