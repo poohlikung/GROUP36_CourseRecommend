@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { getErrorMessage } from '../api/client';
@@ -62,7 +62,7 @@ export function MatcherPage() {
 
   useEffect(() => () => requestController.current?.abort(), []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const showingResults = result !== null;
     const stepChanged = previousStep.current !== step;
     const viewChanged = previouslyShowingResults.current !== showingResults;
@@ -70,12 +70,9 @@ export function MatcherPage() {
     previousStep.current = step;
     previouslyShowingResults.current = showingResults;
 
-    if (!stepChanged && !viewChanged) return undefined;
+    if (!stepChanged && !viewChanged) return;
 
-    const frame = window.requestAnimationFrame(() => {
-      (showingResults ? resultsTitleRef.current : quizTitleRef.current)?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
+    (showingResults ? resultsTitleRef.current : quizTitleRef.current)?.focus();
   }, [result, step]);
 
   function checkStep() {
