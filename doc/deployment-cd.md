@@ -4,6 +4,15 @@ CI checks every pull request to `develop` or `main`. After a reviewed PR is merg
 
 The public architecture follows [ADR 0004](decisions/0004-spa-frontend-and-deployment-strategy.md): React/Vite on Vercel Hobby, Spring Boot on Render Free, PostgreSQL on Neon Free. `code/frontend/vercel.json` forwards `/api/*` to the existing Render backend and serves `index.html` for client-side routes. The proxy target is the backend URL currently recorded in `doc/requirements.md`; update it if the Render service URL changes.
 
+## Current deployment (8 October 2026)
+
+- Frontend: [group36-coursehub.vercel.app](https://group36-coursehub.vercel.app/) in the `bosszy27s-projects/group36-coursehub` project. One-time manual production deployment of the frontend tree from `develop` commit `d1e8512`; see [production smoke report](test-reports/task25-deployment.md).
+- Backend: [coursehub-backend-ahz2.onrender.com](https://coursehub-backend-ahz2.onrender.com/api/v1/system/liveness), maintained separately by the team.
+- `group36courserecommend.vercel.app` belongs to a different Vercel project and still serves the older frontend. Updating that exact domain requires access to its project. Do not treat the two domains as the same deployment.
+- GitHub Actions CD is still disabled because `CD_ENABLED` is unset. The latest `develop` run passed all three test jobs but skipped both deploy jobs. The manual release does not establish automatic future deploys.
+
+For another manual frontend release while CD remains disabled, first ensure the local frontend tree matches the reviewed `develop` commit. From the repository root, run `vercel link --yes --project group36-coursehub --scope bosszy27s-projects` and `vercel deploy --prod --yes --scope bosszy27s-projects`. Confirm the alias points to a Ready deployment, then repeat the production smoke checks below. The local `.vercel/` link is ignored by Git.
+
 ## One-time setup
 
 1. In Render, keep the existing Git-connected backend service and create a deploy hook for it. Turn off Render's native automatic deploys so the hook does not cause a duplicate deploy on each merge. The hook must be able to deploy a specified Git commit.

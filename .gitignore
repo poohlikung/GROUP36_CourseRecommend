@@ -71,3 +71,4 @@ test/reports/e2e/
 # OS Files
 .DS_Store
 Thumbs.db
+/.vercel/
