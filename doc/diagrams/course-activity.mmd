@@ -1,0 +1,23 @@
+flowchart TD
+    A([Owner or Editor creates course]) --> B[Check provider membership]
+    B --> C[Validate unique slug, platform, URL host and categories]
+    C --> D[Save DRAFT with price]
+    D --> E[Audit COURSE_CREATED]
+    E --> F{Provider ACTIVE and state allows submit?}
+    F -- No --> X[409 conflict]
+    F -- Yes --> G[Save PENDING, audit and publish status event]
+    G --> H{Admin moderation decision}
+    H -- Provider edits while PENDING --> U[Save updated DRAFT and audit COURSE_UPDATED]
+    H -- APPROVE --> I{Provider ACTIVE?}
+    I -- Yes --> J[PUBLISHED]
+    I -- No --> X
+    H -- REQUEST_REVISION with reason --> K[REVISION_REQUESTED]
+    K --> F
+    J --> L{Next action}
+    L -- Provider edits --> U
+    U --> F
+    L -- Admin SUSPEND with reason --> M[SUSPENDED]
+    M --> N{Admin decision}
+    N -- RESTORE and provider ACTIVE --> J
+    N -- ARCHIVE with reason --> O[ARCHIVED]
+    L -- Admin ARCHIVE with reason --> O

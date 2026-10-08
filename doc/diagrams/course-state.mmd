@@ -1,13 +1,15 @@
 stateDiagram-v2
-    [*] --> DRAFT: create
-    DRAFT --> PENDING: provider submits
-    REVISION_REQUESTED --> PENDING: provider resubmits
-    PENDING --> PUBLISHED: admin approves
-    PENDING --> REVISION_REQUESTED: admin requests revision
-    PUBLISHED --> SUSPENDED: admin suspends
-    SUSPENDED --> PUBLISHED: admin restores
-    PUBLISHED --> ARCHIVED: admin archives
-    SUSPENDED --> ARCHIVED: admin archives
-    PENDING --> DRAFT: provider edits
-    PUBLISHED --> DRAFT: provider edits
-    ARCHIVED --> [*]
+    [*] --> DRAFT: createCourse
+    DRAFT --> DRAFT: edit
+    DRAFT --> PENDING: submit if Provider ACTIVE
+    DRAFT --> [*]: delete if never published and no reviews
+    PENDING --> DRAFT: edit
+    PENDING --> PUBLISHED: APPROVE if Provider ACTIVE
+    PENDING --> REVISION_REQUESTED: REQUEST_REVISION with reason
+    REVISION_REQUESTED --> REVISION_REQUESTED: edit
+    REVISION_REQUESTED --> PENDING: submit if Provider ACTIVE
+    PUBLISHED --> DRAFT: edit
+    PUBLISHED --> SUSPENDED: SUSPEND with reason
+    PUBLISHED --> ARCHIVED: ARCHIVE with reason
+    SUSPENDED --> PUBLISHED: RESTORE if Provider ACTIVE
+    SUSPENDED --> ARCHIVED: ARCHIVE with reason
