@@ -6,8 +6,11 @@
   ต้องมี PostgreSQL client tools (pg_dump, pg_restore, psql) ใน PATH และเวอร์ชันต้องไม่ต่ำกว่าเวอร์ชันของ server
   connection string อ่านจาก environment variable เท่านั้น สคริปต์ไม่พิมพ์ URL หรือรหัสผ่านออกหน้าจอ
 
-    COURSEHUB_SOURCE_DB_URL   ฐานต้นทาง (production บน Neon)  ใช้กับ backup และ verify
+    COURSEHUB_SOURCE_DB_URL   ฐานต้นทาง (production บน Neon)  ใช้กับ backup, restore และ verify
     COURSEHUB_RESTORE_DB_URL  ฐานทดสอบที่ว่างเปล่า            ใช้กับ restore และ verify
+
+  restore จะปฏิเสธปลายทางที่ชื่อ database อยู่ใน -ProtectedDatabase (ค่าเริ่มต้น neondb)
+  หรือชื่อเดียวกับฐานต้นทาง โดยไม่ดู host เพราะ host แบบ direct กับ -pooler ชี้ฐานเดียวกันได้
 
   ขั้นตอนเต็มอยู่ใน doc/task24-backup-restore-guide.md
 
@@ -17,13 +20,16 @@
   .\code\scripts\db\backup-restore.ps1 verify
 #>
 param(
-    [Parameter(Mandatory = $true, Position = 0)]
+    [Parameter(Position = 0)]
     [ValidateSet('backup', 'restore', 'verify')]
     [string]$Action,
 
     [string]$DumpFile,
 
-    [string]$BackupDir = 'backups'
+    [string]$BackupDir = 'backups',
+
+    # ชื่อ database ของ production ที่ห้าม restore ทับ
+    [string[]]$ProtectedDatabase = @('neondb')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -62,10 +68,31 @@ function Get-DbUrl([string]$VariableName) {
     return $value.Trim()
 }
 
-# ชื่อ host/database สำหรับแสดงผลและตรวจความปลอดภัย โดยไม่เปิดเผย user/password
+# ชื่อ host/database สำหรับแสดงผล โดยไม่เปิดเผย user/password
 function Get-DbTarget([string]$Url) {
     $uri = [System.Uri]$Url
     return '{0}/{1}' -f $uri.Host, $uri.AbsolutePath.TrimStart('/')
+}
+
+function Get-DbName([string]$Url) {
+    $uri = [System.Uri]$Url
+    return [System.Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')).ToLowerInvariant()
+}
+
+# กันพลาด restore ทับฐาน production: ตัดสินจากชื่อ database ไม่ใช้ host
+# เพราะ Neon ให้ host แบบ direct (ep-xxx) และ pooler (ep-xxx-pooler) ที่ชี้ฐานเดียวกัน
+function Assert-SafeRestoreTarget([string]$SourceUrl, [string]$TargetUrl, [string[]]$Protected) {
+    $sourceName = Get-DbName $SourceUrl
+    $targetName = Get-DbName $TargetUrl
+    if ([string]::IsNullOrWhiteSpace($targetName)) {
+        throw 'COURSEHUB_RESTORE_DB_URL ต้องระบุชื่อ database ปลายทาง เช่น .../coursehub_restore'
+    }
+    if ($Protected -contains $targetName) {
+        throw "ห้าม restore ลง database '$targetName' เพราะเป็นฐาน production ให้สร้าง database ว่างชื่ออื่น เช่น coursehub_restore"
+    }
+    if ($targetName -eq $sourceName) {
+        throw "COURSEHUB_RESTORE_DB_URL ชี้ไป database '$targetName' ชื่อเดียวกับต้นทาง ห้าม restore ทับฐาน production"
+    }
 }
 
 function Invoke-Psql([string]$Url, [string]$Sql) {
@@ -116,18 +143,17 @@ function Invoke-Backup {
 }
 
 function Invoke-Restore {
-    Require-Tool 'pg_restore'
-    Require-Tool 'psql'
+    # ตรวจปลายทางก่อนทำอย่างอื่น ต้องรู้ฐานต้นทางเสมอเพื่อเทียบว่าไม่ใช่ฐานเดียวกัน
+    $source = Get-DbUrl 'COURSEHUB_SOURCE_DB_URL'
+    $target = Get-DbUrl 'COURSEHUB_RESTORE_DB_URL'
+    Assert-SafeRestoreTarget $source $target $ProtectedDatabase
+
     if ([string]::IsNullOrWhiteSpace($DumpFile) -or -not (Test-Path $DumpFile)) {
         throw 'ระบุไฟล์ backup ด้วย -DumpFile <path ของไฟล์ .dump>'
     }
-    $target = Get-DbUrl 'COURSEHUB_RESTORE_DB_URL'
-    $sourceUrl = [Environment]::GetEnvironmentVariable('COURSEHUB_SOURCE_DB_URL')
+    Require-Tool 'pg_restore'
+    Require-Tool 'psql'
 
-    # กันพลาด restore ทับฐาน production
-    if (-not [string]::IsNullOrWhiteSpace($sourceUrl) -and (Get-DbTarget $sourceUrl) -eq (Get-DbTarget $target)) {
-        throw 'COURSEHUB_RESTORE_DB_URL ชี้ไปฐานเดียวกับต้นทาง ห้าม restore ทับฐาน production'
-    }
     $tableLines = Invoke-Psql $target "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'"
     $tableCount = [int]$tableLines[0]
     if ($tableCount -gt 0) {
@@ -170,6 +196,12 @@ function Invoke-Verify {
         exit 1
     }
     Write-Host "ผ่าน: ข้อมูลครบทั้ง $($report.Count) ตาราง" -ForegroundColor Green
+}
+
+# โหลดแบบ dot-source (. .\backup-restore.ps1) เพื่อทดสอบฟังก์ชัน โดยไม่รันคำสั่ง
+if ($MyInvocation.InvocationName -eq '.') { return }
+if ([string]::IsNullOrWhiteSpace($Action)) {
+    throw 'ระบุคำสั่ง backup, restore หรือ verify'
 }
 
 switch ($Action) {
