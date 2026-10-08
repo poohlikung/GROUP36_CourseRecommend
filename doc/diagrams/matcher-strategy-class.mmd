@@ -1,6 +1,6 @@
 classDiagram
     class CourseMatcherController {
-        +match(CourseMatchRequest) CourseMatchesResponse
+        +match(CourseMatchRequest) ResponseEntity~CourseMatchesResponse~
     }
     class CourseMatcherService {
         -List~ScoringStrategy~ strategies
@@ -36,7 +36,7 @@ classDiagram
         MatchReason reason
     }
     class CourseRepository {
-        +findMatcherCandidates(PUBLISHED, ACTIVE) List~Course~
+        +findMatcherCandidates(CourseStatus, ProviderStatus) List~Course~
     }
     class CategoryRepository {
         +existsBySlug(slug) boolean
@@ -49,12 +49,12 @@ classDiagram
     }
     CourseMatcherController --> CourseMatcherService
     CourseMatcherService --> EligibilityPolicy : hard filters first
-    CourseMatcherService o-- ScoringStrategy : constructor injection
+    CourseMatcherService o-- ScoringStrategy : constructor injection, unique keys, sorted by key
     ScoringStrategy <|.. BudgetFitStrategy
     ScoringStrategy <|.. EffortFitStrategy
     ScoringStrategy <|.. ReviewQualityStrategy
-    ScoringStrategy ..> ScoringInput : accepts same contract
-    ScoringStrategy ..> ScoringResult : finite score 0 to 100
+    ScoringStrategy ..> ScoringInput : valid immutable eligible snapshot
+    ScoringStrategy ..> ScoringResult : key, finite score 0 to 100, reason
     CourseMatcherService --> CourseRepository : fetch public candidates
     CourseMatcherService --> CategoryRepository : validate goal
     CourseMatcherService --> CatalogRatingRepository : grouped published reviews
