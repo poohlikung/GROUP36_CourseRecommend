@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getErrorMessage, getFieldError } from '../../api/client';
 import { FieldError } from '../../components/AuthCard';
 import { getCatalogOptions } from '../catalog/catalogApi';
@@ -18,6 +18,84 @@ import type {
 interface CourseManagementSectionProps {
   provider: MyProvider;
   onBack: () => void;
+}
+
+const focusableElementSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function useDialogFocusTrap(
+  isOpen: boolean,
+  onClose: () => void,
+  canClose: boolean,
+  fallbackRef?: { readonly current: HTMLElement | null },
+) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  const canCloseRef = useRef(canClose);
+
+  useEffect(() => {
+    closeRef.current = onClose;
+    canCloseRef.current = canClose;
+  }, [onClose, canClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const activeDialog: HTMLDivElement = dialog;
+
+    const getFocusableElements = () =>
+      Array.from(activeDialog.querySelectorAll<HTMLElement>(focusableElementSelector));
+    (getFocusableElements()[0] ?? activeDialog).focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        if (!canCloseRef.current) return;
+        event.preventDefault();
+        closeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        activeDialog.focus();
+        return;
+      }
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !activeDialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !activeDialog.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      if (trigger?.isConnected) {
+        trigger.focus();
+      } else {
+        fallbackRef?.current?.focus();
+      }
+    };
+  }, [isOpen]);
+
+  return dialogRef;
 }
 
 export function CourseManagementSection({ provider, onBack }: CourseManagementSectionProps) {
@@ -56,6 +134,9 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   // Submit action state
   const [submittingCourseId, setSubmittingCourseId] = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
+  const sectionHeadingRef = useRef<HTMLHeadingElement>(null);
+  const formDialogRef = useDialogFocusTrap(isModalOpen, () => setIsModalOpen(false), !formSubmitting, sectionHeadingRef);
+  const deleteDialogRef = useDialogFocusTrap(deletingCourse !== null, () => setDeletingCourse(null), !deleteSubmitting, sectionHeadingRef);
 
   const canManage = provider.role === 'OWNER' || provider.role === 'EDITOR';
   const canSubmitForReview = provider.status === 'ACTIVE';
@@ -227,37 +308,37 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     switch (status) {
       case 'DRAFT':
         return (
-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+          <span className="status-chip border-amber-200 bg-amber-50 text-amber-800">
             แบบร่าง (Draft)
           </span>
         );
       case 'PENDING':
         return (
-          <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+          <span className="status-chip border-blue-200 bg-blue-50 text-blue-800">
             รอตรวจสอบ (Pending)
           </span>
         );
       case 'PUBLISHED':
         return (
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+          <span className="status-chip border-emerald-200 bg-emerald-50 text-emerald-800">
             เผยแพร่แล้ว (Published)
           </span>
         );
       case 'REVISION_REQUESTED':
         return (
-          <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-xs font-semibold text-orange-800">
+          <span className="status-chip border-orange-200 bg-orange-50 text-orange-800">
             ต้องแก้ไข (Revision Requested)
           </span>
         );
       case 'SUSPENDED':
         return (
-          <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+          <span className="status-chip border-slate-300 bg-slate-100 text-slate-700">
             ระงับการใช้งาน
           </span>
         );
       case 'ARCHIVED':
         return (
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+          <span className="status-chip border-slate-200 bg-slate-50 text-slate-500">
             เก็บถาวร (Archived)
           </span>
         );
@@ -283,45 +364,50 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   return (
     <div className="space-y-6">
       {/* Header bar */}
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center">
-        <div>
+      <header className="relative overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-8 text-white shadow-[0_28px_70px_rgba(4,20,46,0.22)] sm:px-8">
+        <div className="absolute -right-12 -top-16 h-52 w-52 rounded-full bg-blue-500/30 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div>
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 inline-flex items-center text-xs font-medium text-cyan-700 hover:underline"
+            className="mb-4 inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-bold text-cyan-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-4 focus:ring-white/10"
           >
             ← กลับไปยังรายการ Provider
           </button>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Course workspace</p>
+          <h2 ref={sectionHeadingRef} tabIndex={-1} className="mt-2 text-2xl font-black tracking-[-0.03em] sm:text-3xl">
             คอร์สเรียนของ {provider.name}
           </h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-2 text-sm text-slate-300">
             Provider Slug: <span className="font-mono">{provider.slug}</span>
           </p>
-        </div>
+          </div>
 
-        {canManage && (
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="inline-flex items-center justify-center rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
-          >
-            เพิ่มคอร์สใหม่
-          </button>
-        )}
-      </div>
+          {canManage && (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="primary-button shrink-0 !bg-white !text-blue-700 hover:!bg-blue-50"
+            >
+              <span aria-hidden="true">＋</span>
+              เพิ่มคอร์สใหม่
+            </button>
+          )}
+        </div>
+      </header>
 
       {/* Notifications */}
       {successMessage && (
         <div
           role="status"
-          className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+          className="alert-success flex items-center justify-between gap-4"
         >
           <span>{successMessage}</span>
           <button
             type="button"
             onClick={() => setSuccessMessage('')}
-            className="text-xs font-semibold underline hover:no-underline"
+            className="min-h-10 rounded-xl px-3 text-xs font-bold hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100"
           >
             ปิด
           </button>
@@ -331,7 +417,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {canManage && !canSubmitForReview && (
         <div
           role="note"
-          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"
         >
           Provider นี้ยังไม่ได้รับการอนุมัติ (สถานะไม่ใช่ Active) จึงยังส่งคอร์สเข้าตรวจไม่ได้
           แต่สามารถสร้างและแก้ไขคอร์สดราฟต์ได้ตามปกติ
@@ -341,7 +427,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {actionError && (
         <div
           role="alert"
-          className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+          className="alert-error flex items-center justify-between gap-4"
         >
           <span>{actionError}</span>
           <button
@@ -357,7 +443,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+          className="alert-error"
         >
           {error}{' '}
           <button
@@ -372,16 +458,19 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
       {/* Loading state */}
       {loading && (
-        <div className="py-12 text-center text-sm text-slate-500" role="status">
-          กำลังโหลดรายการคอร์ส...
+        <div className="grid gap-5 md:grid-cols-2" role="status" aria-label="กำลังโหลดรายการคอร์ส">
+          <div className="skeleton-block h-64" />
+          <div className="skeleton-block h-64" />
+          <span className="sr-only">กำลังโหลดรายการคอร์ส...</span>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !error && courses.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <h3 className="text-base font-semibold text-slate-900">ยังไม่มีคอร์สเรียนใน Provider นี้</h3>
-          <p className="mt-2 text-sm text-slate-500">
+        <div className="empty-state py-14">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-cyan-100 text-3xl text-cyan-800" aria-hidden="true">✦</div>
+          <h3 className="mt-5 text-xl font-black text-slate-950">ยังไม่มีคอร์สเรียนใน Provider นี้</h3>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
             เริ่มต้นสร้างคอร์สแรกของคุณเพื่อเสนอต่อผู้เรียนในระบบ
           </p>
           {canManage && (
@@ -389,7 +478,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
               <button
                 type="button"
                 onClick={openCreateModal}
-                className="inline-flex items-center rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600"
+                className="primary-button"
               >
                 เพิ่มคอร์สใหม่
               </button>
@@ -400,44 +489,46 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
       {/* Course List Cards */}
       {!loading && !error && courses.length > 0 && (
-        <div className="grid gap-5 md:grid-cols-2">
+        <section aria-label={`คอร์สเรียนของ ${provider.name}`} className="grid gap-5 md:grid-cols-2">
           {courses.map((course) => (
             <article
               key={course.id}
               aria-labelledby={`managed-course-title-${course.id}`}
-              className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="surface-card depth-card group relative flex min-h-80 flex-col justify-between overflow-hidden p-5 sm:p-6"
             >
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400" aria-hidden="true" />
               <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 id={`managed-course-title-${course.id}`} className="text-base font-bold text-slate-900">{course.title}</h3>
-                    <p className="font-mono text-xs text-slate-500">slug: {course.slug}</p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{course.platformName}</p>
+                    <h3 id={`managed-course-title-${course.id}`} className="mt-1 text-lg font-black tracking-tight text-slate-950">{course.title}</h3>
+                    <p className="mt-1 truncate font-mono text-xs text-slate-500">slug: {course.slug}</p>
                   </div>
                   <div>{getCourseStatusBadge(course.status)}</div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                  <span className="rounded bg-slate-100 px-2 py-0.5 font-medium">
+                <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-slate-700">
+                  <span className="status-chip border-slate-200 bg-slate-50">
                     {course.platformName}
                   </span>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 font-medium">
+                  <span className="status-chip border-slate-200 bg-slate-50">
                     {course.level}
                   </span>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 font-medium">
+                  <span className="status-chip border-slate-200 bg-slate-50">
                     {course.language}
                   </span>
                   {course.effortHours && (
-                    <span className="rounded bg-slate-100 px-2 py-0.5 font-medium">
+                    <span className="status-chip border-slate-200 bg-slate-50">
                       {course.effortHours} ชม.
                     </span>
                   )}
-                  <span className="rounded bg-slate-100 px-2 py-0.5">
+                  <span className="status-chip border-slate-200 bg-slate-50">
                     {formatPrice(course)}
                   </span>
                 </div>
 
                 {course.description && (
-                  <p className="mt-3 line-clamp-2 text-xs text-slate-600">
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
                     {course.description}
                   </p>
                 )}
@@ -453,7 +544,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     {course.categories.map((cat) => (
                       <span
                         key={cat.id}
-                        className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-800"
+                    className="status-chip border-cyan-200 bg-cyan-50 !px-2.5 !py-1 text-[11px] text-cyan-800"
                       >
                         {cat.name}
                       </span>
@@ -464,7 +555,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
               {/* Action buttons */}
               {canManage && (
-                <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
                   {/* Submit button: only for DRAFT or REVISION_REQUESTED */}
                   {(course.status === 'DRAFT' || course.status === 'REVISION_REQUESTED') && (
                     <button
@@ -472,7 +563,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                       onClick={() => handleSubmitForReview(course.id)}
                       disabled={!canSubmitForReview || submittingCourseId === course.id}
                       title={canSubmitForReview ? undefined : 'Provider ต้องได้รับการอนุมัติก่อนส่งคอร์สเข้าตรวจ'}
-                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50"
+                      className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {submittingCourseId === course.id ? 'กำลังส่ง...' : 'ส่งตรวจ'}
                     </button>
@@ -483,7 +574,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     <button
                       type="button"
                       onClick={() => openEditModal(course)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="secondary-button !min-h-10 !px-4 !py-2 text-sm"
                     >
                       แก้ไข
                     </button>
@@ -497,7 +588,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                         setDeletingCourse(course);
                         setDeleteError('');
                       }}
-                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                      className="inline-flex min-h-10 items-center justify-center rounded-2xl px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-4 focus:ring-rose-100"
                     >
                       ลบ
                     </button>
@@ -506,17 +597,18 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
               )}
             </article>
           ))}
-        </div>
+        </section>
       )}
 
       {/* Modal: Create / Edit Course */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-xl font-bold text-slate-900">
+        <div className="modal-backdrop">
+          <div ref={formDialogRef} role="dialog" aria-modal="true" aria-labelledby="course-form-title" tabIndex={-1} className="modal-card max-w-2xl">
+            <p className="eyebrow">Course editor</p>
+            <h3 id="course-form-title" className="mt-2 text-2xl font-black tracking-tight text-slate-950">
               {editingCourse ? 'แก้ไขข้อมูลคอร์สเรียน' : 'เพิ่มคอร์สเรียนใหม่ (Draft)'}
             </h3>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               {editingCourse
                 ? `แก้ไขคอร์ส ${editingCourse.slug}`
                 : `สร้างดราฟต์คอร์สใหม่ภายใต้สถาบัน ${provider.name}`}
@@ -536,7 +628,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
             {formError ? (
               <div
                 role="alert"
-                className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+                className="alert-error mt-4"
               >
                 {getErrorMessage(formError)}
               </div>
@@ -555,7 +647,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="เช่น Complete Web Development Bootcamp"
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="form-input text-sm"
                 />
                 <FieldError message={getFieldError(formError, 'title')} />
               </div>
@@ -574,7 +666,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     value={formSlug}
                     onChange={(e) => setFormSlug(e.target.value)}
                     placeholder="web-dev-bootcamp"
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   />
                   <p className="mt-1 text-[11px] text-slate-500">
                     อักษรพิมพ์เล็ก ตัวเลข และขีดกลาง (-)
@@ -591,7 +683,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     required
                     value={formPlatformId}
                     onChange={(e) => setFormPlatformId(Number(e.target.value))}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   >
                     {platforms.map((plat) => (
                       <option key={plat.id} value={plat.id}>
@@ -615,7 +707,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
                   placeholder="https://example.com/course"
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="form-input text-sm"
                 />
                 <FieldError message={getFieldError(formError, 'url')} />
               </div>
@@ -629,7 +721,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-level"
                     value={formLevel}
                     onChange={(e) => setFormLevel(e.target.value as CourseLevel)}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   >
                     <option value="BEGINNER">BEGINNER (เริ่มต้น)</option>
                     <option value="INTERMEDIATE">INTERMEDIATE (ปานกลาง)</option>
@@ -645,7 +737,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-language"
                     value={formLanguage}
                     onChange={(e) => setFormLanguage(e.target.value as CourseLanguage)}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   >
                     <option value="THAI">ภาษาไทย</option>
                     <option value="ENGLISH">ภาษาอังกฤษ</option>
@@ -664,7 +756,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     value={formEffortHours}
                     onChange={(e) => setFormEffortHours(e.target.value)}
                     placeholder="เช่น 20"
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   />
                   <FieldError message={getFieldError(formError, 'effortHours')} />
                 </div>
@@ -679,7 +771,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-payment-type"
                     value={formPaymentType}
                     onChange={(e) => setFormPaymentType(e.target.value as PaymentType)}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   >
                     <option value="FREE">ฟรี (Free)</option>
                     <option value="ONE_TIME">ชำระครั้งเดียว (One-time)</option>
@@ -699,7 +791,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     disabled={formPaymentType === 'FREE'}
                     value={formPaymentType === 'FREE' ? '0' : formAmount}
                     onChange={(e) => setFormAmount(e.target.value)}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm disabled:bg-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   />
                   <FieldError message={getFieldError(formError, 'amount')} />
                 </div>
@@ -714,7 +806,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     maxLength={10}
                     value={formCurrency}
                     onChange={(e) => setFormCurrency(e.target.value)}
-                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="form-input text-sm"
                   />
                 </div>
               </div>
@@ -731,10 +823,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                         key={cat.id}
                         type="button"
                         onClick={() => toggleCategory(cat.id)}
+                        aria-pressed={isSelected}
                         className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                           isSelected
-                            ? 'bg-cyan-700 text-white'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            ? 'bg-blue-600 text-white shadow-[0_8px_18px_rgba(21,94,239,0.22)]'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
                         }`}
                       >
                         {cat.name}
@@ -754,7 +847,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="รายละเอียดเนื้อหา สิ่งที่จะได้เรียนรู้..."
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="form-input text-sm"
                 />
               </div>
 
@@ -763,14 +856,14 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={formSubmitting}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="secondary-button !min-h-10 !px-4 !py-2 text-sm"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={formSubmitting}
-                  className="rounded-lg bg-cyan-700 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-cyan-600 disabled:opacity-50"
+                  className="primary-button !min-h-10 !px-4 !py-2 text-sm"
                 >
                   {formSubmitting
                     ? 'กำลังบันทึก...'
@@ -786,10 +879,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
 
       {/* Modal: Delete Confirmation */}
       {deletingCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900">ยืนยันการลบคอร์สดราฟต์</h3>
-            <p className="mt-2 text-sm text-slate-600">
+        <div className="modal-backdrop">
+          <div ref={deleteDialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-course-title" tabIndex={-1} className="modal-card max-w-md">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-xl text-rose-700" aria-hidden="true">!</div>
+            <h3 id="delete-course-title" className="mt-4 text-xl font-black tracking-tight text-slate-950">ยืนยันการลบคอร์สดราฟต์</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               คุณแน่ใจหรือไม่ว่าต้องการลบคอร์ส{' '}
               <span className="font-semibold text-slate-900">{deletingCourse.title}</span>?
             </p>
@@ -800,7 +894,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
             {deleteError && (
               <div
                 role="alert"
-                className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+                className="alert-error mt-4"
               >
                 {deleteError}
               </div>
@@ -811,7 +905,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                 type="button"
                 onClick={() => setDeletingCourse(null)}
                 disabled={deleteSubmitting}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="secondary-button !min-h-10 !px-4 !py-2 text-sm"
               >
                 ยกเลิก
               </button>
@@ -819,7 +913,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                 type="button"
                 onClick={handleDeleteConfirm}
                 disabled={deleteSubmitting}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-500 disabled:opacity-50"
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-rose-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-600 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleteSubmitting ? 'กำลังลบ...' : 'ยืนยันการลบ'}
               </button>
