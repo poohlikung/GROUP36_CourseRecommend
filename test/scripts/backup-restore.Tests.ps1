@@ -41,8 +41,16 @@ Test-Case 'restore ไม่ได้ตั้ง COURSEHUB_SOURCE_DB_URL ต้
     $env:COURSEHUB_SOURCE_DB_URL = $null
     $env:COURSEHUB_RESTORE_DB_URL = Url $directHost 'coursehub_restore'
     $shell = (Get-Process -Id $PID).Path
-    $output = & $shell -NoProfile -File $scriptPath restore -DumpFile 'missing.dump' 2>&1 | Out-String
-    $exitCode = $LASTEXITCODE
+    # Windows PowerShell 5.1 จะหยุดทันทีเมื่อโปรแกรมลูกเขียน stderr ถ้า ErrorActionPreference เป็น Stop
+    # จึงเปลี่ยนเป็น Continue ชั่วคราวเพื่อเก็บข้อความ error มาตรวจ
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $shell -NoProfile -ExecutionPolicy Bypass -File $scriptPath restore -DumpFile 'missing.dump' 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
     $env:COURSEHUB_RESTORE_DB_URL = $null
     if ($exitCode -eq 0) { throw 'สคริปต์ควรจบด้วย exit code ที่ไม่ใช่ 0' }
     if ($output -notlike '*COURSEHUB_SOURCE_DB_URL*') { throw "ไม่ได้แจ้งว่าขาด COURSEHUB_SOURCE_DB_URL: $output" }
