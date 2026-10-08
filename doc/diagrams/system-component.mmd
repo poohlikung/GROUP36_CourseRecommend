@@ -1,0 +1,49 @@
+flowchart LR
+    UI[React pages and feature API modules]
+    Client[frontend api/client.ts]
+    Other[Direct API callers]
+    Security[SecurityConfig and ActiveUserFilter]
+    subgraph Controllers[Spring MVC controllers]
+        Auth[AuthController, CurrentUserController and ProfileController]
+        Health[SystemController liveness]
+        Provider[ProviderController and ProviderMemberController]
+        Course[CourseController and AdminModerationController]
+        Catalog[CatalogController and BookmarkController]
+        Review[ReviewController and AdminReviewModerationController]
+        Matcher[CourseMatcherController]
+    end
+    subgraph Services[Implemented services]
+        AuthS[AuthService and ProfileService]
+        ProviderS[ProviderServiceImpl and ProviderMemberService]
+        CourseS[CourseServiceImpl and CourseModerationServiceImpl]
+        VerifyS[ProviderVerificationServiceImpl]
+        CatalogS[CatalogCourseService and CatalogMetadataService]
+        BookmarkS[BookmarkService]
+        ReviewS[ReviewService and ReviewModerationServiceImpl]
+        MatcherS[CourseMatcherService and EligibilityPolicy]
+        Strategy[ScoringStrategy implementations]
+    end
+    subgraph Persistence[Persistence]
+        Jpa[Spring Data repositories]
+        Ratings[CatalogRatingRepository]
+        DB[(PostgreSQL, Flyway V1 to V4)]
+    end
+    Events[CourseEventPublisher to CourseMetricsListener]
+    UI --> Client --> Security
+    Other --> Security
+    Security --> Auth & Health & Provider & Course & Catalog & Review & Matcher
+    Auth --> AuthS --> Jpa
+    Provider --> ProviderS --> Jpa
+    Course --> CourseS --> Jpa
+    Course --> VerifyS --> Jpa
+    Catalog --> CatalogS --> Jpa
+    CatalogS --> Ratings
+    Catalog --> BookmarkS --> Jpa
+    Review --> ReviewS --> Jpa
+    Matcher --> MatcherS --> Jpa
+    MatcherS --> Strategy
+    MatcherS --> Ratings
+    MatcherS --> CatalogS
+    CourseS --> Events
+    Jpa --> DB
+    Ratings --> DB

@@ -1,6 +1,7 @@
 sequenceDiagram
     actor Learner as Guest or learner
     participant Security as Spring Security
+    participant Csrf as AuthController
     participant Controller as CourseMatcherController
     participant Matcher as CourseMatcherService
     participant Categories as CategoryRepository
@@ -10,7 +11,8 @@ sequenceDiagram
     participant Strategies as List of ScoringStrategy
     participant Mapper as CatalogCourseService
     Learner->>Security: GET /api/v1/auth/csrf
-    Security-->>Learner: token and XSRF-TOKEN cookie
+    Security->>Csrf: csrf(CsrfToken)
+    Csrf-->>Learner: token and XSRF-TOKEN cookie
     Learner->>Security: POST /api/v1/course-matches with cookie/header
     alt Missing or invalid CSRF
         Security-->>Learner: 403 CSRF_INVALID
@@ -31,15 +33,19 @@ sequenceDiagram
                     Policy-->>Matcher: independent rejection reasons or eligible
                 end
                 alt No eligible courses
-                    Matcher-->>Controller: matches empty and constraint counts
+                    alt No public candidates
+                        Matcher-->>Controller: empty matches, NO_AVAILABLE_COURSES
+                    else All candidates rejected
+                        Matcher-->>Controller: empty matches, sorted constraint counts
+                    end
                 else Eligible courses
                     Matcher->>Ratings: findPublishedRatings(all eligible IDs)
                     Ratings-->>Matcher: published averages and counts
-                    loop Every eligible course and every strategy
+                    loop Every eligible course and every sorted strategy key
                         Matcher->>Strategies: score(immutable input)
                         Strategies-->>Matcher: score 0-100 and reason
                     end
-                    Note over Matcher: Mean scores, sort raw score DESC / ID ASC, take 3
+                    Note right of Matcher: Mean scores, sort raw score DESC then ID ASC, take 3
                     loop Each winner
                         Matcher->>Mapper: toResponse(loaded course, rating)
                         Mapper-->>Matcher: safe catalog data without further queries

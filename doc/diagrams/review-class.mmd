@@ -1,0 +1,32 @@
+classDiagram
+    class ReviewController {
+        +listPublished(Long, int, int) ReviewPageResponse
+        +findMine(Authentication, Long) ReviewResponse
+        +create(Authentication, Long, ReviewRequest) ResponseEntity
+        +update(Authentication, Long, ReviewRequest) ReviewResponse
+    }
+    class ReviewService {
+        +listPublished(Long, int, int) ReviewPageResponse
+        +findMine(String, Long) ReviewResponse
+        +create(String, Long, ReviewRequest) ReviewResponse
+        +update(String, Long, ReviewRequest) ReviewResponse
+    }
+    class ReviewRepository {
+        <<interface>>
+        +findByCourseIdAndStatus(Long, ReviewStatus, Pageable) Page~Review~
+        +findByCourseIdAndUserId(Long, Long) Optional~Review~
+        +existsByCourseIdAndUserId(Long, Long) boolean
+    }
+    class Review {
+        status ReviewStatus
+        +update(scores, body) void
+        +publish() void
+        +reject(String) void
+    }
+    class CourseRepository
+    class UserRepository
+    ReviewController --> ReviewService
+    ReviewService --> ReviewRepository
+    ReviewService --> CourseRepository
+    ReviewService --> UserRepository
+    ReviewRepository ..> Review

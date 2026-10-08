@@ -1,0 +1,33 @@
+classDiagram
+    class AdminReviewModerationController {
+        +listReviews(ReviewStatus, int, int) AdminReviewPageResponse
+        +decideReview(Long, ReviewModerationRequest) AdminReviewResponse
+    }
+    class ReviewModerationService {
+        <<interface>>
+        +listReviews(ReviewStatus, int, int) AdminReviewPageResponse
+        +decideReview(Long, ReviewModerationRequest) AdminReviewResponse
+    }
+    class ReviewModerationServiceImpl
+    class AdminActorResolver {
+        <<interface>>
+        +requireAdmin() User
+    }
+    class ReviewRepository {
+        <<interface>>
+        +findByStatus(ReviewStatus, Pageable) Page~Review~
+        +findById(Long) Optional~Review~
+    }
+    class AuditLogRepository
+    class Review {
+        status ReviewStatus
+        version Integer
+        +publish() void
+        +reject(String) void
+    }
+    AdminReviewModerationController --> ReviewModerationService
+    ReviewModerationService <|.. ReviewModerationServiceImpl
+    ReviewModerationServiceImpl --> AdminActorResolver
+    ReviewModerationServiceImpl --> ReviewRepository
+    ReviewModerationServiceImpl --> AuditLogRepository
+    ReviewRepository ..> Review

@@ -18,7 +18,7 @@ sequenceDiagram
     alt Business write / audit fails
         Service--xTx: Exception
         Tx->>DB: ROLLBACK
-        Note over Publisher,Registry: No event publication; counter does not increase
+        Note over Publisher,Registry: No event publication, counter does not increase
         Tx--xAPI: Failure
         API-->>Admin: Error response (409 for version conflict)
     else Business writes succeed
@@ -29,7 +29,7 @@ sequenceDiagram
         Service-->>Tx: DTO
         alt Outer transaction rolls back
             Tx->>DB: ROLLBACK
-            Note over Events,Registry: Published event is not observed; counter does not increase
+            Note over Events,Registry: Published event is not observed, counter does not increase
             Tx--xAPI: Outer caller failure
         else Transaction commits
             Tx->>DB: COMMIT
