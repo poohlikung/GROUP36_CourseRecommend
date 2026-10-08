@@ -2,7 +2,9 @@
 
 ขั้นตอน deploy อัตโนมัติ: [doc/deployment-cd.md](doc/deployment-cd.md)
 
-Step 23 Vercel proxy/session และ loading/retry: [คู่มือตั้งค่าและตรวจ HTTPS](doc/step23-vercel-guide.md), [ผลทดสอบ](doc/test-reports/step23-vercel.md) — มีโค้ดและ local/E2E tests; ยังไม่ยืนยัน Frontend deployment บน Vercel จริง
+เว็บที่ deploy แล้ว: [CourseHub บน Vercel](https://group36-coursehub.vercel.app/) (โปรเจกต์ของ BossZY27, deploy จาก `develop` วันที่ 8 ต.ค. 2026) และ [Backend บน Render](https://coursehub-backend-ahz2.onrender.com/swagger-ui.html) ดู [ผลตรวจ production และงานที่ยังค้าง](doc/test-reports/task25-deployment.md)
+
+Step 23 Vercel proxy/session และ loading/retry: [คู่มือตั้งค่าและตรวจ HTTPS](doc/step23-vercel-guide.md), [ผลทดสอบก่อน deploy](doc/test-reports/step23-vercel.md) — ตรวจหน้าเว็บ, nested route และ liveness ผ่าน Vercel แล้ว ([ผลตรวจ production](doc/test-reports/task25-deployment.md)); ยังไม่ได้ทดสอบ login/session cookie บน HTTPS จริง
 
 # รายชื่อสมาชิกกลุ่ม
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
