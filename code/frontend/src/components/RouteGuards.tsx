@@ -35,7 +35,13 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 function PageStatus({ message }: { message: string }) {
   return (
     <main className="grid min-h-[60vh] place-items-center px-6" aria-live="polite">
-      <p className="text-slate-600">{message}</p>
+      <div className="surface-panel flex items-center gap-4 px-6 py-5">
+        <span className="relative flex h-3 w-3" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-60" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-600" />
+        </span>
+        <p className="font-semibold text-slate-600">{message}</p>
+      </div>
     </main>
   );
 }
