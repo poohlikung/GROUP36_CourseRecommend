@@ -52,6 +52,10 @@ test/reports/e2e/
 *.local
 .vercel/
 
+# Database backups (มีอีเมลและ password hash ของผู้ใช้จริง ห้ามคอมมิต)
+backups/
+*.dump
+
 # Environment variables
 .env
 .env.local
