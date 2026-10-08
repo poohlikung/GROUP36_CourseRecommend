@@ -50,6 +50,8 @@ Test-Case 'restore ไม่ได้ตั้ง COURSEHUB_SOURCE_DB_URL ต้
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousPreference
+        # exit code 1 ของโปรแกรมลูกเป็นผลที่คาดไว้ ล้างทิ้งไม่ให้ค้างเป็น exit code ของเทสต์ทั้งชุด
+        $global:LASTEXITCODE = 0
     }
     $env:COURSEHUB_RESTORE_DB_URL = $null
     if ($exitCode -eq 0) { throw 'สคริปต์ควรจบด้วย exit code ที่ไม่ใช่ 0' }
@@ -91,3 +93,4 @@ if ($script:failures -gt 0) {
     exit 1
 }
 Write-Host 'ผ่านทุกเคส'
+exit 0
