@@ -2,6 +2,8 @@
 
 ขั้นตอน deploy อัตโนมัติ: [doc/deployment-cd.md](doc/deployment-cd.md)
 
+Step 23 Vercel proxy/session และ loading/retry: [คู่มือตั้งค่าและตรวจ HTTPS](doc/step23-vercel-guide.md), [ผลทดสอบ](doc/test-reports/step23-vercel.md) — มีโค้ดและ local/E2E tests; ยังไม่ยืนยัน Frontend deployment บน Vercel จริง
+
 # รายชื่อสมาชิกกลุ่ม
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |

@@ -1,4 +1,4 @@
-%% ER Diagram ของ CourseHub ตาม code/backend/src/main/resources/db/migration/V1__init_schema.sql
+%% ER Diagram ของ CourseHub ตาม Flyway V1 schema และ V3/V4 ALTER TABLE
 %% PK = Primary Key, FK = Foreign Key, UK = Unique Key
 %% สร้างภาพ: npx -p @mermaid-js/mermaid-cli mmdc -i er-diagram.mmd -c er-diagram.config.json -o er-diagram.png -b white -s 1.8
 erDiagram
@@ -58,6 +58,7 @@ erDiagram
         INTEGER effort_hours "NULL หรือ > 0"
         VARCHAR(30) status "DRAFT | PENDING | PUBLISHED | REVISION_REQUESTED | SUSPENDED | ARCHIVED"
         INTEGER version "optimistic lock"
+        VARCHAR(1000) moderation_reason "V3"
         TIMESTAMPTZ created_at
         TIMESTAMPTZ updated_at
     }
@@ -91,6 +92,8 @@ erDiagram
         INTEGER difficulty_score "1-5"
         TEXT body
         VARCHAR(20) status "PENDING | PUBLISHED | REJECTED"
+        INTEGER version "V4 optimistic lock"
+        VARCHAR(1000) moderation_reason "V4"
         TIMESTAMPTZ created_at
         TIMESTAMPTZ updated_at
     }
@@ -109,10 +112,11 @@ erDiagram
         BIGINT entity_id
         VARCHAR(30) old_status
         VARCHAR(30) new_status
+        VARCHAR(1000) reason "V3"
         TIMESTAMPTZ created_at
     }
 
-    users ||--|| user_profiles : "has (1:1)"
+    users ||--o| user_profiles : "has (0..1 profile)"
     users ||--o{ provider_members : "joins"
     providers ||--o{ provider_members : "includes"
     providers ||--o{ courses : "offers"

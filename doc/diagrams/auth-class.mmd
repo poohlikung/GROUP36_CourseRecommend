@@ -1,0 +1,39 @@
+classDiagram
+    class AuthController {
+        +register(RegisterRequest, HttpServletRequest, HttpServletResponse) ResponseEntity
+        +csrf(CsrfToken) CsrfTokenResponse
+        +login(LoginRequest, HttpServletRequest, HttpServletResponse) AuthUserResponse
+        +logout(HttpServletRequest, HttpServletResponse, Authentication) ResponseEntity
+    }
+    class CurrentUserController {
+        +currentUser(Authentication) AuthUserResponse
+    }
+    class AuthService {
+        +register(RegisterRequest) AuthUserResponse
+        +loadUserDetails(String) UserDetails
+        +getCurrentUser(String) AuthUserResponse
+        +isActiveUser(String) boolean
+        +normalizeEmail(String) String
+    }
+    class UserRepository {
+        <<interface>>
+        +findByEmail(String) Optional~User~
+        +existsByEmail(String) boolean
+    }
+    class ActiveUserFilter
+    class SecurityConfig
+    class User {
+        +attachProfile(UserProfile) void
+        +suspend() void
+    }
+    class UserProfile
+    AuthController --> AuthService
+    AuthController --> AuthenticationManager
+    AuthController --> SessionAuthenticationStrategy
+    AuthController --> SecurityContextRepository
+    CurrentUserController --> AuthService
+    AuthService --> UserRepository
+    AuthService --> PasswordEncoder
+    ActiveUserFilter --> AuthService
+    SecurityConfig ..> AuthService : UserDetailsService adapter
+    User "1" *-- "1" UserProfile

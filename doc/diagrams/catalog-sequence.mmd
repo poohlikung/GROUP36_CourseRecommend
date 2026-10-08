@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor Visitor
+    participant API as CatalogController
+    participant Service as CatalogCourseService
+    participant Courses as CourseRepository
+    participant Ratings as CatalogRatingRepository
+    Visitor->>API: GET /api/v1/courses with filters, page, size, sort
+    API->>Service: getPublishedCourses(...)
+    Service->>Service: validate price range and resolve sort
+    Service->>Courses: findCatalogCourseIds(PUBLISHED, ACTIVE, filters, page)
+    Courses-->>Service: Page of IDs
+    alt Page is empty
+        Service-->>API: Empty CatalogPageResponse
+    else IDs found
+        Service->>Courses: findAllWithDetailsByIdIn(ids)
+        Service->>Ratings: findPublishedRatings(ids)
+        Note right of Ratings: Aggregate only PUBLISHED reviews
+        Service->>Service: map in page order and hide unsafe external URLs
+        Service-->>API: CatalogPageResponse
+    end
+    API-->>Visitor: 200 page of published courses from ACTIVE providers

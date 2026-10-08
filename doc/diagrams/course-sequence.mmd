@@ -1,0 +1,36 @@
+sequenceDiagram
+    actor Editor as Owner or Editor
+    participant API as CourseController
+    participant Service as CourseServiceImpl
+    participant Ownership as ProviderOwnershipService
+    participant Platforms as PlatformRepository
+    participant Policy as CourseUrlPolicy
+    participant Categories as CategoryRepository
+    participant Courses as CourseRepository
+    participant Workflow as CourseWorkflow
+    participant Audit as AuditLogRepository
+    participant Events as CourseEventPublisher
+    Editor->>API: POST /api/v1/providers/{providerId}/courses
+    API->>Service: createCourse(providerId, request)
+    Service->>Ownership: requireEditorOrOwner(providerId)
+    Service->>Platforms: findById(platformId)
+    Service->>Policy: requireAllowedUrl(url, platform)
+    Service->>Categories: findAllById(categoryIds)
+    Service->>Courses: save(DRAFT Course with price and categories)
+    Service->>Audit: save(COURSE_CREATED)
+    Service-->>Editor: 201 CourseDetailResponse
+    opt Submit course
+        Editor->>API: POST /api/v1/courses/{id}/submissions
+        API->>Service: submitCourse(id)
+        Service->>Ownership: requireCourseEditorOrOwner(id)
+        Service->>Workflow: forStatus(current).submit()
+        Note right of Service: Only DRAFT or REVISION_REQUESTED and Provider must be ACTIVE
+        alt Invalid state or provider not ACTIVE
+            Service-->>Editor: 409 conflict
+        else Submission allowed
+            Service->>Courses: save(PENDING Course)
+            Service->>Audit: save(COURSE_SUBMITTED)
+            Service->>Events: publish(CourseStatusChangedEvent)
+            Service-->>Editor: 200 CourseDetailResponse
+        end
+    end

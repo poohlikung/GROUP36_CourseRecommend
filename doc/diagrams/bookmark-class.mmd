@@ -1,0 +1,32 @@
+classDiagram
+    class BookmarkController {
+        +list(Authentication, int, int) CatalogPageResponse
+        +savedIds(Authentication, List~Long~) List~Long~
+        +save(Authentication, Long) ResponseEntity
+        +remove(Authentication, Long) ResponseEntity
+    }
+    class BookmarkService {
+        +save(String, Long) void
+        +remove(String, Long) void
+        +savedIds(String, List~Long~) List~Long~
+        +list(String, int, int) CatalogPageResponse
+    }
+    class SavedCourseRepository {
+        <<interface>>
+        +insertIfAbsent(Long, Long) void
+        +deleteBookmark(Long, Long) void
+        +findSavedIds(Long, List~Long~) List~Long~
+        +findVisibleCourseIds(Long, CourseStatus, ProviderStatus, Pageable) Page~Long~
+    }
+    class CatalogCourseService
+    class CourseRepository
+    class UserRepository
+    class SavedCourse {
+        id SavedCourseId
+    }
+    BookmarkController --> BookmarkService
+    BookmarkService --> SavedCourseRepository
+    BookmarkService --> CourseRepository
+    BookmarkService --> UserRepository
+    BookmarkService --> CatalogCourseService
+    SavedCourseRepository ..> SavedCourse

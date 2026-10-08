@@ -45,3 +45,7 @@ describe('bookmark action', () => {
     await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith(12));
   });
 });
+
+vi.mock('../../code/frontend/src/api/system', () => ({
+  systemApi: { liveness: vi.fn().mockResolvedValue({ status: 'UP' }) },
+}));

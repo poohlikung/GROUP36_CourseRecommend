@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { getErrorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { BrandMark } from './BrandMark';
+import { SystemStatus } from './SystemStatus';
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return `nav-link ${isActive ? 'nav-link-active' : ''}`;
@@ -13,6 +14,7 @@ export function AppLayout() {
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const unavailable = status === 'loading' || status === 'error';
   const [logoutError, setLogoutError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -111,7 +113,9 @@ export function AppLayout() {
                   <NavLink to="/register" className="primary-button min-h-10 rounded-xl px-4 py-2 text-sm">สมัครสมาชิก</NavLink>
                 </>
               ) : (
-                <span className="px-3 py-2 text-sm font-medium text-slate-600">กำลังตรวจสอบบัญชี…</span>
+                <span className="px-3 py-2 text-sm font-medium text-slate-600">
+                  {status === 'error' ? 'เชื่อมต่อระบบไม่ได้' : 'กำลังเตรียมระบบ…'}
+                </span>
               )}
             </div>
           </div>
@@ -119,7 +123,8 @@ export function AppLayout() {
         {logoutError && <p className="shell-container pb-3 text-sm font-medium text-red-700" role="alert">{logoutError}</p>}
       </header>
       <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
-        <Outlet />
+        {unavailable && <SystemStatus />}
+        {(!unavailable || location.pathname === '/') && <Outlet />}
       </div>
       <footer className="ink-surface border-t border-slate-200/80 bg-[color:var(--ink)] text-slate-300">
         <div className="shell-container flex flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">

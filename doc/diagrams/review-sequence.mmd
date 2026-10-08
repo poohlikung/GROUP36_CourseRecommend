@@ -1,0 +1,39 @@
+sequenceDiagram
+    actor Learner
+    participant API as ReviewController
+    participant Service as ReviewService
+    participant Courses as CourseRepository
+    participant Users as UserRepository
+    participant Reviews as ReviewRepository
+    Learner->>API: POST /api/v1/courses/{courseId}/reviews
+    API->>Service: create(email, courseId, request)
+    Service->>Courses: findById(courseId)
+    alt Course not PUBLISHED or provider not ACTIVE
+        Service-->>Learner: 404 not found
+    else Visible course
+        Service->>Users: findByEmail(email)
+        Service->>Reviews: existsByCourseIdAndUserId(courseId, userId)
+        alt Already reviewed
+            Service-->>Learner: 409 conflict
+        else First review
+            Service->>Reviews: saveAndFlush(PENDING Review)
+            Service-->>Learner: 201 Location /reviews/me
+        end
+    end
+    opt Public review list
+        Learner->>API: GET /api/v1/courses/{courseId}/reviews
+        API->>Service: listPublished(courseId, page, size)
+        Service->>Courses: findById(courseId) and require visible
+        Service->>Reviews: findByCourseIdAndStatus(courseId, PUBLISHED, pageable)
+        Service-->>Learner: 200 published reviews only
+    end
+    opt Author updates own review
+        Learner->>API: PUT /api/v1/courses/{courseId}/reviews/me
+        API->>Service: update(email, courseId, request)
+        Service->>Courses: findById(courseId) and require visible
+        Service->>Reviews: findByCourseIdAndUserId(courseId, userId)
+        Note right of Service: Review.update resets status to PENDING and clears moderation reason
+        Service->>Reviews: saveAndFlush(review)
+        Service-->>Learner: 200 ReviewResponse
+    end
+    Note over Learner,Service: GET /reviews/me returns own PENDING or REJECTED review while course remains visible

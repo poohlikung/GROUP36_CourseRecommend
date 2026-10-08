@@ -29,7 +29,7 @@ export interface UpdateProfileInput {
 }
 
 export const authApi = {
-  currentUser: (signal?: AbortSignal) => apiRequest<AuthUser>('/api/v1/me', { signal }),
+  currentUser: (signal?: AbortSignal, timeoutMs?: number) => apiRequest<AuthUser>('/api/v1/me', { signal, timeoutMs }),
   login: (input: LoginInput) => apiRequest<AuthUser>('/api/v1/auth/login', { method: 'POST', body: input }),
   register: (input: RegisterInput) => apiRequest<AuthUser>('/api/v1/auth/register', { method: 'POST', body: input }),
   logout: () => apiRequest<void>('/api/v1/auth/logout', { method: 'POST' }),

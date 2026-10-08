@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor Admin
+    participant Security as Spring Security ROLE_ADMIN
+    participant API as AdminModerationController
+    participant Service as CourseModerationServiceImpl
+    participant AdminResolver as AdminActorResolver
+    participant Courses as CourseRepository
+    participant Workflow as CourseWorkflow
+    participant Rules as ModerationRules
+    participant Audit as AuditLogRepository
+    participant Events as CourseEventPublisher
+    Admin->>Security: POST /api/v1/admin/courses/{id}/moderation-decisions
+    Security->>API: decideCourse(id, request)
+    API->>Service: decideCourse(id, request)
+    Service->>AdminResolver: requireAdmin()
+    Service->>Courses: findById(id)
+    Service->>Rules: requireCurrentVersion(current, expected)
+    Service->>Workflow: forStatus(oldStatus).moderate(decision)
+    Service->>Rules: normalizedReason(reason)
+    alt Invalid version or transition or required reason absent
+        Service-->>Admin: 409 or 400
+    else Valid decision
+        Note right of Service: Publishing requires ACTIVE Provider
+        Service->>Courses: saveAndFlush(updated status and reason)
+        Service->>Audit: save(COURSE decision audit)
+        Service->>Events: publish(CourseStatusChangedEvent)
+        Note right of Events: Listener updates metrics after commit
+        Service-->>API: CourseDetailResponse
+        API-->>Admin: 200 CourseDetailResponse
+    end

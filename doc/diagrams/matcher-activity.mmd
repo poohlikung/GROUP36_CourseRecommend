@@ -1,0 +1,18 @@
+flowchart TD
+    A([Guest or learner sends POST course-matches with CSRF]) --> B[Validate CourseMatchRequest]
+    B --> C{categorySlug exists?}
+    C -- No --> E[400 request error]
+    C -- Yes --> D[Load PUBLISHED courses from ACTIVE providers]
+    D --> F{Any candidates?}
+    F -- No --> N[Empty matches with NO_AVAILABLE_COURSES constraint]
+    F -- Yes --> G[EligibilityPolicy checks category, level, language and known THB price within budget]
+    G --> H{Any eligible?}
+    H -- No --> I[Empty matches with sorted rejection counts]
+    H -- Yes --> J[Load PUBLISHED review averages for eligible IDs]
+    J --> K[Build validated ScoringInput per eligible course]
+    K --> L[Run budget, effort and reviewQuality ScoringStrategy]
+    L --> M[Mean raw scores, sort descending then ID ascending, take 3]
+    M --> O[Map safe catalog response, round score and breakdown to 2 decimals]
+    I --> P([200 CourseMatchesResponse])
+    N --> P
+    O --> P

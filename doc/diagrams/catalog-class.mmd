@@ -1,0 +1,31 @@
+classDiagram
+    class CatalogController {
+        +getCourses(filters, page, size, sort) ResponseEntity
+        +getCategories() ResponseEntity
+        +getPlatforms() ResponseEntity
+    }
+    class CatalogCourseService {
+        +getPublishedCourses(filters, page, size, sort) CatalogPageResponse
+        +mapCoursesInPageOrder(List~Long~) List~CatalogCourseResponse~
+        +toResponse(Course, RatingSummary) CatalogCourseResponse
+    }
+    class CatalogMetadataService {
+        +getCategories() List~CatalogOptionResponse~
+        +getPlatforms() List~CatalogOptionResponse~
+    }
+    class CourseRepository {
+        <<interface>>
+        +findCatalogCourseIds(filters, Pageable) Page~Long~
+        +findAllWithDetailsByIdIn(List~Long~) List~Course~
+    }
+    class CatalogRatingRepository {
+        +findPublishedRatings(List~Long~) Map
+    }
+    class CategoryRepository
+    class PlatformRepository
+    CatalogController --> CatalogCourseService
+    CatalogController --> CatalogMetadataService
+    CatalogCourseService --> CourseRepository
+    CatalogCourseService --> CatalogRatingRepository
+    CatalogMetadataService --> CategoryRepository
+    CatalogMetadataService --> PlatformRepository
