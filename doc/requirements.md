@@ -30,7 +30,7 @@
 | 6 | FK, index, cascade/fetch มีเหตุผล | 06 | FK/CHECK/index ใน V1, `@ManyToOne(fetch = LAZY)` | ลบ Provider ที่มีคอร์สไม่ได้, ลบคอร์สแล้ว price/category link หาย | ✅ `CourseSchemaPostgresIntegrationTests` |
 | 6 | ER Diagram + Data Dictionary | 06, 21 | `doc/diagrams/er-diagram.mmd`, `er-diagram.png`, `doc/data-dictionary.md` ตรวจ 12 ตารางกับ Flyway V1–V4 | ตรงกับ migration ทุกตาราง/คอลัมน์ | ✅ เอกสารเทียบ SQL และ render แล้ว; PostgreSQL integration ยังต้องมี Docker |
 | 6 | Migration script | 06 | Flyway `V1__init_schema.sql` – `V4__review_moderation.sql` | migrate ฐานข้อมูลว่างได้ | ✅ |
-| 6, 11 | Backup/restore + migration rehearsal | 24 | `code/scripts/db/backup-restore.ps1`, `BackupRestoreRehearsalIntegrationTests`, `doc/task24-backup-restore-guide.md` | restore ลงฐานว่างแล้วจำนวนแถว, Flyway history และ sequence ตรงกับต้นทาง | 🟡 rehearsal อัตโนมัติผ่านใน CI; รอหลักฐาน backup จาก Neon จริงใน `doc/test-reports/task24-backup-restore.md` |
+| 6, 11 | Backup/restore + migration rehearsal | 24 | `code/scripts/db/backup-restore.ps1`, `BackupRestoreRehearsalIntegrationTests`, `doc/task24-backup-restore-guide.md` | restore ลงฐานว่างแล้วจำนวนแถว, Flyway history และ sequence ตรงกับต้นทาง | ✅ rehearsal อัตโนมัติผ่านใน CI และ backup/restore จาก Neon จริงผ่าน 13/13 ตาราง (`doc/test-reports/task24-backup-restore.md`) |
 | 7 | CRUD ≥ 2 resource | 09, 11 | Provider CRUD, Course CRUD | สร้าง/อ่าน/แก้/ลบสำเร็จ และลบที่ต้องห้ามได้ 409 | ✅ |
 | 7 | HTTP status ถูกต้อง (200/201/204/400/404/409/500) | 08, 09, 11 | `GlobalExceptionHandler`, `doc/api-contract.md` | MockMvc tests ตรวจ status | ✅ |
 | 7 | Resource-based endpoint | 03 | `/api/v1/providers/{providerId}/courses` | ตาม `doc/api-contract.md` | ✅ |

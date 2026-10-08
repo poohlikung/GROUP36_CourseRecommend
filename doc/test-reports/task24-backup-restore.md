@@ -61,21 +61,54 @@
 
 ## 3. Backup/restore กับ Neon จริง
 
-ทำตามคู่มือข้อ 4–5 จากเครื่อง Windows ของผู้รับผิดชอบ (connection string อยู่ใน environment variable เท่านั้น)
+รันเมื่อ 8 ตุลาคม 2026 เวลาประมาณ 22:40 น. (GMT+7) จากเครื่อง Windows ของผู้รับผิดชอบด้วย PowerShell และ PostgreSQL client tools ตามคู่มือข้อ 3–5 connection string อยู่ใน environment variable เท่านั้น
 
 | รายการ | ผล |
 | --- | --- |
-| Neon PostgreSQL version / client version | Neon 18.6 / client _รอผล_ |
-| ไฟล์ backup และ SHA256 | _รอผล_ |
-| `restore` ลง `coursehub_restore` | _รอผล_ |
-| `verify` ทุกตาราง Match และ Flyway history ตรงกัน | _รอผล_ |
-| ภาพหน้าจอหลักฐาน (ปิดรหัสผ่านแล้ว) | _รอผล_ |
+| เวอร์ชัน | Neon PostgreSQL 18.6, `pg_dump` 18.4 (สคริปต์แสดง `server 18 / client 18`) |
+| ต้นทาง → ปลายทาง | database `neondb` → database ว่าง `coursehub_restore` ใน branch `production` ของโปรเจกต์ `coursehub-db` |
+| `backup` | สำเร็จ: `coursehub-20261008-224142.dump` ขนาด 42,359 bytes |
+| SHA256 ของไฟล์ backup | `FD1264161BC15BCD9293918FB492EE12CBF27AE9D586D0597CAA86B04D057E64` |
+| `restore` | สำเร็จ (`pg_restore --exit-on-error` ไม่มี error) |
+| `verify` | ผ่าน: 13 ตาราง `Match = True`, `Flyway history ตรงกัน: True` |
+
+ผลนับแถวจาก `verify`:
+
+| Table | neondb | coursehub_restore | Match |
+| --- | ---: | ---: | :---: |
+| audit_logs | 6 | 6 | True |
+| categories | 6 | 6 | True |
+| course_categories | 8 | 8 | True |
+| course_prices | 6 | 6 | True |
+| courses | 6 | 6 | True |
+| flyway_schema_history | 4 | 4 | True |
+| platforms | 5 | 5 | True |
+| provider_members | 1 | 1 | True |
+| providers | 5 | 5 | True |
+| reviews | 3 | 3 | True |
+| saved_courses | 3 | 3 | True |
+| user_profiles | 6 | 6 | True |
+| users | 6 | 6 | True |
+
+ภาพหน้าจอผล `backup` และ `verify` เก็บไว้กับผู้รับผิดชอบ ไม่ได้คอมมิตเข้า repo เพราะมีชื่อ host ของฐาน production (ไม่มีรหัสผ่านในภาพ) ไฟล์ `.dump` เก็บไว้ในเครื่องผู้รับผิดชอบเท่านั้นตามข้อ 2 ของคู่มือ
 
 ## 4. ข้อมูลคงอยู่หลัง restart backend บน Render
 
 | รายการ | ผล |
 | --- | --- |
-| `totalElements` ของ `GET /api/v1/courses` ก่อน restart | _รอผล_ |
-| Restart service ใน Render แล้วสถานะกลับเป็น Live | _รอผล_ |
-| `totalElements` หลัง restart เท่าเดิม | _รอผล_ |
-| Log ของ Flyway หลัง restart ไม่มี migration ใหม่ | _รอผล_ |
+| `GET /api/v1/courses?size=48` ก่อน restart | `totalElements: 6`, `totalPages: 1` |
+| Render → Manual Deploy → Restart service | "Your server has successfully restarted" และสถานะกลับเป็น Live |
+| `GET /api/v1/courses?size=48` หลัง restart | HTTP 200, `totalElements: 6` เท่าเดิม |
+
+ข้อมูลไม่หายเพราะเก็บใน Neon ไม่ได้อยู่ใน filesystem ของ Render
+
+หมายเหตุ: deploy ที่ Live บน Render ณ วันทดสอบคือ commit `8e1ac30` (merge PR #24) เพราะ service ตั้ง Root Directory เป็น `code/backend` Render จึง deploy ใหม่เฉพาะเมื่อไฟล์ในโฟลเดอร์นั้นเปลี่ยน และ PR #25–#30 ไม่ได้แก้ `code/backend` (ตรวจด้วย `git diff 8e1ac30 d1e8512 -- code/backend` แล้วไม่มีความต่าง) backend ที่ทดสอบจึงเป็นโค้ดเดียวกับ `develop` ล่าสุด
+
+## 5. สรุป
+
+| เกณฑ์ Task 24 | ผล |
+| --- | :---: |
+| restore สำเร็จ | ผ่าน (ทั้งเทสต์อัตโนมัติและ Neon จริง) |
+| ตรวจข้อมูลคงอยู่ครบ | ผ่าน (13/13 ตาราง, Flyway history ตรงกัน, restart แล้วข้อมูลเท่าเดิม) |
+| migration rehearsal | ผ่าน (Flyway validate ได้และไม่ migrate ซ้ำบนฐานที่ restore, sequence ใช้งานต่อได้) |
+| มีหลักฐาน | รายงานนี้ + ภาพหน้าจอที่ผู้รับผิดชอบเก็บไว้ |

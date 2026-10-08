@@ -73,7 +73,7 @@ powershell -ExecutionPolicy Bypass -File .\code\scripts\db\backup-restore.ps1 ve
 
 ## 6. ตรวจว่าข้อมูลไม่หายเมื่อ backend restart
 
-1. เรียก `https://coursehub-backend-ahz2.onrender.com/api/v1/courses?size=100` แล้วจด `totalElements`
+1. เรียก `https://coursehub-backend-ahz2.onrender.com/api/v1/courses?size=48` (API จำกัด `size` ไม่เกิน 48) แล้วจด `totalElements`
 2. Render Dashboard → `coursehub-backend` → **Manual Deploy → Restart service** (หรือ Deploy latest commit)
 3. รอสถานะ Live แล้วเรียก URL เดิมอีกครั้ง `totalElements` ต้องเท่าเดิม และ Log ของ Render ต้องไม่มีการ migrate ซ้ำ (Flyway แจ้งว่า schema up to date)
 
