@@ -109,13 +109,11 @@ select {
   }
 
   .depth-card {
-    transform-style: preserve-3d;
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease, border-color 300ms ease;
+    transition: box-shadow 300ms ease, border-color 300ms ease;
   }
 
   .depth-card:hover,
   .depth-card:focus-within {
-    transform: perspective(1000px) translateY(-6px) rotateX(1.5deg) rotateY(-1.5deg);
     border-color: rgba(21, 94, 239, 0.24);
     box-shadow: var(--shadow-lift);
   }
