@@ -27,6 +27,11 @@ const course = {
   externalUrl: 'https://example.com/course',
 };
 
+function catalogPage(courses: unknown[]) {
+  return jsonResponse({ content: courses, page: 0, size: 48, totalElements: courses.length,
+    totalPages: courses.length ? 1 : 0, first: true, last: true });
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -48,6 +53,7 @@ describe('course matcher quiz', () => {
   it('submits answers with CSRF and shows course reasons', async () => {
     const fetchMock = vi.fn(async (path: string) => {
       if (path === '/api/v1/catalog/categories') return jsonResponse([{ id: 1, name: 'โปรแกรมมิง', slug: 'programming' }]);
+      if (path.startsWith('/api/v1/courses?category=programming')) return catalogPage([course]);
       if (path === '/api/v1/auth/csrf') return jsonResponse({ headerName: 'X-XSRF-TOKEN', token: 'csrf-test' });
       if (path === '/api/v1/course-matches') return jsonResponse({
         matches: [{ course, score: 83.33, scoreBreakdown: [], reasons: [{ code: 'BUDGET', message: 'คอร์สนี้เรียนฟรี' }] }],
@@ -76,6 +82,9 @@ describe('course matcher quiz', () => {
   it('validates hours before sending and explains empty results', async () => {
     const fetchMock = vi.fn(async (path: string) => {
       if (path === '/api/v1/catalog/categories') return jsonResponse([{ id: 1, name: 'โปรแกรมมิง', slug: 'programming' }]);
+      if (path.startsWith('/api/v1/courses?category=programming')) return catalogPage([
+        { ...course, price: { paymentType: 'ONE_TIME', amount: 1500, currency: 'THB' } },
+      ]);
       if (path === '/api/v1/auth/csrf') return jsonResponse({ headerName: 'X-XSRF-TOKEN', token: 'csrf-test' });
       if (path === '/api/v1/course-matches') return jsonResponse({
         matches: [], constraints: [{ code: 'BUDGET_EXCEEDED', message: 'ราคาเกินงบที่เลือก ลองเพิ่มงบประมาณ', excludedCourseCount: 2 }],
@@ -95,13 +104,28 @@ describe('course matcher quiz', () => {
     await user.click(screen.getByRole('button', { name: 'ถัดไป' }));
     await user.click(screen.getByRole('button', { name: 'ดูผลแนะนำ' }));
     expect(screen.getByRole('alert')).toHaveTextContent('1–168 ชั่วโมง');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls.filter(([path]) => path === '/api/v1/course-matches')).toHaveLength(0);
 
     await user.type(screen.getByLabelText('มีเวลาเรียนกี่ชั่วโมงต่อสัปดาห์'), '4');
     await user.click(screen.getByRole('button', { name: 'ดูผลแนะนำ' }));
     await waitFor(() => expect(screen.getByText('ยังไม่พบคอร์สที่ตรงทุกเงื่อนไข')).toBeInTheDocument());
+    expect(screen.getByText(/คอร์สที่ตรงหมวด ระดับ และภาษาเริ่มต้น 1,500 บาท สูงกว่างบ 1,000 บาท/)).toBeInTheDocument();
     expect(screen.getByText('ราคาเกินงบที่เลือก ลองเพิ่มงบประมาณ (2 คอร์ส)')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'แก้คำตอบ' }));
     expect(screen.getByLabelText('อยากเรียนเรื่องอะไร')).toHaveValue('programming');
+  });
+
+  it('shows when a category has no public courses before the learner submits', async () => {
+    const fetchMock = vi.fn(async (path: string) => {
+      if (path === '/api/v1/catalog/categories') return jsonResponse([{ id: 5, name: 'ธุรกิจ', slug: 'business-marketing' }]);
+      if (path.startsWith('/api/v1/courses?category=business-marketing')) return catalogPage([]);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<MemoryRouter><MatcherPage /></MemoryRouter>);
+
+    await userEvent.setup().selectOptions(await screen.findByLabelText('อยากเรียนเรื่องอะไร'), 'business-marketing');
+    expect(await screen.findByText('มีคอร์สเผยแพร่ในหมวดนี้ 0 คอร์ส · รองรับการจับคู่ 0 คอร์ส')).toBeInTheDocument();
+    expect(screen.getByText('หมวดนี้ยังไม่มีคอร์สที่จับคู่ได้ ลองเลือกหมวดอื่น')).toBeInTheDocument();
   });
 });
