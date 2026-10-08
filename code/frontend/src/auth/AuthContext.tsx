@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { authApi } from '../api/auth';
-import type { AuthUser, LoginInput, RegisterInput } from '../api/auth';
+import type { AuthUser, LoginInput, Profile, RegisterInput, UpdateProfileInput } from '../api/auth';
 import { restoreSession } from './startup';
 
 type AuthStatus = 'loading' | 'authenticated' | 'guest' | 'error';
@@ -13,6 +13,7 @@ interface AuthContextValue {
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  saveProfile: (input: UpdateProfileInput) => Promise<Profile>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -64,9 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus('guest');
   }, []);
 
+  const saveProfile = useCallback(async (input: UpdateProfileInput) => {
+    const profile = await authApi.updateProfile(input);
+    setUser((current) => current?.id === profile.userId
+      ? { ...current, displayName: profile.displayName, email: profile.email }
+      : current);
+    return profile;
+  }, []);
+
   const value = useMemo(
-    () => ({ status, user, login, register, logout, refresh: () => refresh() }),
-    [status, user, login, register, logout, refresh],
+    () => ({ status, user, login, register, logout, refresh: () => refresh(), saveProfile }),
+    [status, user, login, register, logout, refresh, saveProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
