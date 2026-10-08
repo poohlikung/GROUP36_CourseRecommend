@@ -1,0 +1,42 @@
+classDiagram
+    class ProviderMemberController {
+        +listMembers(Long) ResponseEntity
+        +addMember(Long, AddProviderMemberRequest) ResponseEntity
+        +removeMember(Long, Long) ResponseEntity
+    }
+    class ProviderMemberService {
+        +listMembers(Long) List~ProviderMemberView~
+        +addMember(Long, String, MemberRole) ProviderMemberView
+        +removeMember(Long, Long) void
+    }
+    class ProviderOwnershipService {
+        +requireOwner(Long) ProviderMember
+        +currentUser() User
+    }
+    class ProviderRepository {
+        <<interface>>
+        +findByIdForUpdate(Long) Optional~Provider~
+    }
+    class ProviderMemberRepository {
+        <<interface>>
+        +findByProviderIdOrderByIdAsc(Long) List~ProviderMember~
+        +existsByProviderIdAndUserId(Long, Long) boolean
+        +findByIdAndProviderId(Long, Long) Optional~ProviderMember~
+        +countByProviderIdAndMemberRole(Long, MemberRole) long
+    }
+    class UserRepository {
+        <<interface>>
+        +findByEmail(String) Optional~User~
+    }
+    class ProviderMember {
+        memberRole MemberRole
+    }
+    class Provider
+    class User
+    ProviderMemberController --> ProviderMemberService
+    ProviderMemberService --> ProviderOwnershipService
+    ProviderMemberService --> ProviderRepository : row lock on mutations
+    ProviderMemberService --> ProviderMemberRepository
+    ProviderMemberService --> UserRepository
+    ProviderMember "0..*" --> "1" Provider
+    ProviderMember "0..*" --> "1" User
