@@ -257,3 +257,7 @@ describe('provider flow', () => {
     );
   });
 });
+
+vi.mock('../../code/frontend/src/api/system', () => ({
+  systemApi: { liveness: vi.fn().mockResolvedValue({ status: 'UP' }) },
+}));

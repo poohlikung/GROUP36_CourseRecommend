@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { FieldError } from '../components/AuthCard';
 
 export function ProfilePage() {
-  const { refresh } = useAuth();
+  const { saveProfile } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -39,11 +39,10 @@ export function ProfilePage() {
     setSaved(false);
     setSaving(true);
     try {
-      const result = await authApi.updateProfile({ displayName, bio });
+      const result = await saveProfile({ displayName, bio });
       setProfile(result);
       setDisplayName(result.displayName);
       setBio(result.bio ?? '');
-      await refresh();
       setSaved(true);
     } catch (saveError) {
       setError(saveError);
