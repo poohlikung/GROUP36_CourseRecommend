@@ -2,7 +2,9 @@
 
 - วันที่รัน: 8 ตุลาคม 2026
 - Branch: `keattisak_6733800729_01` (ฐานจาก `develop` commit `d1e8512`)
-- เครื่องมือ: PostgreSQL 16 (Testcontainers `postgres:16-alpine`), `pg_dump`/`pg_restore`/`psql` 16, Flyway, PowerShell 7.4
+- Production: Neon PostgreSQL 18.6
+- เทสต์อัตโนมัติ: Testcontainers `postgres:18-alpine` (major version เดียวกับ Neon), Flyway
+- ทดสอบสคริปต์บนเครื่อง: PostgreSQL 16 ทั้ง server และ client (`pg_dump`/`pg_restore`/`psql`), PowerShell 7.4
 - คู่มือขั้นตอน: [`doc/task24-backup-restore-guide.md`](../task24-backup-restore-guide.md)
 
 ## 1. เทสต์อัตโนมัติ (รันใน CI ทุก PR)
@@ -13,7 +15,7 @@
 ./mvnw test -Dtest=BackupRestoreRehearsalIntegrationTests
 ```
 
-`BackupRestoreRehearsalIntegrationTests` สร้าง PostgreSQL 2 ตัว: ตัวแรก migrate ด้วย Flyway V1–V4 และเพิ่มคอร์สทดสอบที่มีราคาและ 2 หมวดหมู่ จากนั้น `pg_dump --format=custom` แล้ว `pg_restore --exit-on-error` ลงตัวที่สองซึ่งว่างเปล่า
+`BackupRestoreRehearsalIntegrationTests` สร้าง PostgreSQL 18 จำนวน 2 ตัว: ตัวแรก migrate ด้วย Flyway V1–V4 และเพิ่มคอร์สทดสอบที่มีราคาและ 2 หมวดหมู่ จากนั้น `pg_dump --format=custom` แล้ว `pg_restore --exit-on-error` ลงตัวที่สองซึ่งว่างเปล่า
 
 | เคส | ตรวจอะไร | ผล |
 | --- | --- | :---: |
@@ -22,7 +24,7 @@
 | `restoredDatabaseIsAlreadyMigratedSoFlywayDoesNothing` | `flyway_schema_history` ตรงกับต้นทาง, `Flyway.validate()` ผ่าน และ `migrate()` รัน 0 migration (ไม่ migrate ซ้ำ) | ผ่าน |
 | `restoredSequencesContinueAfterExistingIds` | หลัง restore เพิ่ม Provider ใหม่ได้ id มากกว่า id เดิมทั้งหมด (sequence ถูก restore ด้วย) | ผ่าน |
 
-ผล: **4/4 ผ่าน** (ประมาณ 10 วินาที)
+ผล: **4/4 ผ่าน** ทั้งบน `postgres:16-alpine` และ `postgres:18-alpine` (ประมาณ 10 วินาที) โดยเทสต์ที่คอมมิตใช้ 18 ให้ตรงกับ Neon
 
 ชุดเต็ม `mvn verify` บนเครื่องที่มี Docker: 312 เคส ผ่าน 291 ส่วน 21 เคสที่ไม่ผ่านอยู่ใน `CourseEventPublicationIntegrationTests` ซึ่ง**ไม่ผ่านแบบเดียวกันบน `develop` (`d1e8512`) ที่ยังไม่มีงาน Task 24** (นับ audit log ที่เทสต์อื่นสร้างไว้ในฐาน H2 เดียวกัน ขึ้นกับลำดับการรันเทสต์) จึงไม่เกี่ยวกับงานนี้ และ CI ของ `develop` ยังผ่าน
 
@@ -63,7 +65,7 @@
 
 | รายการ | ผล |
 | --- | --- |
-| Neon PostgreSQL version / client version | _รอผล_ |
+| Neon PostgreSQL version / client version | Neon 18.6 / client _รอผล_ |
 | ไฟล์ backup และ SHA256 | _รอผล_ |
 | `restore` ลง `coursehub_restore` | _รอผล_ |
 | `verify` ทุกตาราง Match และ Flyway history ตรงกัน | _รอผล_ |

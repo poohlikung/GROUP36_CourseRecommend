@@ -31,13 +31,13 @@ class BackupRestoreRehearsalIntegrationTests {
     private static final String DUMP_IN_CONTAINER = "/tmp/coursehub.dump";
 
     @Container
-    static final PostgreSQLContainer<?> SOURCE = new PostgreSQLContainer<>("postgres:16-alpine")
+    static final PostgreSQLContainer<?> SOURCE = new PostgreSQLContainer<>("postgres:18-alpine")
             .withDatabaseName("courserecommend")
             .withUsername("postgres")
             .withPassword("test-password");
 
     @Container
-    static final PostgreSQLContainer<?> RESTORED = new PostgreSQLContainer<>("postgres:16-alpine")
+    static final PostgreSQLContainer<?> RESTORED = new PostgreSQLContainer<>("postgres:18-alpine")
             .withDatabaseName("coursehub_restore")
             .withUsername("postgres")
             .withPassword("test-password");

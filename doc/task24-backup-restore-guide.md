@@ -23,10 +23,11 @@
 
 ## 3. สิ่งที่ต้องติดตั้ง (Windows ไม่ต้องใช้ Docker)
 
-1. ดูเวอร์ชัน PostgreSQL ของ Neon: Neon Console → โปรเจกต์ `coursehub-db` → หน้า Dashboard/Settings จะแสดง Postgres version (หรือรัน `SHOW server_version;` ใน SQL Editor)
-2. ติดตั้ง PostgreSQL client tools **เวอร์ชันเท่ากับหรือสูงกว่า** Neon จากตัวติดตั้งของ EDB (https://www.postgresql.org/download/windows/)
+1. ดูเวอร์ชัน PostgreSQL ของ Neon: Neon Console → SQL Editor รัน `SHOW server_version;` (ณ 8 ตุลาคม 2026 โปรเจกต์ `coursehub-db` เป็น **18.6**)
+2. ติดตั้ง PostgreSQL client tools **major version เดียวกับ Neon** (ตอนนี้คือ 18) จากตัวติดตั้งของ EDB (https://www.enterprisedb.com/downloads/postgres-postgresql-downloads → Windows x86-64)
+   - ห้ามใช้ client ที่ต่ำกว่า server (สคริปต์จะหยุดให้) และไม่ควรใช้สูงกว่า เพราะไฟล์จาก `pg_dump` รุ่นใหม่ไม่รับประกันว่าจะ restore ลง server รุ่นเก่าได้
    - ตอนเลือก components ให้ติ๊กเฉพาะ **Command Line Tools** (ไม่ต้องติดตั้ง PostgreSQL Server, pgAdmin, Stack Builder)
-3. เพิ่ม `C:\Program Files\PostgreSQL\<เวอร์ชัน>\bin` เข้า PATH แล้วเปิด PowerShell ใหม่ ตรวจด้วย
+3. เพิ่ม `C:\Program Files\PostgreSQL\18\bin` เข้า PATH แล้วเปิด PowerShell ใหม่ ตรวจด้วย
 
    ```powershell
    pg_dump --version
