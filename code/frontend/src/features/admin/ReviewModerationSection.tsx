@@ -15,6 +15,7 @@ export function ReviewModerationSection() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const visibleReviews = !loading && !error && reviews?.page === page ? reviews : null;
+  const busyReview = visibleReviews?.content.find((review) => review.id === busyId);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -83,7 +84,13 @@ export function ReviewModerationSection() {
           </select>
         </label>
       </div>
-      {message && <p role="status" className="alert-success">{message}</p>}
+      {busyReview ? (
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          กำลังบันทึกผลตรวจรีวิวของ {busyReview.reviewerDisplayName}
+        </p>
+      ) : message ? (
+        <p role="status" aria-live="polite" aria-atomic="true" className="alert-success">{message}</p>
+      ) : null}
       {error && <p role="alert" className="alert-error">{error}</p>}
       {loading && (
         <div className="grid gap-3 sm:grid-cols-2" role="status" aria-label="กำลังโหลดรีวิว">
@@ -100,6 +107,7 @@ export function ReviewModerationSection() {
           <article
             key={review.id}
             aria-labelledby={`review-title-${review.id}`}
+            aria-busy={busyId === review.id}
             className="surface-card depth-card flex flex-col gap-4 p-5 sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">

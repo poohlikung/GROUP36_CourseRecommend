@@ -33,7 +33,6 @@ export function HeroVisual() {
           width="1536"
           height="1024"
           decoding="async"
-          fetchPriority="high"
         />
         <span className="orbit-chip orbit-chip-one">DESIGN</span>
         <span className="orbit-chip orbit-chip-two">TECH</span>

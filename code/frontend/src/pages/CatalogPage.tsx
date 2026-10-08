@@ -145,7 +145,7 @@ export function CatalogPage() {
 
   return (
     <main className="min-h-screen pb-16 text-slate-950">
-      <section className="relative overflow-hidden bg-[color:var(--ink)] text-white">
+      <section className="ink-surface relative overflow-hidden bg-[color:var(--ink)] text-white">
         <div className="hero-grid absolute inset-0 opacity-60" aria-hidden="true" />
         <div className="absolute -left-28 top-20 h-72 w-72 rounded-full bg-blue-600/25 blur-3xl" aria-hidden="true" />
         <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" aria-hidden="true" />

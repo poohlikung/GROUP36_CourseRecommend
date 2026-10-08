@@ -95,6 +95,12 @@ function useDialogFocusTrap(
   return dialogRef;
 }
 
+function focusFirstFieldError(error: unknown, fields: ReadonlyArray<readonly [string, string]>) {
+  const firstInvalidField = fields.find(([field]) => Boolean(getFieldError(error, field)));
+  if (!firstInvalidField) return;
+  window.setTimeout(() => document.getElementById(firstInvalidField[1])?.focus(), 0);
+}
+
 export function ProviderPage() {
   const [providers, setProviders] = useState<MyProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +140,14 @@ export function ProviderPage() {
   const createDialogRef = useDialogFocusTrap(showCreateModal, () => setShowCreateModal(false), !creating, pageHeadingRef);
   const editDialogRef = useDialogFocusTrap(editingProvider !== null, () => setEditingProvider(null), !updating, pageHeadingRef);
   const deleteDialogRef = useDialogFocusTrap(deletingProvider !== null, () => setDeletingProvider(null), !deleting, pageHeadingRef);
+  const createNameError = getFieldError(createError, 'name');
+  const createSlugError = getFieldError(createError, 'slug');
+  const createDescriptionError = getFieldError(createError, 'description');
+  const createWebsiteError = getFieldError(createError, 'websiteUrl');
+  const editNameError = getFieldError(updateError, 'name');
+  const editSlugError = getFieldError(updateError, 'slug');
+  const editDescriptionError = getFieldError(updateError, 'description');
+  const editWebsiteError = getFieldError(updateError, 'websiteUrl');
 
   function loadProviders() {
     setLoading(true);
@@ -183,6 +197,12 @@ export function ProviderPage() {
       loadProviders();
     } catch (err) {
       setCreateError(err);
+      focusFirstFieldError(err, [
+        ['name', 'create-name'],
+        ['slug', 'create-slug'],
+        ['description', 'create-desc'],
+        ['websiteUrl', 'create-website'],
+      ]);
     } finally {
       setCreating(false);
     }
@@ -205,6 +225,12 @@ export function ProviderPage() {
       loadProviders();
     } catch (err) {
       setUpdateError(err);
+      focusFirstFieldError(err, [
+        ['name', 'edit-name'],
+        ['slug', 'edit-slug'],
+        ['description', 'edit-desc'],
+        ['websiteUrl', 'edit-website'],
+      ]);
     } finally {
       setUpdating(false);
     }
@@ -274,6 +300,7 @@ export function ProviderPage() {
           onBack={() => {
             setManagingCoursesProvider(null);
             loadProviders();
+            window.setTimeout(() => pageHeadingRef.current?.focus(), 0);
           }}
         />
       </main>
@@ -487,9 +514,11 @@ export function ProviderPage() {
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                   placeholder="เช่น Chula MOOC, Skooldio"
+                  aria-invalid={Boolean(createNameError)}
+                  aria-describedby={createNameError ? 'create-name-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(createError, 'name')} />
+                <div id="create-name-error"><FieldError message={createNameError} /></div>
               </div>
 
               <div>
@@ -505,12 +534,14 @@ export function ProviderPage() {
                   value={createForm.slug}
                   onChange={(e) => setCreateForm({ ...createForm, slug: e.target.value })}
                   placeholder="เช่น chula-mooc, skooldio"
+                  aria-invalid={Boolean(createSlugError)}
+                  aria-describedby={createSlugError ? 'create-slug-help create-slug-error' : 'create-slug-help'}
                   className="form-input text-sm"
                 />
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p id="create-slug-help" className="mt-1 text-[11px] text-slate-500">
                   ใช้ภาษาอังกฤษพิมพ์เล็ก ตัวเลข และขีดกลาง (-) เท่านั้น
                 </p>
-                <FieldError message={getFieldError(createError, 'slug')} />
+                <div id="create-slug-error"><FieldError message={createSlugError} /></div>
               </div>
 
               <div>
@@ -527,9 +558,11 @@ export function ProviderPage() {
                   value={createForm.description}
                   onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                   placeholder="รายละเอียดเกี่ยวกับหลักสูตรหรือผู้ให้บริการ..."
+                  aria-invalid={Boolean(createDescriptionError)}
+                  aria-describedby={createDescriptionError ? 'create-description-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(createError, 'description')} />
+                <div id="create-description-error"><FieldError message={createDescriptionError} /></div>
               </div>
 
               <div>
@@ -548,9 +581,11 @@ export function ProviderPage() {
                   value={createForm.websiteUrl}
                   onChange={(e) => setCreateForm({ ...createForm, websiteUrl: e.target.value })}
                   placeholder="https://example.com"
+                  aria-invalid={Boolean(createWebsiteError)}
+                  aria-describedby={createWebsiteError ? 'create-website-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(createError, 'websiteUrl')} />
+                <div id="create-website-error"><FieldError message={createWebsiteError} /></div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3 pt-3">
@@ -606,9 +641,11 @@ export function ProviderPage() {
                   maxLength={100}
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  aria-invalid={Boolean(editNameError)}
+                  aria-describedby={editNameError ? 'edit-name-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(updateError, 'name')} />
+                <div id="edit-name-error"><FieldError message={editNameError} /></div>
               </div>
 
               <div>
@@ -625,9 +662,11 @@ export function ProviderPage() {
                   value={editForm.slug ?? ''}
                   onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
                   placeholder="chula-mooc"
+                  aria-invalid={Boolean(editSlugError)}
+                  aria-describedby={editSlugError ? 'edit-slug-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(updateError, 'slug')} />
+                <div id="edit-slug-error"><FieldError message={editSlugError} /></div>
               </div>
 
               <div>
@@ -640,9 +679,11 @@ export function ProviderPage() {
                   maxLength={2000}
                   value={editForm.description ?? ''}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  aria-invalid={Boolean(editDescriptionError)}
+                  aria-describedby={editDescriptionError ? 'edit-description-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(updateError, 'description')} />
+                <div id="edit-description-error"><FieldError message={editDescriptionError} /></div>
               </div>
 
               <div>
@@ -661,9 +702,11 @@ export function ProviderPage() {
                   value={editForm.websiteUrl ?? ''}
                   onChange={(e) => setEditForm({ ...editForm, websiteUrl: e.target.value })}
                   placeholder="https://example.com"
+                  aria-invalid={Boolean(editWebsiteError)}
+                  aria-describedby={editWebsiteError ? 'edit-website-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(updateError, 'websiteUrl')} />
+                <div id="edit-website-error"><FieldError message={editWebsiteError} /></div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3 pt-3">

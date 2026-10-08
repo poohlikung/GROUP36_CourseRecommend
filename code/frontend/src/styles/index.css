@@ -30,7 +30,6 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
   background:
     radial-gradient(circle at 8% 8%, rgba(82, 215, 245, 0.12), transparent 28rem),
@@ -58,6 +57,7 @@ button {
 }
 
 .bg-slate-950 :where(a, button, [tabindex]):focus-visible,
+.ink-surface :where(a, button, input, textarea, select, [tabindex]):focus-visible,
 footer :where(a, button, [tabindex]):focus-visible {
   outline-color: var(--cyan);
 }

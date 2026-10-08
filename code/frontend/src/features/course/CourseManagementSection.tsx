@@ -98,6 +98,12 @@ function useDialogFocusTrap(
   return dialogRef;
 }
 
+function focusFirstFieldError(error: unknown, fields: ReadonlyArray<readonly [string, string]>) {
+  const firstInvalidField = fields.find(([field]) => Boolean(getFieldError(error, field)));
+  if (!firstInvalidField) return;
+  window.setTimeout(() => document.getElementById(firstInvalidField[1])?.focus(), 0);
+}
+
 export function CourseManagementSection({ provider, onBack }: CourseManagementSectionProps) {
   const [courses, setCourses] = useState<CourseDetail[]>([]);
   const [platforms, setPlatforms] = useState<CatalogOption[]>([]);
@@ -137,6 +143,22 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   const sectionHeadingRef = useRef<HTMLHeadingElement>(null);
   const formDialogRef = useDialogFocusTrap(isModalOpen, () => setIsModalOpen(false), !formSubmitting, sectionHeadingRef);
   const deleteDialogRef = useDialogFocusTrap(deletingCourse !== null, () => setDeletingCourse(null), !deleteSubmitting, sectionHeadingRef);
+  const titleError = getFieldError(formError, 'title');
+  const slugError = getFieldError(formError, 'slug');
+  const descriptionError = getFieldError(formError, 'description');
+  const urlError = getFieldError(formError, 'url');
+  const platformError = getFieldError(formError, 'platformId');
+  const levelError = getFieldError(formError, 'level');
+  const languageError = getFieldError(formError, 'language');
+  const effortError = getFieldError(formError, 'effortHours');
+  const paymentTypeError = getFieldError(formError, 'paymentType');
+  const amountError = getFieldError(formError, 'amount');
+  const currencyError = getFieldError(formError, 'currency');
+  const categoriesError = getFieldError(formError, 'categoryIds');
+
+  useEffect(() => {
+    sectionHeadingRef.current?.focus();
+  }, []);
 
   const canManage = provider.role === 'OWNER' || provider.role === 'EDITOR';
   const canSubmitForReview = provider.status === 'ACTIVE';
@@ -262,6 +284,20 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       loadCourses();
     } catch (err) {
       setFormError(err);
+      focusFirstFieldError(err, [
+        ['title', 'course-title'],
+        ['slug', 'course-slug'],
+        ['platformId', 'course-platform'],
+        ['url', 'course-url'],
+        ['level', 'course-level'],
+        ['language', 'course-language'],
+        ['effortHours', 'course-effort'],
+        ['paymentType', 'course-payment-type'],
+        ['amount', 'course-amount'],
+        ['currency', 'course-currency'],
+        ['categoryIds', 'course-categories'],
+        ['description', 'course-desc'],
+      ]);
     } finally {
       setFormSubmitting(false);
     }
@@ -376,9 +412,9 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
             ← กลับไปยังรายการ Provider
           </button>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Course workspace</p>
-          <h2 ref={sectionHeadingRef} tabIndex={-1} className="mt-2 text-2xl font-black tracking-[-0.03em] sm:text-3xl">
+          <h1 ref={sectionHeadingRef} tabIndex={-1} className="mt-2 text-2xl font-black tracking-[-0.03em] sm:text-3xl">
             คอร์สเรียนของ {provider.name}
-          </h2>
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
             Provider Slug: <span className="font-mono">{provider.slug}</span>
           </p>
@@ -469,7 +505,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       {!loading && !error && courses.length === 0 && (
         <div className="empty-state py-14">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-cyan-100 text-3xl text-cyan-800" aria-hidden="true">✦</div>
-          <h3 className="mt-5 text-xl font-black text-slate-950">ยังไม่มีคอร์สเรียนใน Provider นี้</h3>
+          <h2 className="mt-5 text-xl font-black text-slate-950">ยังไม่มีคอร์สเรียนใน Provider นี้</h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
             เริ่มต้นสร้างคอร์สแรกของคุณเพื่อเสนอต่อผู้เรียนในระบบ
           </p>
@@ -501,7 +537,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{course.platformName}</p>
-                    <h3 id={`managed-course-title-${course.id}`} className="mt-1 text-lg font-black tracking-tight text-slate-950">{course.title}</h3>
+                    <h2 id={`managed-course-title-${course.id}`} className="mt-1 text-lg font-black tracking-tight text-slate-950">{course.title}</h2>
                     <p className="mt-1 truncate font-mono text-xs text-slate-500">slug: {course.slug}</p>
                   </div>
                   <div>{getCourseStatusBadge(course.status)}</div>
@@ -605,9 +641,9 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
         <div className="modal-backdrop">
           <div ref={formDialogRef} role="dialog" aria-modal="true" aria-labelledby="course-form-title" tabIndex={-1} className="modal-card max-w-2xl">
             <p className="eyebrow">Course editor</p>
-            <h3 id="course-form-title" className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+            <h2 id="course-form-title" className="mt-2 text-2xl font-black tracking-tight text-slate-950">
               {editingCourse ? 'แก้ไขข้อมูลคอร์สเรียน' : 'เพิ่มคอร์สเรียนใหม่ (Draft)'}
-            </h3>
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {editingCourse
                 ? `แก้ไขคอร์ส ${editingCourse.slug}`
@@ -647,9 +683,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="เช่น Complete Web Development Bootcamp"
+                  aria-invalid={Boolean(titleError)}
+                  aria-describedby={titleError ? 'course-title-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(formError, 'title')} />
+                <div id="course-title-error"><FieldError message={titleError} /></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -666,12 +704,14 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     value={formSlug}
                     onChange={(e) => setFormSlug(e.target.value)}
                     placeholder="web-dev-bootcamp"
+                    aria-invalid={Boolean(slugError)}
+                    aria-describedby={slugError ? 'course-slug-help course-slug-error' : 'course-slug-help'}
                     className="form-input text-sm"
                   />
-                  <p className="mt-1 text-[11px] text-slate-500">
+                  <p id="course-slug-help" className="mt-1 text-[11px] text-slate-500">
                     อักษรพิมพ์เล็ก ตัวเลข และขีดกลาง (-)
                   </p>
-                  <FieldError message={getFieldError(formError, 'slug')} />
+                  <div id="course-slug-error"><FieldError message={slugError} /></div>
                 </div>
 
                 <div>
@@ -683,6 +723,8 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     required
                     value={formPlatformId}
                     onChange={(e) => setFormPlatformId(Number(e.target.value))}
+                    aria-invalid={Boolean(platformError)}
+                    aria-describedby={platformError ? 'course-platform-error' : undefined}
                     className="form-input text-sm"
                   >
                     {platforms.map((plat) => (
@@ -691,7 +733,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                       </option>
                     ))}
                   </select>
-                  <FieldError message={getFieldError(formError, 'platformId')} />
+                  <div id="course-platform-error"><FieldError message={platformError} /></div>
                 </div>
               </div>
 
@@ -707,9 +749,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
                   placeholder="https://example.com/course"
+                  aria-invalid={Boolean(urlError)}
+                  aria-describedby={urlError ? 'course-url-error' : undefined}
                   className="form-input text-sm"
                 />
-                <FieldError message={getFieldError(formError, 'url')} />
+                <div id="course-url-error"><FieldError message={urlError} /></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -721,12 +765,15 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-level"
                     value={formLevel}
                     onChange={(e) => setFormLevel(e.target.value as CourseLevel)}
+                    aria-invalid={Boolean(levelError)}
+                    aria-describedby={levelError ? 'course-level-error' : undefined}
                     className="form-input text-sm"
                   >
                     <option value="BEGINNER">BEGINNER (เริ่มต้น)</option>
                     <option value="INTERMEDIATE">INTERMEDIATE (ปานกลาง)</option>
                     <option value="ADVANCED">ADVANCED (ขั้นสูง)</option>
                   </select>
+                  <div id="course-level-error"><FieldError message={levelError} /></div>
                 </div>
 
                 <div>
@@ -737,12 +784,15 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-language"
                     value={formLanguage}
                     onChange={(e) => setFormLanguage(e.target.value as CourseLanguage)}
+                    aria-invalid={Boolean(languageError)}
+                    aria-describedby={languageError ? 'course-language-error' : undefined}
                     className="form-input text-sm"
                   >
                     <option value="THAI">ภาษาไทย</option>
                     <option value="ENGLISH">ภาษาอังกฤษ</option>
                     <option value="SUB_THAI">ซับไตเติลภาษาไทย</option>
                   </select>
+                  <div id="course-language-error"><FieldError message={languageError} /></div>
                 </div>
 
                 <div>
@@ -756,9 +806,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     value={formEffortHours}
                     onChange={(e) => setFormEffortHours(e.target.value)}
                     placeholder="เช่น 20"
+                    aria-invalid={Boolean(effortError)}
+                    aria-describedby={effortError ? 'course-effort-error' : undefined}
                     className="form-input text-sm"
                   />
-                  <FieldError message={getFieldError(formError, 'effortHours')} />
+                  <div id="course-effort-error"><FieldError message={effortError} /></div>
                 </div>
               </div>
 
@@ -771,12 +823,15 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     id="course-payment-type"
                     value={formPaymentType}
                     onChange={(e) => setFormPaymentType(e.target.value as PaymentType)}
+                    aria-invalid={Boolean(paymentTypeError)}
+                    aria-describedby={paymentTypeError ? 'course-payment-type-error' : undefined}
                     className="form-input text-sm"
                   >
                     <option value="FREE">ฟรี (Free)</option>
                     <option value="ONE_TIME">ชำระครั้งเดียว (One-time)</option>
                     <option value="SUBSCRIPTION">รายเดือน/สมาชิก (Subscription)</option>
                   </select>
+                  <div id="course-payment-type-error"><FieldError message={paymentTypeError} /></div>
                 </div>
 
                 <div>
@@ -791,9 +846,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     disabled={formPaymentType === 'FREE'}
                     value={formPaymentType === 'FREE' ? '0' : formAmount}
                     onChange={(e) => setFormAmount(e.target.value)}
+                    aria-invalid={Boolean(amountError)}
+                    aria-describedby={amountError ? 'course-amount-error' : undefined}
                     className="form-input text-sm"
                   />
-                  <FieldError message={getFieldError(formError, 'amount')} />
+                  <div id="course-amount-error"><FieldError message={amountError} /></div>
                 </div>
 
                 <div>
@@ -806,15 +863,23 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     maxLength={10}
                     value={formCurrency}
                     onChange={(e) => setFormCurrency(e.target.value)}
+                    aria-invalid={Boolean(currencyError)}
+                    aria-describedby={currencyError ? 'course-currency-error' : undefined}
                     className="form-input text-sm"
                   />
+                  <div id="course-currency-error"><FieldError message={currencyError} /></div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">
+              <fieldset
+                id="course-categories"
+                tabIndex={-1}
+                aria-invalid={Boolean(categoriesError)}
+                aria-describedby={categoriesError ? 'course-categories-error' : undefined}
+              >
+                <legend className="block text-xs font-semibold text-slate-700">
                   หมวดหมู่คอร์สเรียน (Categories)
-                </label>
+                </legend>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {categories.map((cat) => {
                     const isSelected = formCategoryIds.includes(cat.id);
@@ -835,7 +900,8 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                     );
                   })}
                 </div>
-              </div>
+                <div id="course-categories-error"><FieldError message={categoriesError} /></div>
+              </fieldset>
 
               <div>
                 <label htmlFor="course-desc" className="block text-xs font-semibold text-slate-700">
@@ -847,8 +913,11 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="รายละเอียดเนื้อหา สิ่งที่จะได้เรียนรู้..."
+                  aria-invalid={Boolean(descriptionError)}
+                  aria-describedby={descriptionError ? 'course-description-error' : undefined}
                   className="form-input text-sm"
                 />
+                <div id="course-description-error"><FieldError message={descriptionError} /></div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3 pt-3">
@@ -882,7 +951,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
         <div className="modal-backdrop">
           <div ref={deleteDialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-course-title" tabIndex={-1} className="modal-card max-w-md">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-xl text-rose-700" aria-hidden="true">!</div>
-            <h3 id="delete-course-title" className="mt-4 text-xl font-black tracking-tight text-slate-950">ยืนยันการลบคอร์สดราฟต์</h3>
+            <h2 id="delete-course-title" className="mt-4 text-xl font-black tracking-tight text-slate-950">ยืนยันการลบคอร์สดราฟต์</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               คุณแน่ใจหรือไม่ว่าต้องการลบคอร์ส{' '}
               <span className="font-semibold text-slate-900">{deletingCourse.title}</span>?

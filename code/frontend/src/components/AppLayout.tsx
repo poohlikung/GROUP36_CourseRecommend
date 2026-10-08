@@ -121,7 +121,7 @@ export function AppLayout() {
       <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />
       </div>
-      <footer className="border-t border-slate-200/80 bg-[color:var(--ink)] text-slate-300">
+      <footer className="ink-surface border-t border-slate-200/80 bg-[color:var(--ink)] text-slate-300">
         <div className="shell-container flex flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <BrandMark inverse />

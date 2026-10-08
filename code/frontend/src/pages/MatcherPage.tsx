@@ -42,6 +42,10 @@ export function MatcherPage() {
   const [result, setResult] = useState<MatchResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const requestController = useRef<AbortController | null>(null);
+  const quizTitleRef = useRef<HTMLHeadingElement>(null);
+  const resultsTitleRef = useRef<HTMLHeadingElement>(null);
+  const previousStep = useRef(step);
+  const previouslyShowingResults = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,6 +61,22 @@ export function MatcherPage() {
   }, [categoryRetry]);
 
   useEffect(() => () => requestController.current?.abort(), []);
+
+  useEffect(() => {
+    const showingResults = result !== null;
+    const stepChanged = previousStep.current !== step;
+    const viewChanged = previouslyShowingResults.current !== showingResults;
+
+    previousStep.current = step;
+    previouslyShowingResults.current = showingResults;
+
+    if (!stepChanged && !viewChanged) return undefined;
+
+    const frame = window.requestAnimationFrame(() => {
+      (showingResults ? resultsTitleRef.current : quizTitleRef.current)?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [result, step]);
 
   function checkStep() {
     if (step === 0 && !categorySlug) return 'กรุณาเลือกหมวดหมู่';
@@ -107,7 +127,7 @@ export function MatcherPage() {
   return (
     <main className="page-shell max-w-6xl">
       <Link to="/courses" className="inline-flex min-h-10 items-center rounded-xl text-sm font-bold text-blue-700 transition hover:-translate-x-1 hover:text-blue-900">← ดูคอร์สทั้งหมด</Link>
-      <header className="relative mt-5 overflow-hidden rounded-[2rem] bg-[color:var(--ink)] p-7 text-white shadow-2xl sm:p-10">
+      <header className="ink-surface relative mt-5 overflow-hidden rounded-[2rem] bg-[color:var(--ink)] p-7 text-white shadow-2xl sm:p-10">
         <div className="hero-grid absolute inset-0 opacity-40" aria-hidden="true" />
         <div className="absolute -right-12 -top-20 h-64 w-64 rounded-full bg-blue-500/30 blur-3xl" aria-hidden="true" />
         <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">
@@ -129,15 +149,23 @@ export function MatcherPage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="eyebrow">เส้นทางที่เหมาะกับคุณ</p>
-                <h2 id="match-results-title" className="section-heading mt-3">ผลแนะนำคอร์ส</h2>
-                <p className="mt-1 text-slate-600">แสดงสูงสุด 3 คอร์สที่ผ่านเงื่อนไขของคุณ</p>
+                <h2
+                  ref={resultsTitleRef}
+                  id="match-results-title"
+                  className="section-heading mt-3"
+                  tabIndex={-1}
+                  aria-describedby={result.matches.length === 0 ? 'match-empty-title' : 'match-results-summary'}
+                >
+                  ผลแนะนำคอร์ส
+                </h2>
+                <p id="match-results-summary" className="mt-1 text-slate-600">แสดงสูงสุด 3 คอร์สที่ผ่านเงื่อนไขของคุณ</p>
               </div>
               <button type="button" onClick={editAnswers} className="secondary-button">แก้คำตอบ</button>
             </div>
             {result.matches.length === 0 ? (
-              <div className="surface-panel mt-6 p-7 sm:p-9" role="status">
+              <div className="surface-panel mt-6 p-7 sm:p-9">
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-2xl" aria-hidden="true">⌕</div>
-                <h3 className="mt-5 text-xl font-black">ยังไม่พบคอร์สที่ตรงทุกเงื่อนไข</h3>
+                <h3 id="match-empty-title" className="mt-5 text-xl font-black">ยังไม่พบคอร์สที่ตรงทุกเงื่อนไข</h3>
                 <p className="mt-2 text-slate-600">ลองปรับคำตอบแล้วค้นหาอีกครั้ง ระบบจะไม่เปลี่ยนเงื่อนไขให้เอง</p>
                 {result.constraints.length > 0 && (
                   <ul className="mt-5 grid gap-3 text-slate-700">
@@ -179,7 +207,7 @@ export function MatcherPage() {
                 <p className="text-sm font-extrabold text-blue-700">ข้อ {step + 1} จาก {steps.length}</p>
                 <ol className="mt-6 grid grid-cols-4 gap-2 lg:grid-cols-1 lg:gap-3">
                   {steps.map((name, index) => (
-                    <li key={name} aria-current={index === step ? 'step' : undefined} className={`flex min-h-12 items-center gap-3 rounded-2xl border px-3 py-2 text-sm font-bold transition ${index === step ? 'border-blue-200 bg-white text-blue-800 shadow-sm' : index < step ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-transparent text-slate-500'}`}>
+                    <li key={name} aria-current={index === step ? 'step' : undefined} className={`flex min-h-12 items-center gap-3 rounded-2xl border px-3 py-2 text-sm font-bold transition ${index === step ? 'border-blue-200 bg-white text-blue-800 shadow-sm' : index < step ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-transparent text-slate-600'}`}>
                       <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs ${index === step ? 'bg-blue-600 text-white' : index < step ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}`} aria-hidden="true">{index < step ? '✓' : index + 1}</span>
                       <span className="hidden lg:inline">{name}</span>
                       <span className="sr-only lg:hidden">{name}</span>
@@ -189,7 +217,7 @@ export function MatcherPage() {
               </aside>
               <div className="p-6 sm:p-9">
                 <p className="eyebrow">คำถามของคุณ</p>
-                <h2 id="quiz-title" className="section-heading mt-3">{steps[step]}</h2>
+                <h2 ref={quizTitleRef} id="quiz-title" className="section-heading mt-3" tabIndex={-1}>{steps[step]}</h2>
                 <form onSubmit={handleNext} noValidate className="mt-8 space-y-6">
               {step === 0 && (
                 <div>

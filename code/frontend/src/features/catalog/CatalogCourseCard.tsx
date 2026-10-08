@@ -43,7 +43,7 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
       aria-labelledby={`course-title-${course.id}`}
       className="surface-card depth-card group flex h-full flex-col overflow-hidden"
     >
-      <div className="relative min-h-44 overflow-hidden bg-[color:var(--ink)] p-6 text-white">
+      <div className="ink-surface relative min-h-44 overflow-hidden bg-[color:var(--ink)] p-6 text-white">
         <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:32px_32px]" />
         <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-cyan-300/30 blur-sm transition duration-500 group-hover:scale-110" />
         <div className="absolute -bottom-16 right-20 h-36 w-36 rounded-full bg-blue-500/35 blur-md transition duration-500 group-hover:-translate-y-2" />

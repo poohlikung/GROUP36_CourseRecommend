@@ -36,7 +36,7 @@ export function AdminPage() {
   const [providerLoading, setProviderLoading] = useState(true);
   const [courseReasons, setCourseReasons] = useState<Record<number, string>>({});
   const [providerReasons, setProviderReasons] = useState<Record<number, string>>({});
-  const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<{ type: 'course' | 'provider'; name: string } | null>(null);
   const [courseReload, setCourseReload] = useState(0);
   const [providerReload, setProviderReload] = useState(0);
   const [courseError, setCourseError] = useState('');
@@ -64,7 +64,7 @@ export function AdminPage() {
   }, [providerStatus, providerReload]);
 
   async function decideCourse(course: CourseDetail, decision: CourseDecision) {
-    setBusy(true);
+    setBusyAction({ type: 'course', name: course.title });
     setCourseError('');
     setMessage('');
     try {
@@ -74,12 +74,12 @@ export function AdminPage() {
       setCourseError(getErrorMessage(error));
     } finally {
       setCourseReload((value) => value + 1);
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
   async function decideProvider(provider: AdminProvider, decision: ProviderDecision) {
-    setBusy(true);
+    setBusyAction({ type: 'provider', name: provider.name });
     setProviderError('');
     setMessage('');
     try {
@@ -89,9 +89,11 @@ export function AdminPage() {
       setProviderError(getErrorMessage(error));
     } finally {
       setProviderReload((value) => value + 1);
-      setBusy(false);
+      setBusyAction(null);
     }
   }
+
+  const busy = busyAction !== null;
 
   return (
     <main className="page-shell space-y-8">
@@ -108,9 +110,21 @@ export function AdminPage() {
         </div>
       </header>
 
-      {message && <p role="status" className="alert-success">{message}</p>}
+      {busyAction ? (
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {busyAction.type === 'course'
+            ? `กำลังบันทึกผลตรวจคอร์ส ${busyAction.name}`
+            : `กำลังบันทึกผลตรวจ Provider ${busyAction.name}`}
+        </p>
+      ) : message ? (
+        <p role="status" aria-live="polite" aria-atomic="true" className="alert-success">{message}</p>
+      ) : null}
 
-      <section aria-labelledby="course-heading" className="surface-panel space-y-5 p-5 sm:p-7">
+      <section
+        aria-labelledby="course-heading"
+        aria-busy={busyAction?.type === 'course'}
+        className="surface-panel space-y-5 p-5 sm:p-7"
+      >
         <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="eyebrow">Content review</p>
@@ -181,7 +195,11 @@ export function AdminPage() {
         </div>
       </section>
 
-      <section aria-labelledby="provider-heading" className="surface-panel space-y-5 p-5 sm:p-7">
+      <section
+        aria-labelledby="provider-heading"
+        aria-busy={busyAction?.type === 'provider'}
+        className="surface-panel space-y-5 p-5 sm:p-7"
+      >
         <div className="flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="eyebrow">Partner review</p>

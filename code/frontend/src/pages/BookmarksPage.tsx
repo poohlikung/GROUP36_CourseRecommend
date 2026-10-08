@@ -34,7 +34,7 @@ export function BookmarksPage() {
 
   return (
     <main className="page-shell">
-      <header className="relative overflow-hidden rounded-[2rem] bg-[color:var(--ink)] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-12">
+      <header className="ink-surface relative overflow-hidden rounded-[2rem] bg-[color:var(--ink)] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-12">
         <div className="hero-grid absolute inset-0 opacity-40" aria-hidden="true" />
         <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" aria-hidden="true" />
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
