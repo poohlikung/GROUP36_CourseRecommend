@@ -144,40 +144,56 @@ export function CatalogPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link to="/" className="text-xl font-black tracking-tight">
-            Course<span className="text-cyan-600">Hub</span>
-          </Link>
-          <span className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
-            ค้นหาคอร์สที่เหมาะกับคุณ
-          </span>
-        </div>
-      </header>
-
-      <section className="bg-slate-950 px-6 py-16 text-white lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-cyan-300">Course Catalog</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight sm:text-5xl">
-            เรียนสิ่งที่สนใจ จากแหล่งเรียนรู้ที่ไว้ใจได้
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            รวมคอร์สจากหลายแพลตฟอร์มไว้ในที่เดียว ค้นหาและเปรียบเทียบก่อนเริ่มเรียนได้ง่ายขึ้น
-          </p>
+    <main className="min-h-screen pb-16 text-slate-950">
+      <section className="ink-surface relative overflow-hidden bg-[color:var(--ink)] text-white">
+        <div className="hero-grid absolute inset-0 opacity-60" aria-hidden="true" />
+        <div className="absolute -left-28 top-20 h-72 w-72 rounded-full bg-blue-600/25 blur-3xl" aria-hidden="true" />
+        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" aria-hidden="true" />
+        <div className="shell-container relative py-14 sm:py-20">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-cyan-300">Course Catalog</p>
+              <h1 className="mt-4 max-w-3xl text-balance text-4xl font-black leading-[1.12] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
+                เรียนสิ่งที่สนใจ จากแหล่งเรียนรู้ที่ไว้ใจได้
+              </h1>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+                รวมคอร์สจากหลายแพลตฟอร์มไว้ในที่เดียว ค้นหาและเปรียบเทียบก่อนเริ่มเรียนได้ง่ายขึ้น
+              </p>
+              <Link to="/match" className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/15">
+                ยังเลือกไม่ถูก? ลองระบบแนะนำ <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+            <div className="relative hidden min-h-64 lg:block" aria-hidden="true">
+              <div className="absolute left-6 top-8 w-64 -rotate-6 rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-md">
+                <span className="text-xs font-bold text-cyan-200">DESIGN</span>
+                <p className="mt-12 text-xl font-black">เรียนจากผู้สอนที่ใช่</p>
+                <div className="mt-5 h-2 w-3/4 rounded-full bg-cyan-300/70" />
+              </div>
+              <div className="absolute bottom-0 right-4 w-64 rotate-6 rounded-[1.75rem] border border-white/20 bg-blue-600/50 p-5 shadow-2xl backdrop-blur-md">
+                <span className="text-xs font-bold text-blue-100">TECHNOLOGY</span>
+                <p className="mt-12 text-xl font-black">เริ่มเส้นทางใหม่วันนี้</p>
+                <div className="mt-5 flex gap-2"><span className="h-9 w-9 rounded-xl bg-[color:var(--coral)]" /><span className="h-9 w-20 rounded-xl bg-white/20" /></div>
+              </div>
+            </div>
+          </div>
 
           <form
-            className="mt-9 grid gap-3 rounded-2xl bg-white p-3 text-slate-950 shadow-2xl md:grid-cols-2 xl:grid-cols-4"
+            className="surface-card relative mt-12 grid gap-4 p-4 text-slate-950 sm:p-6 md:grid-cols-2 xl:grid-cols-4"
             onSubmit={handleSearch}
           >
-            <label className="sr-only" htmlFor="catalog-search">ค้นหาคอร์ส</label>
-            <input
-              id="catalog-search"
-              className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:col-span-2"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="ค้นหาจากชื่อคอร์ส"
-            />
+            <div className="md:col-span-2 xl:col-span-4">
+              <label className="text-sm font-extrabold text-slate-800" htmlFor="catalog-search">ค้นหาคอร์ส</label>
+              <div className="relative mt-2">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate-400" aria-hidden="true">⌕</span>
+                <input
+                  id="catalog-search"
+                  className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-300 bg-white pl-12 pr-4 text-base outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder="ค้นหาจากชื่อคอร์ส"
+                />
+              </div>
+            </div>
 
             <FilterSelect id="category-filter" label="หมวดหมู่" value={category} onChange={(value) => { setCategory(value); setPage(0); }}>
               <option value="">ทุกหมวดหมู่</option>
@@ -232,19 +248,19 @@ export function CatalogPage() {
               <option value="price-desc">ราคาสูงไปต่ำ</option>
             </FilterSelect>
 
-            <button className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700" type="submit">
+            <button className="primary-button self-end" type="submit">
               ค้นหา
             </button>
 
             {optionsError && (
-              <div className="flex items-center justify-between gap-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 md:col-span-2 xl:col-span-3" role="alert">
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:col-span-2 xl:col-span-3" role="alert">
                 <span>โหลดหมวดหมู่และแพลตฟอร์มไม่สำเร็จ</span>
-                <button className="font-bold underline" onClick={() => setOptionsRetry((count) => count + 1)} type="button">ลองใหม่</button>
+                <button className="min-h-10 font-bold underline underline-offset-4" onClick={() => setOptionsRetry((count) => count + 1)} type="button">ลองใหม่</button>
               </div>
             )}
 
             {priceRangeInvalid && (
-              <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800 md:col-span-2 xl:col-span-4" role="alert">
+              <p className="alert-error md:col-span-2 xl:col-span-4" role="alert">
                 ราคาต่ำสุดต้องไม่เกินราคาสูงสุด และราคาต้องไม่ติดลบ
               </p>
             )}
@@ -252,11 +268,11 @@ export function CatalogPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <section className="page-shell">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-cyan-700">หลักสูตรทั้งหมด</p>
-            <h2 className="mt-1 text-2xl font-bold" aria-live="polite" role="status">
+            <p className="eyebrow">หลักสูตรทั้งหมด</p>
+            <h2 className="section-heading mt-3" aria-live="polite" role="status">
               {loading
                 ? 'กำลังค้นหาคอร์ส...'
                 : priceRangeInvalid
@@ -267,17 +283,18 @@ export function CatalogPage() {
             </h2>
           </div>
           {hasFilters && (
-            <button className="text-sm font-semibold text-slate-600 underline underline-offset-4 hover:text-slate-950" onClick={clearFilters} type="button">
+            <button className="ghost-button" onClick={clearFilters} type="button">
               ล้างตัวกรอง
             </button>
           )}
         </div>
 
         {!priceRangeInvalid && coursesError && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center" role="alert">
-            <h2 className="text-lg font-bold text-amber-950">กำลังเตรียมระบบให้พร้อม</h2>
+          <div className="surface-panel p-8 text-center" role="alert">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-2xl" aria-hidden="true">↻</div>
+            <h2 className="mt-4 text-lg font-black text-amber-950">กำลังเตรียมระบบให้พร้อม</h2>
             <p className="mt-2 text-sm text-amber-800">เซิร์ฟเวอร์อาจกำลังเริ่มทำงาน กรุณารอสักครู่แล้วลองใหม่</p>
-            <button className="mt-5 rounded-xl bg-amber-900 px-5 py-2.5 text-sm font-semibold text-white" onClick={() => setCoursesRetry((count) => count + 1)} type="button">
+            <button className="primary-button mt-5" onClick={() => setCoursesRetry((count) => count + 1)} type="button">
               ลองใหม่
             </button>
           </div>
@@ -286,11 +303,11 @@ export function CatalogPage() {
         {!priceRangeInvalid && !coursesError && loading && (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className="h-[430px] animate-pulse rounded-3xl border border-slate-200 bg-white p-6">
-                <div className="h-36 rounded-2xl bg-slate-200" />
-                <div className="mt-6 h-4 w-1/3 rounded bg-slate-200" />
-                <div className="mt-4 h-6 w-4/5 rounded bg-slate-200" />
-                <div className="mt-3 h-4 w-full rounded bg-slate-100" />
+              <div key={index} className="surface-card h-[450px] overflow-hidden p-6">
+                <div className="skeleton-block h-36" />
+                <div className="skeleton-block mt-6 h-4 w-1/3" />
+                <div className="skeleton-block mt-4 h-6 w-4/5" />
+                <div className="skeleton-block mt-3 h-4 w-full" />
               </div>
             ))}
           </div>
@@ -306,16 +323,16 @@ export function CatalogPage() {
             {catalog.totalPages > 1 && (
               <nav className="mt-10 flex items-center justify-center gap-4" aria-label="หน้ารายการคอร์ส">
                 <button
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+                  className="secondary-button min-h-10 rounded-xl px-4 py-2 text-sm"
                   disabled={catalog.first}
                   onClick={() => setPage((currentPage) => Math.max(0, currentPage - 1))}
                   type="button"
                 >
                   ก่อนหน้า
                 </button>
-                <span className="text-sm font-medium text-slate-600">หน้า {catalog.page + 1} จาก {catalog.totalPages}</span>
+                <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm">หน้า {catalog.page + 1} จาก {catalog.totalPages}</span>
                 <button
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+                  className="secondary-button min-h-10 rounded-xl px-4 py-2 text-sm"
                   disabled={catalog.last}
                   onClick={() => setPage((currentPage) => currentPage + 1)}
                   type="button"
@@ -328,10 +345,11 @@ export function CatalogPage() {
         )}
 
         {!priceRangeInvalid && !coursesError && !loading && catalog.content.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-            <h2 className="text-xl font-bold">ยังไม่พบคอร์สที่ตรงกับตัวกรอง</h2>
+          <div className="empty-state px-6 py-16">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-100 text-3xl text-blue-700" aria-hidden="true">⌕</div>
+            <h2 className="mt-5 text-xl font-black text-slate-950">ยังไม่พบคอร์สที่ตรงกับตัวกรอง</h2>
             <p className="mt-2 text-slate-600">ลองเปลี่ยนคำค้นหา หรือเลือกตัวกรองใหม่</p>
-            <button className="mt-5 font-semibold text-blue-700" onClick={clearFilters} type="button">ดูคอร์สทั้งหมด</button>
+            <button className="primary-button mt-5" onClick={clearFilters} type="button">ดูคอร์สทั้งหมด</button>
           </div>
         )}
       </section>
@@ -349,11 +367,11 @@ type FilterSelectProps = {
 
 function FilterSelect({ id, label, value, onChange, children }: FilterSelectProps) {
   return (
-    <label className="grid gap-1 text-xs font-semibold text-slate-600" htmlFor={id}>
+    <label className="grid gap-2 text-xs font-extrabold text-slate-600" htmlFor={id}>
       <span>{label}</span>
       <select
         id={id}
-        className="rounded-xl border border-slate-200 px-4 py-3 text-base font-normal text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        className="min-h-12 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-normal text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -372,11 +390,11 @@ type FilterNumberInputProps = {
 
 function FilterNumberInput({ id, label, value, onChange }: FilterNumberInputProps) {
   return (
-    <label className="grid gap-1 text-xs font-semibold text-slate-600" htmlFor={id}>
+    <label className="grid gap-2 text-xs font-extrabold text-slate-600" htmlFor={id}>
       <span>{label}</span>
       <input
         id={id}
-        className="rounded-xl border border-slate-200 px-4 py-3 text-base font-normal text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        className="min-h-12 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-normal text-slate-950 outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
         type="number"
         inputMode="decimal"
         min="0"

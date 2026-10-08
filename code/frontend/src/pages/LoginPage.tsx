@@ -15,6 +15,9 @@ export function LoginPage() {
   const [error, setError] = useState<unknown>();
   const [submitting, setSubmitting] = useState(false);
 
+  const emailError = getFieldError(error, 'email');
+  const passwordError = getFieldError(error, 'password');
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(undefined);
@@ -37,36 +40,54 @@ export function LoginPage() {
       alternateLinkText="สมัครสมาชิก"
       alternateTo="/register"
     >
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        <label className="block text-sm font-medium">
-          อีเมล
+      <div className="mb-7 grid grid-cols-2 gap-3" aria-hidden="true">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3">
+          <span className="block text-xs font-bold text-blue-700">บัญชีเดียว</span>
+          <span className="mt-1 block text-sm font-black text-slate-900">เก็บทุกคอร์สที่สนใจ</span>
+        </div>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+          <span className="block text-xs font-bold text-emerald-700">กลับมาเรียนต่อ</span>
+          <span className="mt-1 block text-sm font-black text-slate-900">ต่อเนื่องทุกอุปกรณ์</span>
+        </div>
+      </div>
+
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-sm font-bold text-slate-800" htmlFor="login-email">อีเมล</label>
+            <span className="text-xs font-medium text-slate-500">ใช้สำหรับเข้าสู่ระบบ</span>
+          </div>
           <input
             className="form-input"
+            id="login-email"
             type="email"
             autoComplete="email"
             required
             maxLength={255}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={Boolean(getFieldError(error, 'email'))}
+            aria-invalid={Boolean(emailError)}
+            aria-describedby={emailError ? 'login-email-error' : undefined}
           />
-          <FieldError message={getFieldError(error, 'email')} />
-        </label>
-        <label className="block text-sm font-medium">
-          รหัสผ่าน
+          <div id="login-email-error"><FieldError message={emailError} /></div>
+        </div>
+        <div>
+          <label className="text-sm font-bold text-slate-800" htmlFor="login-password">รหัสผ่าน</label>
           <input
             className="form-input"
+            id="login-password"
             type="password"
             autoComplete="current-password"
             required
             maxLength={72}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={Boolean(getFieldError(error, 'password'))}
+            aria-invalid={Boolean(passwordError)}
+            aria-describedby={passwordError ? 'login-password-error' : undefined}
           />
-          <FieldError message={getFieldError(error, 'password')} />
-        </label>
-        {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">{getErrorMessage(error)}</p> : null}
+          <div id="login-password-error"><FieldError message={passwordError} /></div>
+        </div>
+        {error ? <p className="alert-error" role="alert">{getErrorMessage(error)}</p> : null}
         <button className="primary-button w-full" type="submit" disabled={submitting || !email || !password}>
           {submitting ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
         </button>
