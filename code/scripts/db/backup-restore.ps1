@@ -52,7 +52,14 @@ function Get-DbUrl([string]$VariableName) {
     if ([string]::IsNullOrWhiteSpace($value)) {
         throw "ยังไม่ได้ตั้ง environment variable $VariableName"
     }
-    return $value
+    # ตรวจรูปแบบก่อนส่งให้ psql เพื่อไม่ให้ error ของ psql พิมพ์ connection string (และรหัสผ่าน) ออกหน้าจอ
+    if ($value -match '^\s*jdbc:') {
+        throw "$VariableName เป็นรูปแบบ JDBC (jdbc:postgresql://...) ซึ่ง psql/pg_dump ใช้ไม่ได้ ให้คัดลอกแบบ Connection string ที่ขึ้นต้นด้วย postgresql:// จากปุ่ม Connect ของ Neon"
+    }
+    if ($value -notmatch '^\s*postgres(ql)?://') {
+        throw "$VariableName ต้องขึ้นต้นด้วย postgresql://"
+    }
+    return $value.Trim()
 }
 
 # ชื่อ host/database สำหรับแสดงผลและตรวจความปลอดภัย โดยไม่เปิดเผย user/password

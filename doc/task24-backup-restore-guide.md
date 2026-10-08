@@ -38,6 +38,7 @@
 
 1. Neon Console → Databases → **New database** ชื่อ `coursehub_restore` (อยู่ใน branch เดียวกับ `neondb` แต่เป็นฐานแยก ว่างเปล่า)
 2. กด **Connect** แล้วคัดลอก connection string 2 ชุด โดย**ปิด Connection pooling** (pg_dump/pg_restore ควรต่อแบบ direct ไม่ผ่าน pooler)
+   - เลือกรูปแบบ **Connection string** ที่ขึ้นต้นด้วย `postgresql://` ห้ามใช้แบบ Java/JDBC (`jdbc:postgresql://...`) ซึ่งเป็นรูปแบบที่ Render ใช้ เพราะ psql/pg_dump อ่านไม่ได้
    - database `neondb` → ใช้เป็นต้นทาง
    - database `coursehub_restore` → ใช้เป็นปลายทาง
 
@@ -114,6 +115,7 @@ powershell -ExecutionPolicy Bypass -File .\code\scripts\db\backup-restore.ps1 ve
 - ลบ database `coursehub_restore` ใน Neon Console (Free plan มีพื้นที่จำกัด)
 - ลบไฟล์ใน `backups/` ที่ไม่ต้องใช้แล้ว
 - ปิดหน้าต่าง PowerShell เพื่อล้างตัวแปรที่มีรหัสผ่าน
+- PowerShell บันทึกคำสั่งที่พิมพ์ไว้ในไฟล์ประวัติ (รวมบรรทัดที่ตั้ง `$env:COURSEHUB_..._DB_URL`) ให้เปิด `(Get-PSReadLineOption).HistorySavePath` แล้วลบบรรทัดที่มี connection string ออก
 
 ## 10. Linux / macOS
 
