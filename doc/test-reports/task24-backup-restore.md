@@ -28,7 +28,30 @@
 
 ชุดเต็ม `mvn verify` บนเครื่องที่มี Docker: 312 เคส ผ่าน 291 ส่วน 21 เคสที่ไม่ผ่านอยู่ใน `CourseEventPublicationIntegrationTests` ซึ่ง**ไม่ผ่านแบบเดียวกันบน `develop` (`d1e8512`) ที่ยังไม่มีงาน Task 24** (นับ audit log ที่เทสต์อื่นสร้างไว้ในฐาน H2 เดียวกัน ขึ้นกับลำดับการรันเทสต์) จึงไม่เกี่ยวกับงานนี้ และ CI ของ `develop` ยังผ่าน
 
-## 2. ทดสอบสคริปต์ `backup-restore.ps1` กับ PostgreSQL บนเครื่อง
+## 2. เทสต์ตัวกันพลาดของสคริปต์ (รันใน CI)
+
+เพิ่มตามรีวิว PR #32: `restore` ต้องรู้ฐานต้นทางเสมอ และปฏิเสธฐาน production ตามชื่อ database เพราะ host แบบ direct กับ `-pooler` ของ Neon ต่างกันแม้ชี้ฐานเดียวกัน
+
+```bash
+pwsh -NoProfile -File test/scripts/backup-restore.Tests.ps1
+```
+
+| เคส | ผล |
+| --- | :---: |
+| `restore` โดยไม่ได้ตั้ง `COURSEHUB_SOURCE_DB_URL` หยุดทันที (exit code ไม่ใช่ 0) และแจ้งชื่อตัวแปร ก่อนเชื่อมต่อฐานปลายทาง | ผ่าน |
+| ปลายทาง `neondb` ผ่าน host `-pooler` ขณะที่ต้นทางใช้ host direct ถูกปฏิเสธ | ผ่าน |
+| ปลายทาง `neondb` ถูกปฏิเสธแม้ต้นทางเป็นฐานชื่ออื่น (อยู่ในรายชื่อฐาน production) | ผ่าน |
+| ชื่อฐาน production ตัวพิมพ์ต่างกัน (`NeonDB`) ถูกปฏิเสธ | ผ่าน |
+| ปลายทางชื่อเดียวกับต้นทางผ่าน host `-pooler` ถูกปฏิเสธ แม้ไม่อยู่ในรายชื่อ | ผ่าน |
+| ปลายทางไม่ระบุชื่อ database ถูกปฏิเสธ | ผ่าน |
+| ปลายทาง `coursehub_restore` ผ่านการตรวจ | ผ่าน |
+| connection string แบบ JDBC ถูกปฏิเสธ | ผ่าน |
+
+ผล: **8/8 ผ่าน** ทุกเคสตรวจด้วยว่าข้อความ error ไม่มีรหัสผ่าน และเมื่อนำเทสต์ชุดนี้ไปรันกับสคริปต์เวอร์ชันก่อนแก้ จะไม่ผ่าน
+
+ทดสอบซ้ำกับ PostgreSQL บนเครื่องหลังแก้: `restore` ลง database ชื่อ `neondb` บนอีก server ถูกปฏิเสธ ส่วน backup → restore ลง `coursehub_restore` → verify ยังผ่าน
+
+## 3. ทดสอบสคริปต์ `backup-restore.ps1` กับ PostgreSQL บนเครื่อง
 
 จำลองต้นทางชื่อ `neondb` (migrate ด้วย backend จริง ได้ Flyway V1–V4 และข้อมูล seed) และปลายทางว่างชื่อ `coursehub_restore` บน PostgreSQL 16 แยกกัน 2 ตัว
 
@@ -59,7 +82,7 @@
 | user_profiles | 4 | 4 |
 | users | 4 | 4 |
 
-## 3. Backup/restore กับ Neon จริง
+## 4. Backup/restore กับ Neon จริง
 
 รันเมื่อ 8 ตุลาคม 2026 เวลาประมาณ 22:40 น. (GMT+7) จากเครื่อง Windows ของผู้รับผิดชอบด้วย PowerShell และ PostgreSQL client tools ตามคู่มือข้อ 3–5 connection string อยู่ใน environment variable เท่านั้น
 
@@ -92,7 +115,7 @@
 
 ภาพหน้าจอผล `backup` และ `verify` เก็บไว้กับผู้รับผิดชอบ ไม่ได้คอมมิตเข้า repo เพราะมีชื่อ host ของฐาน production (ไม่มีรหัสผ่านในภาพ) ไฟล์ `.dump` เก็บไว้ในเครื่องผู้รับผิดชอบเท่านั้นตามข้อ 2 ของคู่มือ
 
-## 4. ข้อมูลคงอยู่หลัง restart backend บน Render
+## 5. ข้อมูลคงอยู่หลัง restart backend บน Render
 
 | รายการ | ผล |
 | --- | --- |
@@ -104,11 +127,12 @@
 
 หมายเหตุ: deploy ที่ Live บน Render ณ วันทดสอบคือ commit `8e1ac30` (merge PR #24) เพราะ service ตั้ง Root Directory เป็น `code/backend` Render จึง deploy ใหม่เฉพาะเมื่อไฟล์ในโฟลเดอร์นั้นเปลี่ยน และ PR #25–#30 ไม่ได้แก้ `code/backend` (ตรวจด้วย `git diff 8e1ac30 d1e8512 -- code/backend` แล้วไม่มีความต่าง) backend ที่ทดสอบจึงเป็นโค้ดเดียวกับ `develop` ล่าสุด
 
-## 5. สรุป
+## 6. สรุป
 
 | เกณฑ์ Task 24 | ผล |
 | --- | :---: |
 | restore สำเร็จ | ผ่าน (ทั้งเทสต์อัตโนมัติและ Neon จริง) |
+| กันพลาด restore ทับ production | ผ่าน (8/8 เคสใน CI) |
 | ตรวจข้อมูลคงอยู่ครบ | ผ่าน (13/13 ตาราง, Flyway history ตรงกัน, restart แล้วข้อมูลเท่าเดิม) |
 | migration rehearsal | ผ่าน (Flyway validate ได้และไม่ migrate ซ้ำบนฐานที่ restore, sequence ใช้งานต่อได้) |
 | มีหลักฐาน | รายงานนี้ + ภาพหน้าจอที่ผู้รับผิดชอบเก็บไว้ |

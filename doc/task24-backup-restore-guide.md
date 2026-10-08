@@ -6,6 +6,7 @@
 | --- | --- |
 | สคริปต์ (Windows PowerShell) | `code/scripts/db/backup-restore.ps1` |
 | เทสต์ซ้อม backup/restore อัตโนมัติ (รันใน CI) | `test/backend/integration/com/example/courserecommend/BackupRestoreRehearsalIntegrationTests.java` |
+| เทสต์ตัวกันพลาดของสคริปต์ (รันใน CI job `Database script safety tests`) | `test/scripts/backup-restore.Tests.ps1` |
 | ผลทดสอบและหลักฐาน | `doc/test-reports/task24-backup-restore.md` |
 
 ## 1. หลักการ
@@ -13,7 +14,10 @@
 - ฐาน production คือ database `neondb` บน Neon ห้าม restore ทับฐานนี้โดยตรง
 - backup ด้วย `pg_dump --format=custom --no-owner --no-acl` ได้ไฟล์ `.dump` ไฟล์เดียว ครบทั้ง schema ข้อมูล ประวัติ Flyway และค่า sequence
 - restore ลง **ฐานว่าง** ที่แยกจาก production เสมอ แล้วเทียบจำนวนแถวทุกตารางและ `flyway_schema_history` กับต้นทาง
-- สคริปต์ปฏิเสธการ restore เมื่อปลายทางเป็นฐานเดียวกับต้นทาง หรือปลายทางมีตารางอยู่แล้ว
+- `restore` ต้องตั้งทั้ง `COURSEHUB_SOURCE_DB_URL` และ `COURSEHUB_RESTORE_DB_URL` และปฏิเสธเมื่อ
+  - ชื่อ database ปลายทางเป็นฐาน production (`neondb`, เปลี่ยนรายชื่อได้ด้วย `-ProtectedDatabase`)
+  - ชื่อ database ปลายทางตรงกับต้นทาง ตัดสินจากชื่อฐาน ไม่ใช้ host เพราะ Neon มี host แบบ direct (`ep-xxx`) และ pooler (`ep-xxx-pooler`) ที่ชี้ฐานเดียวกัน
+  - ปลายทางมีตารางอยู่แล้ว
 
 ## 2. ความปลอดภัย
 
