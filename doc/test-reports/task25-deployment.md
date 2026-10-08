@@ -17,7 +17,7 @@
 | `/api/v1/system/liveness` on Vercel domain | HTTP 200 JSON, `status: UP`, after Render woke |
 | `/api/v1/me` without login | HTTP 401 as expected; browser then showed guest navigation |
 | `/api/v1/auth/csrf` on Vercel domain | HTTP 200 JSON; `XSRF-TOKEN` cookie carried the `Secure` flag |
-| Public Swagger UI on Render | `/swagger-ui.html` returned HTTP 200 |
+| Public Swagger UI on Render | `/swagger-ui.html` redirected (HTTP 302) to `/swagger-ui/index.html`, which returned HTTP 200 |
 
 Render's free instance took time to wake. Initial API requests through Vercel timed out or returned `ROUTER_EXTERNAL_TARGET_ERROR`; repeating after direct backend liveness returned 200 succeeded. The frontend displayed its loading state during this period.
 

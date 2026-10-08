@@ -11,7 +11,15 @@ The public architecture follows [ADR 0004](decisions/0004-spa-frontend-and-deplo
 - `group36courserecommend.vercel.app` belongs to a different Vercel project and still serves the older frontend. Updating that exact domain requires access to its project. Do not treat the two domains as the same deployment.
 - GitHub Actions CD is still disabled because `CD_ENABLED` is unset. The latest `develop` run passed all three test jobs but skipped both deploy jobs. The manual release does not establish automatic future deploys.
 
-For another manual frontend release while CD remains disabled, first ensure the local frontend tree matches the reviewed `develop` commit. From the repository root, run `vercel link --yes --project group36-coursehub --scope bosszy27s-projects` and `vercel deploy --prod --yes --scope bosszy27s-projects`. Confirm the alias points to a Ready deployment, then repeat the production smoke checks below. The local `.vercel/` link is ignored by Git.
+For another manual frontend release while CD remains disabled, first confirm that the local frontend files match the reviewed `develop` commit. The Vercel CLI uploads files from this checkout, so uncommitted or different frontend files must not be included. From the repository root, run:
+
+```sh
+git fetch origin develop
+git status --porcelain
+git diff --exit-code origin/develop -- code/frontend
+```
+
+The status and diff commands must produce no output; stop if either reports changes. Record `git rev-parse origin/develop` as the source commit, then run `vercel link --yes --project group36-coursehub --scope bosszy27s-projects` and `vercel deploy --prod --yes --scope bosszy27s-projects` from that same checkout. Confirm the alias points to a Ready deployment, then repeat the production smoke checks below. The local `.vercel/` link is ignored by Git.
 
 ## One-time setup
 
