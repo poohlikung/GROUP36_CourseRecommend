@@ -100,3 +100,40 @@ test('learner reviews through real API, admin approves or rejects through UI and
   await expect(learner.page.getByRole('article', { name: course.title, exact: true })).toContainText('ยังไม่มีรีวิว');
   expect((await (await learner.context.request.get(`/api/v1/courses/${course.id}/reviews`)).json()).totalElements).toBe(0);
 });
+
+test('review form waits for existing review to load before displaying (prevents race condition)', async ({ actors }) => {
+  const { provider, admin, learner } = actors;
+  const course = await prepareCourse(provider, admin);
+  await loginUI(learner);
+  
+  // Create and approve a review
+  const payload = { overallScore: 5, contentScore: 5, teachingScore: 4, difficultyScore: 2, body: 'First review' };
+  const review = await jsonMutation<{ id: number }>(learner, 'POST', `/api/v1/courses/${course.id}/reviews`, payload, 201);
+  
+  await admin.page.goto('/admin');
+  const region = admin.page.getByRole('region', { name: 'รีวิว', exact: true });
+  const row = region.getByRole('article').filter({ hasText: 'First review' });
+  const approval = admin.page.waitForResponse((r) => r.url().endsWith(`/api/v1/admin/reviews/${review.id}/moderation-decisions`) && r.request().method() === 'POST');
+  await row.getByRole('button', { name: 'อนุมัติรีวิว', exact: true }).click();
+  expect((await approval).status()).toBe(200);
+  
+  // Navigate to review page - form should wait for GET /reviews/me to complete
+  await learner.page.goto(`/courses/${course.id}/reviews`);
+  
+  // Wait for form to be fully loaded (not showing "Checking your session..." anymore)
+  await expect(learner.page.getByRole('button', { name: /Update review|Submit review/, exact: false })).toBeVisible({ timeout: 10000 });
+  
+  // Verify the existing review was loaded (h2 should show "Manage your review")
+  const heading = learner.page.getByRole('heading', { name: 'Manage your review', exact: true });
+  await expect(heading).toBeVisible();
+  
+  // Submit an update - should use PUT, not POST
+  const updated = await jsonMutation<{ status: string }>(learner, 'PUT', `/api/v1/courses/${course.id}/reviews/me`, {
+    ...payload, overallScore: 4, body: 'Updated review',
+  });
+  expect(updated.status).toBe('PENDING');
+  
+  // Verify the update was successful (only one review should exist)
+  const reviews = await learner.context.request.get(`/api/v1/courses/${course.id}/reviews`);
+  expect((await reviews.json()).totalElements).toBe(0); // Pending review is not published
+});

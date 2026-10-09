@@ -82,7 +82,7 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className="text-sm font-bold text-amber-700">
-            {course.averageRating === null ? 'No reviews yet' : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} reviews)`}
+            {course.averageRating === null ? 'ยังไม่มีรีวิว' : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} รีวิว)`}
           </p>
           <Link className="text-sm font-extrabold text-blue-700 hover:text-blue-900" to={`/courses/${course.id}/reviews`}>Read reviews</Link>
         </div>

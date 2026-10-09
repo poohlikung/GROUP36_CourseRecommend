@@ -21,6 +21,7 @@ export function ReviewsPage() {
   const [input, setInput] = useState<ReviewInput>(initialInput);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMine, setLoadingMine] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -38,13 +39,16 @@ export function ReviewsPage() {
   }, [courseId, page, reload]);
 
   useEffect(() => {
-    if (status !== 'authenticated' || !Number.isInteger(courseId)) { setMine(null); setInput(initialInput); return; }
+    if (status !== 'authenticated' || !Number.isInteger(courseId)) { setMine(null); setInput(initialInput); setLoadingMine(false); return; }
     const controller = new AbortController();
+    setLoadingMine(true);
     reviewApi.mine(courseId, controller.signal).then((review) => {
       setMine(review);
       setInput({ overallScore: review.overallScore, contentScore: review.contentScore, teachingScore: review.teachingScore, difficultyScore: review.difficultyScore, body: review.body ?? '' });
     }).catch((requestError) => {
       if (!controller.signal.aborted && requestError instanceof ApiError && requestError.status !== 404) setError(getErrorMessage(requestError));
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoadingMine(false);
     });
     return () => controller.abort();
   }, [courseId, status, reload]);
@@ -86,7 +90,7 @@ export function ReviewsPage() {
       </section>
 
       <aside className="surface-card p-5 sm:p-6 lg:sticky lg:top-24"><p className="eyebrow">Your voice</p><h2 className="mt-2 text-2xl font-black">{mine ? 'Manage your review' : 'Rate this course'}</h2>
-        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">Sign in to add and manage your rating.</p><Link className="primary-button mt-4 w-full" to="/login">Sign in to review</Link></div> : status === 'authenticated' ? <form className="mt-5 space-y-5" onSubmit={submit}>
+        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">Sign in to add and manage your rating.</p><Link className="primary-button mt-4 w-full" to="/login">Sign in to review</Link></div> : status === 'authenticated' && !loadingMine ? <form className="mt-5 space-y-5" onSubmit={submit}>
           {scoreFields.map(({ key, label, hint }) => <fieldset key={key}><legend className="text-sm font-extrabold">{label} <span className="font-normal text-slate-500">— {hint}</span></legend><div className="mt-2 flex gap-1" role="radiogroup">{[1,2,3,4,5].map((score) => <label key={score} className="flex-1"><input className="peer sr-only" type="radio" name={key} value={score} checked={input[key] === score} onChange={() => setInput((current) => ({ ...current, [key]: score }))}/><span className="grid min-h-11 cursor-pointer place-items-center rounded-xl border border-slate-300 bg-white font-black text-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-50 peer-checked:text-amber-800">{score}</span></label>)}</div></fieldset>)}
           <label className="block text-sm font-extrabold">Comment <span className="font-normal text-slate-500">(optional)</span><textarea className="form-input min-h-32 resize-y" maxLength={2000} value={input.body} onChange={(event) => setInput((current) => ({ ...current, body: event.target.value }))} placeholder="What worked well? What should future learners know?"/></label>
           {mine && <p className="rounded-xl bg-slate-100 p-3 text-xs text-slate-600">Status: <b>{mine.status}</b>{mine.moderationReason ? ` — ${mine.moderationReason}` : ''}. Editing sends the review back to moderation.</p>}
