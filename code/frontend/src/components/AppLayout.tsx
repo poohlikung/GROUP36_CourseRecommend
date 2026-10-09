@@ -69,16 +69,16 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col text-slate-900">
       <a className="skip-link" href="#main-content">ข้ามไปยังเนื้อหาหลัก</a>
-      <header className={`floating-header sticky top-0 z-40 py-3 ${location.pathname === '/' ? 'floating-header-home' : ''}`}>
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-[rgba(247,243,233,0.88)] backdrop-blur-xl">
         <nav className="shell-container" aria-label="เมนูหลัก">
-          <div className="floating-nav-shell relative flex min-h-[64px] items-center justify-between gap-4 rounded-[1.35rem] border border-white/80 bg-[rgba(255,255,255,0.92)] px-4 shadow-[0_18px_55px_rgba(5,10,18,0.16)] backdrop-blur-2xl sm:px-5">
+          <div className="flex min-h-[76px] items-center justify-between gap-4">
             <Link to="/" aria-label="CourseHub หน้าแรก" className="rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100">
               <BrandMark />
             </Link>
             <button
               ref={menuButtonRef}
               type="button"
-              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-slate-950 text-white shadow-sm lg:hidden"
+              className="grid h-11 w-11 place-items-center rounded-xl border border-slate-300 bg-white text-slate-900 shadow-sm lg:hidden"
               aria-label={menuOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
               aria-expanded={menuOpen}
               aria-controls="primary-navigation"
@@ -88,7 +88,7 @@ export function AppLayout() {
             </button>
             <div
               id="primary-navigation"
-              className={`${menuOpen ? 'flex' : 'hidden'} absolute left-0 right-0 top-[72px] max-h-[calc(100dvh-6rem)] flex-col gap-1 overflow-y-auto rounded-3xl border border-white bg-[color:var(--paper)] p-3 shadow-2xl lg:static lg:flex lg:max-h-none lg:flex-row lg:items-center lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
+              className={`${menuOpen ? 'flex' : 'hidden'} absolute left-5 right-5 top-[68px] max-h-[calc(100dvh-5rem)] flex-col gap-1 overflow-y-auto rounded-3xl border border-white bg-[color:var(--paper)] p-3 shadow-2xl lg:static lg:flex lg:max-h-none lg:flex-row lg:items-center lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
             >
               <NavLink to="/courses" className={navLinkClass}>สำรวจคอร์ส</NavLink>
               <NavLink to="/match" className={navLinkClass}>หาคอร์สที่ใช่</NavLink>
@@ -120,10 +120,10 @@ export function AppLayout() {
             </div>
           </div>
         </nav>
-        {logoutError && <p className="shell-container pt-2 text-sm font-medium text-red-700" role="alert">{logoutError}</p>}
+        {logoutError && <p className="shell-container pb-3 text-sm font-medium text-red-700" role="alert">{logoutError}</p>}
       </header>
       <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
-        {unavailable && <SystemStatus compact={location.pathname === '/'} />}
+        {unavailable && <SystemStatus />}
         {(!unavailable || location.pathname === '/') && <Outlet />}
       </div>
       <footer className="ink-surface border-t border-slate-200/80 bg-[color:var(--ink)] text-slate-300">
