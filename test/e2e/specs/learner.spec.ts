@@ -48,7 +48,7 @@ test('non-member cannot edit or submit provider courses and the stored draft rem
   expect(unchanged.version).toBe(course.version);
 });
 
-test('learner reviews through real API, admin approves or rejects through UI and catalog ratings follow published reviews', async ({ actors }) => {
+test('learner updates review through the form, admin moderates through UI and catalog ratings follow published reviews', async ({ actors }) => {
   const { provider, admin, learner } = actors;
   const course = await prepareCourse(provider, admin);
   await loginUI(learner);
@@ -76,10 +76,15 @@ test('learner reviews through real API, admin approves or rejects through UI and
   expect((await published.json()).content[0].body).toBe(reviewBody);
 
   const editedBody = `Edited ${learner.slug}`;
-  const edited = await jsonMutation<{ status: string }>(learner, 'PUT', `/api/v1/courses/${course.id}/reviews/me`, {
-    ...payload, overallScore: 2, body: editedBody,
-  });
-  expect(edited.status).toBe('PENDING');
+  await learner.page.goto(`/courses/${course.id}/reviews`);
+  await expect(learner.page.getByRole('heading', { name: `รีวิวคอร์ส ${course.title}` })).toBeVisible();
+  await expect(learner.page.getByRole('heading', { name: 'จัดการรีวิวของคุณ' })).toBeVisible();
+  await learner.page.locator('fieldset').first().getByText('2', { exact: true }).click();
+  await learner.page.getByRole('textbox', { name: /ความคิดเห็น/ }).fill(editedBody);
+  const update = learner.page.waitForResponse((r) => r.url().endsWith(`/api/v1/courses/${course.id}/reviews/me`) && r.request().method() === 'PUT');
+  await learner.page.getByRole('button', { name: 'อัปเดตรีวิว', exact: true }).click();
+  expect((await update).status()).toBe(200);
+  await expect(learner.page.getByText('บันทึกรีวิวแล้วและส่งให้ผู้ดูแลตรวจสอบ')).toBeVisible();
   card = await searchCourse(learner.page, course.title, true);
   await expect(card).toContainText('ยังไม่มีรีวิว');
   await admin.page.reload();
@@ -101,7 +106,7 @@ test('learner reviews through real API, admin approves or rejects through UI and
   expect((await (await learner.context.request.get(`/api/v1/courses/${course.id}/reviews`)).json()).totalElements).toBe(0);
 });
 
-test('review form waits for existing review to load before displaying (prevents race condition)', async ({ actors }) => {
+test('review form waits for existing review and updates it through the browser', async ({ actors }) => {
   const { provider, admin, learner } = actors;
   const course = await prepareCourse(provider, admin);
   await loginUI(learner);
@@ -120,20 +125,31 @@ test('review form waits for existing review to load before displaying (prevents 
   // Navigate to review page - form should wait for GET /reviews/me to complete
   await learner.page.goto(`/courses/${course.id}/reviews`);
   
-  // Wait for form to be fully loaded (not showing "Checking your session..." anymore)
-  await expect(learner.page.getByRole('button', { name: /Update review|Submit review/, exact: false })).toBeVisible({ timeout: 10000 });
-  
-  // Verify the existing review was loaded (h2 should show "Manage your review")
-  const heading = learner.page.getByRole('heading', { name: 'Manage your review', exact: true });
-  await expect(heading).toBeVisible();
-  
-  // Submit an update - should use PUT, not POST
-  const updated = await jsonMutation<{ status: string }>(learner, 'PUT', `/api/v1/courses/${course.id}/reviews/me`, {
-    ...payload, overallScore: 4, body: 'Updated review',
-  });
-  expect(updated.status).toBe('PENDING');
+  await expect(learner.page.getByRole('heading', { name: `รีวิวคอร์ส ${course.title}` })).toBeVisible();
+  await expect(learner.page.getByRole('heading', { name: 'จัดการรีวิวของคุณ', exact: true })).toBeVisible();
+  await expect(learner.page.getByRole('textbox', { name: /ความคิดเห็น/ })).toHaveValue('First review');
+  await learner.page.locator('fieldset').first().getByText('4', { exact: true }).click();
+  await learner.page.getByRole('textbox', { name: /ความคิดเห็น/ }).fill('Updated review');
+  const update = learner.page.waitForResponse((r) => r.url().endsWith(`/api/v1/courses/${course.id}/reviews/me`) && r.request().method() === 'PUT');
+  await learner.page.getByRole('button', { name: 'อัปเดตรีวิว', exact: true }).click();
+  const updated = await update;
+  expect(updated.status()).toBe(200);
+  expect((await updated.json()).status).toBe('PENDING');
+  await expect(learner.page.getByText('บันทึกรีวิวแล้วและส่งให้ผู้ดูแลตรวจสอบ')).toBeVisible();
   
   // Verify the update was successful (only one review should exist)
   const reviews = await learner.context.request.get(`/api/v1/courses/${course.id}/reviews`);
   expect((await reviews.json()).totalElements).toBe(0); // Pending review is not published
+  const mine = await learner.context.request.get(`/api/v1/courses/${course.id}/reviews/me`);
+  expect((await mine.json()).body).toBe('Updated review');
+});
+
+test('admin sees the course title and reviews but cannot open the learner review form', async ({ actors }) => {
+  const { provider, admin } = actors;
+  const course = await prepareCourse(provider, admin);
+  await admin.page.goto(`/courses/${course.id}/reviews`);
+  await expect(admin.page.getByRole('heading', { name: `รีวิวคอร์ส ${course.title}` })).toBeVisible();
+  await expect(admin.page.getByText('เฉพาะบัญชีผู้เรียนเท่านั้นที่เขียนรีวิวได้')).toBeVisible();
+  await expect(admin.page.locator('form')).toHaveCount(0);
+  await expect(admin.page.getByRole('heading', { name: 'รีวิวที่เผยแพร่' })).toBeVisible();
 });

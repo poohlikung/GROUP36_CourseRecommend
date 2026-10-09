@@ -118,7 +118,7 @@ Swagger/OpenAPI ที่ `/swagger-ui.html` และ `/v3/api-docs` ระบ�
 
 ชุด E2E ใช้ Playwright + Chromium กับ React, Spring Boot และ PostgreSQL จริง โดยเปิดฐานข้อมูลทดสอบแยกใน Docker สำหรับแต่ละรอบ จาก root ติดตั้ง dependencies ด้วย `npm ci --prefix code/frontend` และ `npm ci --prefix test/e2e` แล้วเข้า `test/e2e` เพื่อรัน `npx playwright install chromium`
 
-เปิด Docker Desktop แล้วรัน `npm run test:e2e` จาก `code/frontend` หรือ `npm run test:e2e:headed` เพื่อดู browser ต้องว่างพอร์ต 18080/15173 รายงาน HTML/JUnit และ diagnostics อยู่ใน `test/reports/e2e/` ผู้เรียนสร้าง/แก้รีวิวผ่าน API จริง ส่วน Admin/Catalog ทดสอบผ่าน UI ตามขอบเขตที่มีในระบบ
+เปิด Docker Desktop แล้วรัน `npm run test:e2e` จาก `code/frontend` หรือ `npm run test:e2e:headed` เพื่อดู browser ต้องว่างพอร์ต 18080/15173 รายงาน HTML/JUnit และ diagnostics อยู่ใน `test/reports/e2e/` เทสต์ผู้เรียนแก้รีวิวผ่านฟอร์มจริง ตรวจคำขอ PUT และผลที่บันทึก ส่วน Admin/Catalog ทดสอบผ่าน UI ตามขอบเขตที่มีในระบบ
 
 ดู [คู่มือ Task 22](doc/task22-e2e-guide.md) และ [รายงานผลจริง](doc/test-reports/task22-e2e.md)
 

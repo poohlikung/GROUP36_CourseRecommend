@@ -84,7 +84,7 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
           <p className="text-sm font-bold text-amber-700">
             {course.averageRating === null ? 'ยังไม่มีรีวิว' : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} รีวิว)`}
           </p>
-          <Link className="text-sm font-extrabold text-blue-700 hover:text-blue-900" to={`/courses/${course.id}/reviews`}>Read reviews</Link>
+          <Link className="text-sm font-extrabold text-blue-700 hover:text-blue-900" to={`/courses/${course.id}/reviews`}>อ่านรีวิว</Link>
         </div>
 
         <div className="mt-5"><BookmarkButton courseId={course.id} courseTitle={course.title} saved={saved} onChange={onBookmarkChange} /></div>
