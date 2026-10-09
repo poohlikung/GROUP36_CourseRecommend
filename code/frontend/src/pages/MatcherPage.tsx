@@ -79,6 +79,7 @@ export function MatcherPage() {
   }, [categorySlug]);
 
   const categoryCourses = categoryData?.slug === categorySlug ? categoryData.courses : null;
+  // Keep these price rules aligned with backend EligibilityPolicy.rejectionReasons.
   const matchableCourses = categoryCourses?.filter((course) => course.price?.paymentType === 'FREE'
     || (course.price?.paymentType === 'ONE_TIME' && course.price.amount !== null
       && course.price.amount >= 0 && course.price.currency?.toUpperCase() === 'THB'));
@@ -211,12 +212,12 @@ export function MatcherPage() {
                 )}
                 {result.constraints.length > 0 && (
                   <div className="mt-5">
-                  <p className="text-sm font-bold text-slate-600">ข้อจำกัดที่พบจากคอร์สทั้งหมด (หนึ่งคอร์สอาจมีหลายข้อ)</p>
-                  <ul className="mt-3 grid gap-3 text-slate-700">
-                    {result.constraints.map((constraint) => (
-                      <li key={constraint.code} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold">{constraint.message}{constraint.excludedCourseCount > 0 ? ` (${constraint.excludedCourseCount} คอร์ส)` : ''}</li>
-                    ))}
-                  </ul>
+                    <p className="text-sm font-bold text-slate-600">ข้อจำกัดที่พบจากคอร์สทั้งหมด (หนึ่งคอร์สอาจมีหลายข้อ)</p>
+                    <ul className="mt-3 grid gap-3 text-slate-700">
+                      {result.constraints.map((constraint) => (
+                        <li key={constraint.code} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold">{constraint.message}{constraint.excludedCourseCount > 0 ? ` (${constraint.excludedCourseCount} คอร์ส)` : ''}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
@@ -282,7 +283,7 @@ export function MatcherPage() {
               )}
               {step === 1 && (
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div><label htmlFor="match-level" className="block font-extrabold">ระดับที่เหมาะกับคุณ</label><select id="match-level" value={level} onChange={(event) => { setLevel(event.target.value as CatalogCourse['level'] | ''); setLanguage(''); }} className="form-input"><option value="">เลือกระดับ</option>{levels.map((item) => <option key={item.value} value={item.value}>{item.label}{matchableCourses ? ` (${matchableCourses.filter((course) => course.level === item.value).length} คอร์ส)` : ''}</option>)}</select></div>
+                  <div><label htmlFor="match-level" className="block font-extrabold">ระดับที่เหมาะกับคุณ</label><select id="match-level" value={level} onChange={(event) => setLevel(event.target.value as CatalogCourse['level'] | '')} className="form-input"><option value="">เลือกระดับ</option>{levels.map((item) => <option key={item.value} value={item.value}>{item.label}{matchableCourses ? ` (${matchableCourses.filter((course) => course.level === item.value).length} คอร์ส)` : ''}</option>)}</select></div>
                   <div><label htmlFor="match-language" className="block font-extrabold">ภาษาของคอร์ส</label><select id="match-language" value={language} onChange={(event) => setLanguage(event.target.value as CatalogCourse['language'] | '')} className="form-input"><option value="">เลือกภาษา</option>{languages.map((item) => <option key={item.value} value={item.value}>{item.label}{levelCourses ? ` (${levelCourses.filter((course) => course.language === item.value).length} คอร์ส)` : ''}</option>)}</select></div>
                   {level && language && matchingChoices?.length === 0 && <p className="text-sm font-semibold text-amber-900 sm:col-span-2">ยังไม่มีคอร์สที่ตรงระดับและภาษานี้ในหมวดที่เลือก ลองเปลี่ยนตัวเลือก</p>}
                 </div>

@@ -50,6 +50,25 @@ async function answerQuestions(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('course matcher quiz', () => {
+  it('keeps the selected language when the learner changes level', async () => {
+    const fetchMock = vi.fn(async (path: string) => {
+      if (path === '/api/v1/catalog/categories') return jsonResponse([{ id: 1, name: 'โปรแกรมมิง', slug: 'programming' }]);
+      if (path.startsWith('/api/v1/courses?category=programming')) return catalogPage([course]);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<MemoryRouter><MatcherPage /></MemoryRouter>);
+
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('อยากเรียนเรื่องอะไร'), 'programming');
+    await user.click(screen.getByRole('button', { name: 'ถัดไป' }));
+    await user.selectOptions(screen.getByLabelText('ภาษาของคอร์ส'), 'THAI');
+    await user.selectOptions(screen.getByLabelText('ระดับที่เหมาะกับคุณ'), 'BEGINNER');
+    expect(screen.getByLabelText('ภาษาของคอร์ส')).toHaveValue('THAI');
+    await user.selectOptions(screen.getByLabelText('ระดับที่เหมาะกับคุณ'), 'INTERMEDIATE');
+    expect(screen.getByLabelText('ภาษาของคอร์ส')).toHaveValue('THAI');
+  });
+
   it('submits answers with CSRF and shows course reasons', async () => {
     const fetchMock = vi.fn(async (path: string) => {
       if (path === '/api/v1/catalog/categories') return jsonResponse([{ id: 1, name: 'โปรแกรมมิง', slug: 'programming' }]);
