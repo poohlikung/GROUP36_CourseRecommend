@@ -7,7 +7,7 @@
 - เลข Task ตรงกับตาราง "งานทีม CourseHub • 30 งาน"
 - สถานะ: ✅ มีหลักฐานใน repo แล้ว · 🟡 ทำแล้วบางส่วน · ⬜ ยังไม่เริ่ม
 - ต้องอัปเดตสถานะทุกครั้งที่งานที่เกี่ยวข้อง merge เข้า `develop`
-- เพิ่มหลักฐาน Task 22 วันที่ 7 ตุลาคม 2026 ใน branch `supawat_6733800622_01` สำหรับ PR เข้า develop: Playwright E2E learner/provider/admin และรายงานผลจริง
+- หลักฐาน Task 22 เดิมวันที่ 7 ตุลาคม 2026 ครอบคลุม 10 scenarios; ชุดปัจจุบันใน `test/e2e/specs/` มี 14 tests (จาก `npm run test:e2e:list` วันที่ 9 ตุลาคม 2026) โดย Task 26 ตรวจผลล่าสุดแยกใน [รายงานรวม](test-reports/task26-smoke-and-test-summary.md)
 - เพิ่มหลักฐาน Task 23: `code/frontend/vercel.json`, startup/session loading/retry, [คู่มือ Vercel](step23-vercel-guide.md), [รายงานทดสอบ](test-reports/step23-vercel.md) และ [ผลตรวจ production](test-reports/task25-deployment.md); Frontend URL, nested route และ liveness ผ่าน Vercel แล้ว แต่ยังไม่ยืนยัน login/session cookie บน HTTPS จริง
 
 ## 1. ข้อกำหนดจากใบงาน
@@ -42,9 +42,9 @@
 | 9.1 | Class, Sequence ≥ 3, Activity, Component, Deployment, State | 21 | `doc/diagrams/` มี diagram แยกตาม feature, activity, component, deployment, state; Mermaid render ได้ | ไฟล์ใน `doc/diagrams/` | ✅ |
 | 10 | README ครบหัวข้อ | 01, 28 | `README.md` | ครบตามใบงานข้อ 10 | 🟡 ยังขาดคอลัมน์ Section, Tech Stack, Architecture, Deployment URL, Project Structure |
 | 11 | Dockerfile + docker-compose.yml | 07, 25 | `code/backend/Dockerfile`, `docker-compose.yml` | `docker compose up` รัน DB + backend ได้ | 🟡 compose ยังไม่มี frontend |
-| 11 | CI/CD (คะแนนพิเศษ) | 26 | `.github/workflows/ci.yml` | Build → Test ผ่านทุก PR, Deploy อัตโนมัติ | 🟡 มี Build/Test ยังไม่มี Deploy |
-| 14 | Test report | 26 | `doc/test-reports/` | รวมผลทุกคน | 🟡 มีรายงานราย task |
-| 14 | End-to-end learner/provider/admin | 22 | `test/e2e/specs/`, `doc/task22-e2e-guide.md`, `doc/test-reports/task22-e2e.md` | Chromium + backend/PostgreSQL จริง; ทั้ง 10 scenarios ผ่านซ้ำจาก DB ใหม่ ไม่มี skipped/flaky | ✅ มีใน branch supawat; รอ PR เข้า develop |
+| 11 | CI/CD (คะแนนพิเศษ) | 26 | `.github/workflows/ci.yml` | Build → Test ผ่านทุก PR, Deploy อัตโนมัติ | 🟡 มี Build/Test; CD ยังปิดตาม [คู่มือ CD](deployment-cd.md) |
+| 14 | Test report | 26 | `doc/test-reports/task26-smoke-and-test-summary.md` | ผล smoke ทุกข้อพร้อมหลักฐาน และแยก local/production/CI | 🟡 รายงานรวมระบุรายการ production ที่ยังค้าง |
+| 14 | End-to-end learner/provider/admin | 22, 26 | `test/e2e/specs/`, `doc/task22-e2e-guide.md`, `doc/test-reports/task22-e2e.md`, `doc/test-reports/task26-smoke-and-test-summary.md` | Chromium + backend/PostgreSQL แยก; 14 tests ตามชุดปัจจุบัน ไม่มี failed/skipped/flaky | 🟡 ต้องอ้างผล run ล่าสุดในรายงาน Task 26; รายงาน Task 22 เป็นหลักฐานประวัติ 10 tests |
 | 14 | Slide ใน `doc/slide/` | 28 | — | — | ⬜ |
 
 ## 2. Use case → feature
