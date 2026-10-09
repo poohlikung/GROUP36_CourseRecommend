@@ -13,10 +13,14 @@
 
 ชุด smoke GET ไม่บันทึก token หรือค่า cookie ลงไฟล์ ส่วนแบบทดสอบใช้ matcher ที่อ่านข้อมูลอย่างเดียว (`CourseMatcherService` เป็น transaction `readOnly`) ไม่สร้างหรือแก้คอร์ส ผู้ใช้ หรือรีวิว
 
+## E2E บนฐานข้อมูลทดสอบแยก — 10 ตุลาคม 2026
+
+รัน `npm run test:e2e --prefix code/frontend` ในเครื่องบน source commit `279d55f` ด้วย Chromium, backend และ PostgreSQL ใน Docker Compose ที่สร้างใหม่ ผล **15/15 ผ่าน**, ไม่มี failed/skipped/flaky ครอบคลุมสมัคร/ล็อกอิน/ออกจากระบบ, สิทธิ์ learner/provider/admin, bookmark, รีวิวและ moderation, การเผยแพร่คอร์ส, matcher และการฟื้นตัวหลัง startup error [สรุปผลรัน](evidence/task27-local-e2e.json) ชุดทดสอบลบ container กับ network ของตนหลังรันสำเร็จ ผลนี้ยืนยันระบบในสภาพแวดล้อมแยก ไม่ใช่การทดสอบบัญชีบน production
+
 ## งาน UAT ที่ยังต้องตรวจ
 
-- สมัคร/เข้าสู่ระบบ/ออกจากระบบ, session หลัง refresh และสิทธิ์ของ learner/provider/admin บน HTTPS จริง: ต้องมีบัญชีทดสอบ production ที่ทีมกำหนด พร้อมวิธีล้างข้อมูลที่สร้างก่อนทดสอบ
-- การสร้าง/แก้รีวิวและการอนุมัติผ่าน UI, bookmark และการจัดการคอร์ส: CI E2E ผ่านบนฐานข้อมูลทดสอบ แต่ยังไม่ใช่หลักฐาน production
+- สมัคร/เข้าสู่ระบบ/ออกจากระบบ, session หลัง refresh และสิทธิ์ของ learner/provider/admin บน HTTPS จริง: ข้อมูลล่าสุดวันที่ 10 ต.ค. ยังไม่มีบัญชีทดสอบ production จึงต้องเตรียมบัญชีแต่ละบทบาทและวิธีล้างข้อมูลที่สร้างก่อนทดสอบ (ระบบยังไม่มี endpoint ลบบัญชีผู้ใช้)
+- การสร้าง/แก้รีวิวและการอนุมัติผ่าน UI, bookmark และการจัดการคอร์ส: local และ CI E2E ผ่านบนฐานข้อมูลทดสอบ แต่ยังไม่ใช่หลักฐาน production
 - พฤติกรรมหน้าเว็บระหว่าง Render Free หลับและตื่น, รวมถึงการกด “ลองใหม่”: รอบนี้ backend ตอบทัน จึงยังไม่ได้ทดสอบ cold start จริง
 - ตรวจร่วมกับทีมว่า `group36-coursehub.vercel.app` เป็นโดเมนหลักสำหรับส่งงานหรือไม่ แล้วค่อยปิดรายการ UAT ก่อน release เข้า `main`
 
