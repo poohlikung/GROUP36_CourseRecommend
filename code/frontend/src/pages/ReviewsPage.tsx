@@ -20,6 +20,11 @@ const reviewStatusLabels: Record<Review['status'], string> = {
 
 export function ReviewsPage() {
   const courseId = Number(useParams().courseId);
+  // A new course must get fresh form and pagination state on the first render.
+  return <CourseReviewsPage key={courseId} courseId={courseId} />;
+}
+
+function CourseReviewsPage({ courseId }: { courseId: number }) {
   const { status, user } = useAuth();
   const canReview = status === 'authenticated' && user?.role === 'LEARNER';
   const [courseTitle, setCourseTitle] = useState('');
@@ -29,7 +34,9 @@ export function ReviewsPage() {
   const [input, setInput] = useState<ReviewInput>(initialInput);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [loadingMine, setLoadingMine] = useState(false);
+  const [loadingMine, setLoadingMine] = useState(true);
+  const [mineError, setMineError] = useState('');
+  const [mineReload, setMineReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -50,7 +57,7 @@ export function ReviewsPage() {
     const controller = new AbortController();
     setLoading(true); setError('');
     reviewApi.list(courseId, page, controller.signal)
-      .then(setReviews)
+      .then((result) => { if (!controller.signal.aborted) setReviews(result); })
       .catch((requestError) => { if (!controller.signal.aborted) setError(getErrorMessage(requestError)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -59,21 +66,28 @@ export function ReviewsPage() {
   useEffect(() => {
     if (!canReview || !Number.isInteger(courseId) || courseId <= 0) { setMine(null); setInput(initialInput); setLoadingMine(false); return; }
     const controller = new AbortController();
-    setLoadingMine(true);
+    setLoadingMine(true); setMineError('');
     reviewApi.mine(courseId, controller.signal).then((review) => {
+      if (controller.signal.aborted) return;
       setMine(review);
       setInput({ overallScore: review.overallScore, contentScore: review.contentScore, teachingScore: review.teachingScore, difficultyScore: review.difficultyScore, body: review.body ?? '' });
     }).catch((requestError) => {
-      if (!controller.signal.aborted && requestError instanceof ApiError && requestError.status !== 404) setError(getErrorMessage(requestError));
+      if (controller.signal.aborted) return;
+      if (requestError instanceof ApiError && requestError.status === 404) {
+        setMine(null);
+        setInput(initialInput);
+      } else {
+        setMineError(getErrorMessage(requestError));
+      }
     }).finally(() => {
       if (!controller.signal.aborted) setLoadingMine(false);
     });
     return () => controller.abort();
-  }, [canReview, courseId, reload]);
+  }, [canReview, courseId, mineReload]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!canReview || loadingMine) return;
+    if (!canReview || loadingMine || mineError) return;
     setSaving(true); setError(''); setMessage('');
     try {
       const saved = mine ? await reviewApi.update(courseId, input) : await reviewApi.create(courseId, input);
@@ -111,7 +125,7 @@ export function ReviewsPage() {
       </section>
 
       <aside className="surface-card p-5 sm:p-6 lg:sticky lg:top-24"><p className="eyebrow">ความคิดเห็นของคุณ</p><h2 className="mt-2 text-2xl font-black">{status === 'authenticated' && !canReview ? 'การเขียนรีวิว' : mine ? 'จัดการรีวิวของคุณ' : 'ให้คะแนนคอร์สนี้'}</h2>
-        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">เข้าสู่ระบบเพื่อเขียนและจัดการรีวิวของคุณ</p><Link className="primary-button mt-4 w-full" to="/login">เข้าสู่ระบบเพื่อรีวิว</Link></div> : status === 'authenticated' && !canReview ? <p className="mt-5 text-sm text-slate-600">เฉพาะบัญชีผู้เรียนเท่านั้นที่เขียนรีวิวได้</p> : canReview && !loadingMine ? <form className="mt-5 space-y-5" onSubmit={submit}>
+        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">เข้าสู่ระบบเพื่อเขียนและจัดการรีวิวของคุณ</p><Link className="primary-button mt-4 w-full" to="/login">เข้าสู่ระบบเพื่อรีวิว</Link></div> : status === 'authenticated' && !canReview ? <p className="mt-5 text-sm text-slate-600">เฉพาะบัญชีผู้เรียนเท่านั้นที่เขียนรีวิวได้</p> : canReview && mineError ? <div className="mt-5"><p className="alert-error" role="alert">โหลดรีวิวของคุณไม่ได้: {mineError}</p><button className="secondary-button mt-3" type="button" onClick={() => setMineReload((value) => value + 1)}>ลองใหม่</button></div> : canReview && !loadingMine ? <form className="mt-5 space-y-5" onSubmit={submit}>
           {scoreFields.map(({ key, label, hint }) => <fieldset key={key}><legend className="text-sm font-extrabold">{label} <span className="font-normal text-slate-500">— {hint}</span></legend><div className="mt-2 flex gap-1" role="radiogroup">{[1,2,3,4,5].map((score) => <label key={score} className="flex-1"><input className="peer sr-only" type="radio" name={key} value={score} checked={input[key] === score} onChange={() => setInput((current) => ({ ...current, [key]: score }))}/><span className="grid min-h-11 cursor-pointer place-items-center rounded-xl border border-slate-300 bg-white font-black text-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-50 peer-checked:text-amber-800">{score}</span></label>)}</div></fieldset>)}
           <label className="block text-sm font-extrabold">ความคิดเห็น <span className="font-normal text-slate-500">(ไม่บังคับ)</span><textarea className="form-input min-h-32 resize-y" maxLength={2000} value={input.body} onChange={(event) => setInput((current) => ({ ...current, body: event.target.value }))} placeholder="คอร์สนี้มีข้อดีอะไร และผู้เรียนคนอื่นควรรู้อะไรบ้าง"/></label>
           {mine && <p className="rounded-xl bg-slate-100 p-3 text-xs text-slate-600">สถานะ: <b>{reviewStatusLabels[mine.status]}</b>{mine.moderationReason ? ` — เหตุผล: ${mine.moderationReason}` : ''} การแก้ไขจะส่งรีวิวกลับไปให้ผู้ดูแลตรวจอีกครั้ง</p>}
