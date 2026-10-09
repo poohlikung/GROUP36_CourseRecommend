@@ -14,14 +14,14 @@ export function SystemStatus({ compact = false }: SystemStatusProps) {
         <span className={`system-toast-dot ${loading ? 'is-loading' : ''}`} aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white">{loading ? 'กำลังเตรียมระบบ…' : 'เชื่อมต่อระบบไม่ได้'}</p>
-          <p className="mt-0.5 truncate text-xs text-white/50">
+          <p className="mt-0.5 text-xs leading-5 text-white/70">
             {loading
               ? 'การเปิดใช้งานครั้งแรกอาจใช้เวลา 2–3 นาที กรุณารอสักครู่'
               : 'ระบบอาจยังไม่พร้อม กรุณาลองเชื่อมต่ออีกครั้ง'}
           </p>
         </div>
         {!loading && (
-          <button type="button" className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+          <button type="button" className="shrink-0 rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
             onClick={() => void refresh()}>ลองใหม่</button>
         )}
       </section>

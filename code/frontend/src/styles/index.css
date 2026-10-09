@@ -336,7 +336,7 @@ select {
 
 .type-reveal {
   position: relative;
-  clip-path: inset(0 100% 0 0);
+  clip-path: inset(-0.2em 100% -0.2em -0.05em);
   animation: type-reveal 1.25s 0.75s steps(12, end) forwards;
 }
 
@@ -686,7 +686,7 @@ select {
 }
 
 @keyframes type-reveal {
-  to { clip-path: inset(0 -0.12em 0 0); }
+  to { clip-path: inset(-0.2em -0.12em -0.2em -0.05em); }
 }
 
 @keyframes caret-blink {
