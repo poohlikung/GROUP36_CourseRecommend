@@ -28,7 +28,6 @@ export async function createCourseUI(actor: Actor): Promise<CourseDetail> {
   await page.getByRole('button', { name: 'เพิ่มคอร์สใหม่', exact: true }).first().click();
   await page.getByLabel('ชื่อคอร์สเรียน', { exact: false }).fill(`Course ${actor.slug}`);
   await page.getByLabel('URL Slug', { exact: false }).fill(actor.slug);
-  await page.getByLabel('แพลตฟอร์ม', { exact: false }).selectOption({ label: 'Coursera' });
   await page.getByLabel('ลิงก์คอร์สเรียน (URL)', { exact: false }).fill(`https://www.coursera.org/learn/${actor.slug}`);
   await page.getByLabel('ระดับความยาก', { exact: true }).selectOption('BEGINNER');
   await page.getByLabel('ภาษาที่ใช้สอน', { exact: true }).selectOption('THAI');
