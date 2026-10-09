@@ -8,6 +8,7 @@
 - สถานะ: ✅ มีหลักฐานใน repo แล้ว · 🟡 ทำแล้วบางส่วน · ⬜ ยังไม่เริ่ม
 - ต้องอัปเดตสถานะทุกครั้งที่งานที่เกี่ยวข้อง merge เข้า `develop`
 - เพิ่มหลักฐาน Task 22 วันที่ 7 ตุลาคม 2026 ใน branch `supawat_6733800622_01` สำหรับ PR เข้า develop: Playwright E2E learner/provider/admin และรายงานผลจริง
+- เพิ่มหลักฐาน Task 23: `code/frontend/vercel.json`, startup/session loading/retry, [คู่มือ Vercel](step23-vercel-guide.md), [รายงานทดสอบ](test-reports/step23-vercel.md) และ [ผลตรวจ production](test-reports/task25-deployment.md); Frontend URL, nested route และ liveness ผ่าน Vercel แล้ว แต่ยังไม่ยืนยัน login/session cookie บน HTTPS จริง
 
 ## 1. ข้อกำหนดจากใบงาน
 
@@ -18,7 +19,7 @@
 | 2 | REST API + Swagger/OpenAPI | 03, 25 | `springdoc` ใน `pom.xml`, `https://coursehub-backend-ahz2.onrender.com/swagger-ui.html` | เปิด Swagger UI ได้ทั้ง local และ public URL | ✅ |
 | 2 | Frontend (React) | 07 | `code/frontend/` (React + TypeScript + Vite) | หน้าเว็บเรียก API จริง | ✅ |
 | 2 | JUnit 5 + Mockito (+ Spring Boot Test) | ทุก task | `test/backend/unit`, `test/backend/integration` | เทสต์ผ่านใน CI | 🟡 มี JUnit/Spring Boot Test/MockMvc/Testcontainers; Mockito unit test มีใน Course (`CourseServiceImplMockitoTests`) ส่วน feature อื่นยังไม่มี |
-| 2, 11 | Deploy บน Cloud | 07, 23, 25 | Backend: `https://coursehub-backend-ahz2.onrender.com` (Render, Docker) + PostgreSQL บน Neon; Flyway V1–V2 migrate สำเร็จ, `GET /api/v1/system/liveness` ตอบ 200 | public URL ใช้งานได้วันนำเสนอ | 🟡 backend และ DB ใช้งานได้แล้ว ยังไม่มี frontend บน Vercel และยังไม่มี URL ใน README |
+| 2, 11 | Deploy บน Cloud | 07, 23, 25 | Backend: `https://coursehub-backend-ahz2.onrender.com` (Render, Docker) + PostgreSQL บน Neon; Frontend: `https://group36-coursehub.vercel.app/` (Vercel โปรเจกต์ BossZY27); [ผลตรวจ](test-reports/task25-deployment.md) | public URL ใช้งานได้วันนำเสนอ | 🟡 Frontend, nested route และ API liveness ใช้งานได้จริง; ยังต้องตรวจ login/session cookie บน HTTPS, ตั้ง CD และยืนยันโดเมนหลักของทีม |
 | 3 | Layered Architecture ห้ามข้าม layer | 03 | Controller → Service → Repository ในทุก feature, `doc/decisions/0001-*.md` | ไม่มี Controller เรียก Repository ตรง | ✅ |
 | 4 | SOLID พร้อม `doc/solid-analysis.md` | 21 | `doc/solid-analysis.md` อ้าง source/test รายบรรทัดครบ S/O/L/I/D และ contract ของ `ScoringStrategy` | ระบุไฟล์/บรรทัด/เหตุผลครบ 5 ข้อ | ✅ เอกสารและ unit tests ที่เกี่ยวข้องมีหลักฐาน |
 | 5.1 | Layered, MVC, Repository, Service Layer, DTO + Mapper, DI | 03, 21 | `doc/decisions/0001-*.md`, DTO ใน `*/dto/`, Mapper (`CourseMapper`, `ProviderMapper`, `ProfileMapper`), constructor injection | อธิบายใน `doc/design-patterns.md` | 🟡 มีในโค้ด ยังไม่มีเอกสารรวม |

@@ -41,56 +41,60 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
   return (
     <article
       aria-labelledby={`course-title-${course.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70"
+      className="surface-card depth-card group flex h-full flex-col overflow-hidden"
     >
-      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 p-6 text-white">
-        <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full border border-white/20" />
-        <div className="absolute -bottom-12 right-10 h-28 w-28 rounded-full bg-white/10" />
-        <p className="relative text-sm font-semibold text-cyan-100">{course.platform.name}</p>
-        <h3 id={`course-title-${course.id}`} className="relative mt-2 line-clamp-2 text-2xl font-bold leading-tight">
+      <div className="ink-surface relative min-h-44 overflow-hidden bg-[color:var(--ink)] p-6 text-white">
+        <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:32px_32px]" />
+        <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-cyan-300/30 blur-sm transition duration-500 group-hover:scale-110" />
+        <div className="absolute -bottom-16 right-20 h-36 w-36 rounded-full bg-blue-500/35 blur-md transition duration-500 group-hover:-translate-y-2" />
+        <div className="relative flex items-center justify-between gap-3">
+          <p className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-cyan-100 backdrop-blur-sm">{course.platform.name}</p>
+          <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/20 bg-white/10 text-lg" aria-hidden="true">↗</span>
+        </div>
+        <h3 id={`course-title-${course.id}`} className="relative mt-5 line-clamp-2 text-2xl font-black leading-tight tracking-[-0.02em]">
           {course.title}
         </h3>
       </div>
 
       <div className="flex flex-1 flex-col p-6">
-        <p className="text-sm font-semibold text-blue-700">{course.provider.name}</p>
+        <p className="eyebrow normal-case tracking-normal before:hidden">{course.provider.name}</p>
         <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
           {course.description ?? 'ดูรายละเอียดหลักสูตรและเนื้อหาทั้งหมดได้ที่เว็บไซต์ผู้ให้บริการ'}
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-          <span className="rounded-full bg-slate-100 px-3 py-1.5">{levelLabels[course.level]}</span>
-          <span className="rounded-full bg-slate-100 px-3 py-1.5">{languageLabels[course.language]}</span>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-slate-700">
+          <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5">{levelLabels[course.level]}</span>
+          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5">{languageLabels[course.language]}</span>
           {course.effortHours !== null && (
-            <span className="rounded-full bg-slate-100 px-3 py-1.5">{course.effortHours} ชั่วโมง</span>
+            <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5">{course.effortHours} ชั่วโมง</span>
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-x-3 gap-y-2">
           {course.categories.map((category) => (
-            <span key={category.id} className="text-xs font-medium text-cyan-700">
+            <span key={category.id} className="text-xs font-bold text-blue-700">
               #{category.name}
             </span>
           ))}
         </div>
 
-        <p className="mt-4 text-sm font-semibold text-amber-600">
+        <p className="mt-4 text-sm font-bold text-amber-700">
           {course.averageRating === null
             ? 'ยังไม่มีรีวิว'
             : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} รีวิว)`}
         </p>
 
-        <div className="mt-4"><BookmarkButton courseId={course.id} courseTitle={course.title} saved={saved} onChange={onBookmarkChange} /></div>
+        <div className="mt-5"><BookmarkButton courseId={course.id} courseTitle={course.title} saved={saved} onChange={onBookmarkChange} /></div>
 
-        <div className="mt-auto flex items-end justify-between gap-4 border-t border-slate-100 pt-5">
+        <div className="mt-auto flex items-end justify-between gap-4 border-t border-slate-200/80 pt-5">
           <div>
-            <p className="text-xs text-slate-500">ราคาเริ่มต้น</p>
-            <p className="mt-1 text-lg font-bold text-slate-950">{formatPrice(course)}</p>
+            <p className="text-xs font-semibold text-slate-500">ราคาเริ่มต้น</p>
+            <p className="mt-1 text-lg font-black text-slate-950">{formatPrice(course)}</p>
           </div>
           {course.externalUrl ? (
             <a
               aria-label={`ดูคอร์ส ${course.title}`}
-              className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="primary-button min-h-10 rounded-xl px-4 py-2 text-sm"
               href={course.externalUrl}
               target="_blank"
               rel="noreferrer"
@@ -98,7 +102,7 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
               ดูคอร์ส
             </a>
           ) : (
-            <span className="rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">
+            <span className="rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500">
               ลิงก์ไม่พร้อม
             </span>
           )}
