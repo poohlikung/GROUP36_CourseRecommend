@@ -1,0 +1,111 @@
+{
+  "observedAt": "2026-10-09T23:49:20.192Z",
+  "frontend": "https://group36-coursehub.vercel.app",
+  "backend": "https://coursehub-backend-ahz2.onrender.com",
+  "method": "GET only",
+  "cases": [
+    {
+      "id": "render-liveness",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 107073,
+      "evidence": "https://coursehub-backend-ahz2.onrender.com/api/v1/system/liveness → HTTP 200"
+    },
+    {
+      "id": "home",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 181,
+      "evidence": "https://group36-coursehub.vercel.app/ → HTTP 200"
+    },
+    {
+      "id": "match-refresh",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 189,
+      "evidence": "https://group36-coursehub.vercel.app/match → HTTP 200"
+    },
+    {
+      "id": "match-direct",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 191,
+      "evidence": "https://group36-coursehub.vercel.app/match → HTTP 200"
+    },
+    {
+      "id": "hero-asset",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 230,
+      "evidence": "https://group36-coursehub.vercel.app/images/coursehub-learning-orbit.webp → HTTP 200"
+    },
+    {
+      "id": "vercel-liveness",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 686,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/system/liveness → HTTP 200"
+    },
+    {
+      "id": "swagger-ui",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 1994,
+      "evidence": "https://coursehub-backend-ahz2.onrender.com/swagger-ui/index.html → HTTP 200"
+    },
+    {
+      "id": "csrf-cookie",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 2179,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/auth/csrf → HTTP 200"
+    },
+    {
+      "id": "guest-admin",
+      "result": "pass",
+      "status": 401,
+      "durationMs": 3278,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/admin/courses → HTTP 401"
+    },
+    {
+      "id": "guest-me",
+      "result": "pass",
+      "status": 401,
+      "durationMs": 3283,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/me → HTTP 401"
+    },
+    {
+      "id": "catalog-platforms",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 7975,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/catalog/platforms → HTTP 200"
+    },
+    {
+      "id": "catalog-categories",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 7978,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/catalog/categories → HTTP 200"
+    },
+    {
+      "id": "catalog-courses",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 9980,
+      "evidence": "https://group36-coursehub.vercel.app/api/v1/courses?page=0&size=1 → HTTP 200"
+    },
+    {
+      "id": "matcher-openapi",
+      "result": "pass",
+      "status": 200,
+      "durationMs": 27493,
+      "evidence": "https://coursehub-backend-ahz2.onrender.com/v3/api-docs → HTTP 200"
+    }
+  ],
+  "counts": {
+    "pass": 14,
+    "fail": 0,
+    "blocked": 0
+  }
+}
