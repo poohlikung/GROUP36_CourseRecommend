@@ -1,6 +1,7 @@
 package com.example.courserecommend.repository;
 
 import com.example.courserecommend.domain.entity.Course;
+import com.example.courserecommend.domain.entity.Platform;
 import com.example.courserecommend.domain.enums.CourseLanguage;
 import com.example.courserecommend.domain.enums.CourseLevel;
 import com.example.courserecommend.domain.enums.CourseStatus;
@@ -18,6 +19,12 @@ import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
+
+        @Query("SELECT DISTINCT c.platform FROM Course c " +
+                        "WHERE c.status = :courseStatus AND c.provider.status = :providerStatus " +
+                        "ORDER BY c.platform.name")
+        List<Platform> findCatalogPlatforms(@Param("courseStatus") CourseStatus courseStatus,
+                                            @Param("providerStatus") ProviderStatus providerStatus);
 
         @Query("SELECT DISTINCT c FROM Course c " +
                         "JOIN FETCH c.provider provider " +

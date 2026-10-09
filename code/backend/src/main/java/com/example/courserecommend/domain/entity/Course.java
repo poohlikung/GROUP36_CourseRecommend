@@ -42,7 +42,7 @@ public class Course {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 2048)
     private String url;
 
     @Enumerated(EnumType.STRING)
