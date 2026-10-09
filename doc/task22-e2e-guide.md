@@ -74,7 +74,7 @@ npx playwright show-report ../reports/e2e/coursehub-e2e-<random>/html
 
 CI เพิ่ม job `Learner provider admin E2E` บน PR เข้า develop/main และ push develop/main ใช้ Node 22, Chromium และ stack เดียวกัน เก็บ artifacts 7 วันแม้ test ล้มเหลว ผล CI ต้องดูจาก run จริงหลัง push/เปิด PR
 
-ตั้งหนึ่ง worker และ retries เป็นศูนย์ ไม่มีเวลารอคงที่ใน browser scenarios Runner ถือว่าผ่านเมื่อมี test สำเร็จอย่างน้อยหนึ่งกรณีและไม่มี failed/skipped/flaky test; ชุดเต็มมี 10 tests
+ตั้งหนึ่ง worker และ retries เป็นศูนย์ ไม่มีเวลารอคงที่ใน browser scenarios Runner ถือว่าผ่านเมื่อมี test สำเร็จอย่างน้อยหนึ่งกรณีและไม่มี failed/skipped/flaky test; ชุดที่รายงาน Task 22 เดิมมี 10 tests ส่วน branch หลัง merge `develop` (`f4dd613`) วันที่ 9 ตุลาคม 2026 ค้นพบ 15 tests ใน 5 files (รวม startup/retry, review UI และ matcher case จาก PR #34) ดูขอบเขตผลรันใน [รายงาน Task 26](test-reports/task26-smoke-and-test-summary.md)
 
 ## ขอบเขตหลักฐาน
 

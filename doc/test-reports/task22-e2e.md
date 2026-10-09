@@ -1,5 +1,7 @@
 # Task 22 — รายงาน End-to-end learner/provider/admin
 
+> รายงานนี้เป็นผลย้อนหลังของ revision วันที่ 7 ตุลาคม 2026 ซึ่งมี 10 tests ใน 4 files หลัง merge `develop` (`f4dd613`) วันที่ 9 ตุลาคม 2026 `npm run test:e2e:list --prefix code/frontend` พบ 15 tests ใน 5 files ดูขอบเขตผลรันและ CI ใน [รายงาน Task 26](task26-smoke-and-test-summary.md)
+
 วันที่ทดสอบ: **7 ตุลาคม 2026** (Asia/Bangkok)
 
 Branch: `supawat_6733800622_01` · develop ที่ pull ก่อนเริ่ม: `a953c3316ce852203e689453c48222ecb87205eb`

@@ -27,6 +27,8 @@ export function HeroVisual() {
       onPointerLeave={resetTilt}
     >
       <div className="hero-visual-inner">
+        <span className="visual-orbit visual-orbit-one" />
+        <span className="visual-orbit visual-orbit-two" />
         <img
           src="/images/coursehub-learning-orbit.webp"
           alt=""
@@ -37,6 +39,7 @@ export function HeroVisual() {
         <span className="orbit-chip orbit-chip-one">DESIGN</span>
         <span className="orbit-chip orbit-chip-two">TECH</span>
         <span className="orbit-chip orbit-chip-three">BUSINESS</span>
+        <span className="visual-caption">YOUR LEARNING ORBIT <i /></span>
       </div>
     </div>
   );
