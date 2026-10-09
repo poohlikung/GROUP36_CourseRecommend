@@ -70,7 +70,7 @@
 - ผู้เรียนค้นหาและบันทึกคอร์ส
 - ผู้เรียนเขียนรีวิวและ Admin อนุมัติรีวิว
 
-รายงาน Task 22 วันที่ 7 ตุลาคมบันทึก 10 scenarios ตาม revision ในเวลานั้น ปัจจุบัน `npm run test:e2e:list --prefix code/frontend` พบ **14 tests ใน 5 files** รวม guest/session, admin/ownership/CSRF, publish/revision, bookmark ข้ามบัญชี, review moderation, Matcher, review UI และ startup/retry เกณฑ์ผ่านคือไม่มี failed/skipped/flaky test และรันจากฐานข้อมูลใหม่ได้ ผลจริงของ revision ปัจจุบันอยู่ใน [รายงาน Task 26](test-reports/task26-smoke-and-test-summary.md)
+รายงาน Task 22 วันที่ 7 ตุลาคมบันทึก 10 scenarios ตาม revision ในเวลานั้น หลัง merge `develop` (`f4dd613`) วันที่ 9 ตุลาคม 2026 `npm run test:e2e:list --prefix code/frontend` พบ **15 tests ใน 5 files** รวม guest/session, admin/ownership/CSRF, publish/revision, bookmark ข้ามบัญชี, review moderation, Matcher, review UI และ startup/retry เกณฑ์ผ่านคือไม่มี failed/skipped/flaky test และรันจากฐานข้อมูลใหม่ได้ ดูขอบเขตผลรันใน [รายงาน Task 26](test-reports/task26-smoke-and-test-summary.md)
 
 ### Task 26: production smoke และหลักฐาน
 
