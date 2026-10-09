@@ -1,0 +1,23 @@
+# Task 27 — UAT บนเว็บที่ deploy จริง
+
+## รอบตรวจ 9 ตุลาคม 2026
+
+ตรวจหลัง merge PR #33 เข้า `develop` ที่ commit `2135110` และหลัง [GitHub Actions run](https://github.com/poohlikung/GROUP36_CourseRecommend/actions/runs/37960156470) ผ่านทั้ง CI และงาน deploy ของ Render/Vercel เว็บที่ตรวจคือ <https://group36-coursehub.vercel.app/> และ API ผ่านโดเมนเดียวกัน ผลรอบนี้ครอบคลุมผู้เยี่ยมชมและเส้นทางที่ไม่สร้างข้อมูลในฐาน production เท่านั้น
+
+| สิ่งที่ตรวจ | ผล |
+| --- | --- |
+| Production GET smoke ของ Render, Vercel, catalog, Swagger, guest permission และ CSRF cookie | ผ่าน 14/14; [ผลรายกรณี](evidence/task27-production-readonly.json) |
+| Chromium เปิดหน้าแรก, `/match` โดยตรง และ refresh `/match` | ผ่าน 3/3; [ผลจาก browser](evidence/task27-production-browser.json) |
+| เปิดหน้ารายการคอร์สแล้วกด “อ่านรีวิว” | ไปหน้า `/courses/6/reviews` ได้; แสดงชื่อคอร์สจริง, รายการรีวิวตอบ HTTP 200 และผู้เยี่ยมชมเห็นปุ่มเข้าสู่ระบบ ไม่มี JavaScript error; [ภาพหน้าจอจริง](evidence/task27-reviews-desktop.png) |
+| แบบทดสอบแนะนำคอร์สบน browser | เลือกหมวด UI/UX, ระดับเริ่มต้น, ภาษาไทย, งบ 2,000 บาท, เวลา 10 ชม./สัปดาห์; `POST /api/v1/course-matches` ตอบ HTTP 200 และหน้าเว็บแสดงคอร์ส ID 6 “UI/UX Design Masterclass: From Wireframe to Prototype” ตรงกับผล API |
+
+ชุด smoke GET ไม่บันทึก token หรือค่า cookie ลงไฟล์ ส่วนแบบทดสอบใช้ matcher ที่อ่านข้อมูลอย่างเดียว (`CourseMatcherService` เป็น transaction `readOnly`) ไม่สร้างหรือแก้คอร์ส ผู้ใช้ หรือรีวิว
+
+## งาน UAT ที่ยังต้องตรวจ
+
+- สมัคร/เข้าสู่ระบบ/ออกจากระบบ, session หลัง refresh และสิทธิ์ของ learner/provider/admin บน HTTPS จริง: ต้องมีบัญชีทดสอบ production ที่ทีมกำหนด พร้อมวิธีล้างข้อมูลที่สร้างก่อนทดสอบ
+- การสร้าง/แก้รีวิวและการอนุมัติผ่าน UI, bookmark และการจัดการคอร์ส: CI E2E ผ่านบนฐานข้อมูลทดสอบ แต่ยังไม่ใช่หลักฐาน production
+- พฤติกรรมหน้าเว็บระหว่าง Render Free หลับและตื่น, รวมถึงการกด “ลองใหม่”: รอบนี้ backend ตอบทัน จึงยังไม่ได้ทดสอบ cold start จริง
+- ตรวจร่วมกับทีมว่า `group36-coursehub.vercel.app` เป็นโดเมนหลักสำหรับส่งงานหรือไม่ แล้วค่อยปิดรายการ UAT ก่อน release เข้า `main`
+
+**สถานะ Task 27: กำลังดำเนินการ** — เส้นทางสาธารณะที่ตรวจรอบนี้ไม่พบบั๊กขวางการใช้งาน แต่ยังไม่ถือว่า UAT ทุกบทบาทผ่าน
