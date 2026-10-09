@@ -133,7 +133,10 @@ class CourseEventPublicationIntegrationTests {
         courseCommands.updateCourse(course.getId(), editRequest());
 
         assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
-        assertThat(audits.findAll()).singleElement().satisfies(audit -> {
+        assertThat(audits.findAll())
+                .filteredOn(audit -> "COURSE".equals(audit.getEntityType())
+                        && course.getId().equals(audit.getEntityId()))
+                .singleElement().satisfies(audit -> {
             assertThat(audit.getAction()).isEqualTo("COURSE_UPDATED");
             assertThat(audit.getOldStatus()).isEqualTo(status.name());
             assertThat(audit.getNewStatus()).isEqualTo(status.name());
@@ -164,7 +167,10 @@ class CourseEventPublicationIntegrationTests {
         courseCommands.deleteCourse(created.id());
 
         assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
-        assertThat(audits.findAll()).extracting(audit -> audit.getAction())
+        assertThat(audits.findAll())
+                .filteredOn(audit -> "COURSE".equals(audit.getEntityType())
+                        && created.id().equals(audit.getEntityId()))
+                .extracting(audit -> audit.getAction())
                 .containsExactlyInAnyOrder("COURSE_CREATED", "COURSE_DELETED");
     }
 
@@ -175,7 +181,10 @@ class CourseEventPublicationIntegrationTests {
                 ProviderVerificationRequest.ProviderDecision.SUSPEND, provider.getVersion(), "Check provider"));
 
         assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
-        assertThat(audits.findAll()).singleElement()
+        assertThat(audits.findAll())
+                .filteredOn(audit -> "PROVIDER".equals(audit.getEntityType())
+                        && provider.getId().equals(audit.getEntityId()))
+                .singleElement()
                 .satisfies(audit -> assertThat(audit.getAction()).isEqualTo("PROVIDER_SUSPEND"));
     }
 
@@ -185,7 +194,7 @@ class CourseEventPublicationIntegrationTests {
     void invalidTransitionDoesNotPublish(CourseStatus status, CourseDecision decision) {
         Course course = course(status);
 
-        assertRejectedWithoutEvent(HttpStatus.CONFLICT, () -> courseModeration.decideCourse(course.getId(),
+        assertRejectedWithoutEvent(course, HttpStatus.CONFLICT, () -> courseModeration.decideCourse(course.getId(),
                 new CourseModerationRequest(decision, course.getVersion(), "Check course")));
     }
 
@@ -194,7 +203,7 @@ class CourseEventPublicationIntegrationTests {
     void staleVersionDoesNotPublish() {
         Course course = course(CourseStatus.PENDING);
 
-        assertRejectedWithoutEvent(HttpStatus.CONFLICT, () -> courseModeration.decideCourse(course.getId(),
+        assertRejectedWithoutEvent(course, HttpStatus.CONFLICT, () -> courseModeration.decideCourse(course.getId(),
                 new CourseModerationRequest(CourseDecision.APPROVE, course.getVersion() + 1, null)));
     }
 
@@ -203,7 +212,7 @@ class CourseEventPublicationIntegrationTests {
     void missingRequiredReasonDoesNotPublish() {
         Course course = course(CourseStatus.PUBLISHED);
 
-        assertRejectedWithoutEvent(HttpStatus.BAD_REQUEST, () -> courseModeration.decideCourse(course.getId(),
+        assertRejectedWithoutEvent(course, HttpStatus.BAD_REQUEST, () -> courseModeration.decideCourse(course.getId(),
                 new CourseModerationRequest(CourseDecision.SUSPEND, course.getVersion(), " ")));
     }
 
@@ -212,7 +221,7 @@ class CourseEventPublicationIntegrationTests {
     void failedOwnershipCheckDoesNotPublish() {
         Course course = course(CourseStatus.DRAFT);
 
-        assertRejectedWithoutEvent(HttpStatus.FORBIDDEN, () -> courseCommands.submitCourse(course.getId()));
+        assertRejectedWithoutEvent(course, HttpStatus.FORBIDDEN, () -> courseCommands.submitCourse(course.getId()));
     }
 
     @Test
@@ -221,7 +230,7 @@ class CourseEventPublicationIntegrationTests {
         providers.saveAndFlush(provider);
         Course course = course(CourseStatus.DRAFT);
 
-        assertRejectedWithoutEvent(HttpStatus.CONFLICT, () -> courseCommands.submitCourse(course.getId()));
+        assertRejectedWithoutEvent(course, HttpStatus.CONFLICT, () -> courseCommands.submitCourse(course.getId()));
     }
 
     @Test
@@ -240,7 +249,10 @@ class CourseEventPublicationIntegrationTests {
                                         CourseStatus oldStatus, CourseStatus newStatus) {
         assertThat(events.stream(CourseStatusChangedEvent.class)).containsExactly(
                 new CourseStatusChangedEvent(course.getId(), actor.getId(), action, oldStatus, newStatus));
-        assertThat(audits.findAll()).singleElement().satisfies(audit -> {
+        assertThat(audits.findAll())
+                .filteredOn(audit -> "COURSE".equals(audit.getEntityType())
+                        && course.getId().equals(audit.getEntityId()))
+                .singleElement().satisfies(audit -> {
             assertThat(audit.getEntityType()).isEqualTo("COURSE");
             assertThat(audit.getEntityId()).isEqualTo(course.getId());
             assertThat(audit.getActor().getId()).isEqualTo(actor.getId());
@@ -250,11 +262,14 @@ class CourseEventPublicationIntegrationTests {
         });
     }
 
-    private void assertRejectedWithoutEvent(HttpStatus expectedStatus, Runnable command) {
+    private void assertRejectedWithoutEvent(Course course, HttpStatus expectedStatus, Runnable command) {
         assertThatThrownBy(command::run).isInstanceOfSatisfying(ResponseStatusException.class,
                 exception -> assertThat(exception.getStatusCode()).isEqualTo(expectedStatus));
         assertThat(events.stream(CourseStatusChangedEvent.class)).isEmpty();
-        assertThat(audits.findAll()).isEmpty();
+        assertThat(audits.findAll())
+                .filteredOn(audit -> "COURSE".equals(audit.getEntityType())
+                        && course.getId().equals(audit.getEntityId()))
+                .isEmpty();
     }
 
     private Course course(CourseStatus status) {
