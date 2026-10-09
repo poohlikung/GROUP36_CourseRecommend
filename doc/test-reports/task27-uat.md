@@ -17,9 +17,15 @@
 
 รัน `npm run test:e2e --prefix code/frontend` ในเครื่องบน source commit `279d55f` ด้วย Chromium, backend และ PostgreSQL ใน Docker Compose ที่สร้างใหม่ ผล **15/15 ผ่าน**, ไม่มี failed/skipped/flaky ครอบคลุมสมัคร/ล็อกอิน/ออกจากระบบ, สิทธิ์ learner/provider/admin, bookmark, รีวิวและ moderation, การเผยแพร่คอร์ส, matcher และการฟื้นตัวหลัง startup error [สรุปผลรัน](evidence/task27-local-e2e.json) ชุดทดสอบลบ container กับ network ของตนหลังรันสำเร็จ ผลนี้ยืนยันระบบในสภาพแวดล้อมแยก ไม่ใช่การทดสอบบัญชีบน production
 
+## บัญชี UAT บน production — 10 ตุลาคม 2026
+
+หลังได้รับอนุญาตจากผู้รับผิดชอบงาน สร้างบัญชีทดสอบ 2 บัญชีผ่าน `https://group36-coursehub.vercel.app/`: ผู้เรียน (user ID 8) และผู้ให้บริการ (user ID 9) ทั้งคู่สมัครเป็น `LEARNER` ตามระบบปัจจุบัน บัญชีหลังสร้าง Provider ทดสอบ ID 7 สถานะ `PENDING` และเห็นรายการนี้ผ่าน `/api/v1/providers/me` ส่วนบัญชีผู้เรียนไม่เห็น Provider ของอีกคน
+
+ทั้งสองบัญชี login ตอบ 200, `/api/v1/me` ระบุบัญชีถูกต้อง, endpoint admin ตอบ 403, logout ตอบ 204 และ `/api/v1/me` หลัง logout ตอบ 401; session cookie มี `Secure`, `HttpOnly` และ `SameSite=Lax` ไม่บันทึกรหัสผ่านหรือค่า cookie ใน repo หลักฐานรหัสอยู่ในไฟล์ส่วนตัวบนเครื่องผู้รับผิดชอบงาน บัญชีและ Provider ทดสอบยังคงอยู่สำหรับ UAT รอบถัดไป การลบ Provider ทำได้ผ่าน API โดยเจ้าของ แต่การลบบัญชีต้องประสานผู้ดูแลฐานข้อมูล เพราะยังไม่มี endpoint ลบบัญชี
+
 ## งาน UAT ที่ยังต้องตรวจ
 
-- สมัคร/เข้าสู่ระบบ/ออกจากระบบ, session หลัง refresh และสิทธิ์ของ learner/provider/admin บน HTTPS จริง: ข้อมูลล่าสุดวันที่ 10 ต.ค. ยังไม่มีบัญชีทดสอบ production จึงต้องเตรียมบัญชีแต่ละบทบาทและวิธีล้างข้อมูลที่สร้างก่อนทดสอบ (ระบบยังไม่มี endpoint ลบบัญชีผู้ใช้)
+- ทดสอบ session หลัง refresh, หน้าจอ provider workflow และสิทธิ์ `ADMIN` บน HTTPS จริง: มีบัญชีผู้เรียนและเจ้าของ Provider แล้ว แต่ระบบไม่เปิดสมัคร Admin ผ่านหน้าเว็บ ต้องให้ผู้ดูแลฐานข้อมูลเตรียมบัญชี Admin สำหรับ UAT และตกลงวิธีลบบัญชีทดสอบภายหลัง
 - การสร้าง/แก้รีวิวและการอนุมัติผ่าน UI, bookmark และการจัดการคอร์ส: local และ CI E2E ผ่านบนฐานข้อมูลทดสอบ แต่ยังไม่ใช่หลักฐาน production
 - พฤติกรรมหน้าเว็บระหว่าง Render Free หลับและตื่น, รวมถึงการกด “ลองใหม่”: รอบนี้ backend ตอบทัน จึงยังไม่ได้ทดสอบ cold start จริง
 - ตรวจร่วมกับทีมว่า `group36-coursehub.vercel.app` เป็นโดเมนหลักสำหรับส่งงานหรือไม่ แล้วค่อยปิดรายการ UAT ก่อน release เข้า `main`
