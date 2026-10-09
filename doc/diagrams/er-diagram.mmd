@@ -42,7 +42,7 @@ erDiagram
         BIGINT id PK
         VARCHAR(100) name
         VARCHAR(100) slug UK
-        VARCHAR(255) allowed_host
+        VARCHAR(255) allowed_host UK
     }
 
     courses {
@@ -52,7 +52,7 @@ erDiagram
         VARCHAR(200) title
         VARCHAR(100) slug UK
         TEXT description
-        VARCHAR(255) url
+        VARCHAR(2048) url
         VARCHAR(20) level "BEGINNER | INTERMEDIATE | ADVANCED"
         VARCHAR(20) language "THAI | ENGLISH | SUB_THAI"
         INTEGER effort_hours "NULL หรือ > 0"

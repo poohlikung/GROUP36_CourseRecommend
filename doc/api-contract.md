@@ -8,7 +8,7 @@
 - Layer: `Controller` รับ request และตรวจ `@Valid` → `Service` ตรวจสิทธิ์ กฎธุรกิจ และ `@Transactional` → `Repository` (Spring Data JPA) ไม่มี Controller เรียก Repository ตรง
 - Controller ขึ้นกับ interface ของ service ไม่ใช่คลาสจริง: `ProviderController` → `ProviderService` (impl: `ProviderServiceImpl`), `CourseController` → `CourseQueryService` สำหรับการอ่าน และ `CourseCommandService` สำหรับการเปลี่ยนข้อมูล (impl: `CourseServiceImpl`), `AdminModerationController` → `CourseModerationService` กับ `ProviderVerificationService` (impl แยกกัน)
 - API รับและส่ง **DTO** (`*Request`, `*Response`) ไม่ serialize Entity โดยตรง การแปลง Entity → DTO อยู่ใน `ProviderMapper` และ `CourseMapper`
-- กฎตรวจลิงก์คอร์สตามโดเมนของ Platform แยกอยู่ใน `CourseUrlPolicy`
+- กฎตรวจลิงก์คอร์สอยู่ใน `CourseUrlPolicy`; `CoursePlatformResolver` ระบุแพลตฟอร์มจากโดเมนของ URL
 - ยืนยันตัวตนด้วย session cookie (`JSESSIONID`) ของ Spring Security
 - คำขอที่เปลี่ยนข้อมูล (`POST`, `PUT`, `DELETE`) ต้องส่ง CSRF token ที่ได้จาก `GET /api/v1/auth/csrf` ใน header ตามค่า `headerName` ที่ตอบกลับ (`X-XSRF-TOKEN`)
 - ทุกการสร้าง แก้ไข ส่งตรวจ และลบ บันทึกลงตาราง `audit_logs` ใน transaction เดียวกับงานหลัก
@@ -33,7 +33,7 @@
 | Status | `code` | ใช้เมื่อ |
 | :---: | --- | --- |
 | 400 | `VALIDATION_ERROR` | ข้อมูลไม่ผ่าน Bean Validation หรือ JSON อ่านไม่ได้ (`fieldErrors` บอกฟิลด์ที่ผิด) |
-| 400 | `REQUEST_ERROR` | กฎธุรกิจที่ข้อมูลผิด เช่น Platform/Category ไม่มีอยู่ หรือ URL ไม่ตรงโดเมนของ Platform |
+| 400 | `REQUEST_ERROR` | กฎธุรกิจที่ข้อมูลผิด เช่น Category ไม่มีอยู่, URL ใช้โดเมนที่ไม่ถูกต้อง หรือ `platformId` แบบเดิมไม่ตรงกับ URL |
 | 401 | `UNAUTHORIZED` | ยังไม่ได้เข้าสู่ระบบ หรือ session หมดอายุ |
 | 403 | `FORBIDDEN` | เข้าสู่ระบบแล้วแต่ไม่มีสิทธิ์ เช่น ไม่ใช่ Owner/Editor ของ Provider นั้น |
 | 403 | `CSRF_INVALID` | ไม่ส่งหรือส่ง CSRF token ผิด |
@@ -104,8 +104,8 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 | --- | --- | :---: | --- |
 | `title` | string | ✓ | ไม่ว่าง, ≤ 200 ตัวอักษร |
 | `slug` | string | ✓ | 3–100 ตัวอักษร, `^[a-z0-9]+(?:-[a-z0-9]+)*$`, ไม่ซ้ำทั้งระบบ |
-| `url` | string | ✓ | ≤ 255, `http(s)://`, host ต้องเป็น `allowed_host` ของ Platform หรือ subdomain |
-| `platformId` | number | ✓ | ต้องมีอยู่ ไม่งั้นได้ 400 |
+| `url` | string | ✓ | ≤ 2048, HTTPS และโดเมนเว็บไซต์ถูกต้อง; ระบบจับคู่แพลตฟอร์มที่รู้จักหรือสร้างรายการจากโดเมนใหม่อัตโนมัติ |
+| `platformId` | number | | รองรับคำขอจาก client เดิม; หากส่งมา ต้องมีอยู่และโดเมน URL ต้องตรงกัน หน้าเว็บปัจจุบันไม่ส่งฟิลด์นี้ |
 | `description` | string | | ส่ง `""` = `null` |
 | `level` | `BEGINNER` / `INTERMEDIATE` / `ADVANCED` | | create ไม่ส่ง = `BEGINNER`; update ไม่ส่ง = ค่าเดิม |
 | `language` | `THAI` / `ENGLISH` / `SUB_THAI` | | create ไม่ส่ง = `THAI`; update ไม่ส่ง = ค่าเดิม |

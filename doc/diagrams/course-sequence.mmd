@@ -3,6 +3,7 @@ sequenceDiagram
     participant API as CourseController
     participant Service as CourseServiceImpl
     participant Ownership as ProviderOwnershipService
+    participant Resolver as CoursePlatformResolver
     participant Platforms as PlatformRepository
     participant Policy as CourseUrlPolicy
     participant Categories as CategoryRepository
@@ -13,8 +14,13 @@ sequenceDiagram
     Editor->>API: POST /api/v1/providers/{providerId}/courses
     API->>Service: createCourse(providerId, request)
     Service->>Ownership: requireEditorOrOwner(providerId)
-    Service->>Platforms: findById(platformId)
-    Service->>Policy: requireAllowedUrl(url, platform)
+    Service->>Resolver: resolve(url, optional legacy platformId)
+    Resolver->>Policy: requireValidHost(url)
+    Resolver->>Platforms: findMatchingHost(host)
+    opt New domain
+        Resolver->>Platforms: insertIfMissing(domain)
+    end
+    Resolver-->>Service: detected Platform
     Service->>Categories: findAllById(categoryIds)
     Service->>Courses: save(DRAFT Course with price and categories)
     Service->>Audit: save(COURSE_CREATED)
