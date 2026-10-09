@@ -12,6 +12,7 @@ import { BookmarksPage } from '../pages/BookmarksPage';
 import { ProviderPage } from '../pages/ProviderPage';
 import { AdminPage } from '../pages/AdminPage';
 import { MatcherPage } from '../pages/MatcherPage';
+import { ReviewsPage } from '../pages/ReviewsPage';
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<CatalogPage />} />
+          <Route path="/courses/:courseId/reviews" element={<ReviewsPage />} />
           <Route path="/match" element={<MatcherPage />} />
           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
           <Route path="/register" element={<PublicOnlyRoute authenticatedTo="/profile"><RegisterPage /></PublicOnlyRoute>} />

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import type { CatalogCourse } from './types';
 import { BookmarkButton } from '../bookmarks/BookmarkButton';
 
@@ -78,11 +80,12 @@ export function CatalogCourseCard({ course, saved = false, onBookmarkChange = ()
           ))}
         </div>
 
-        <p className="mt-4 text-sm font-bold text-amber-700">
-          {course.averageRating === null
-            ? 'ยังไม่มีรีวิว'
-            : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} รีวิว)`}
-        </p>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <p className="text-sm font-bold text-amber-700">
+            {course.averageRating === null ? 'No reviews yet' : `★ ${course.averageRating.toFixed(1)} (${course.reviewCount} reviews)`}
+          </p>
+          <Link className="text-sm font-extrabold text-blue-700 hover:text-blue-900" to={`/courses/${course.id}/reviews`}>Read reviews</Link>
+        </div>
 
         <div className="mt-5"><BookmarkButton courseId={course.id} courseTitle={course.title} saved={saved} onChange={onBookmarkChange} /></div>
 
