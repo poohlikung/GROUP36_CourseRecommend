@@ -1,4 +1,4 @@
-# Task 25 — Production deployment check (8 October 2026)
+# Task 25 — Production deployment check (8–9 October 2026)
 
 ## Release
 
@@ -21,9 +21,11 @@
 
 Render's free instance took time to wake. Initial API requests through Vercel timed out or returned `ROUTER_EXTERNAL_TARGET_ERROR`; repeating after direct backend liveness returned 200 succeeded. The frontend displayed its loading state during this period.
 
-## Remaining before Task 25 is complete
+## Task 25 acceptance and follow-up
 
-- Test registration/login, CSRF and Secure session cookie on Vercel HTTPS with a disposable account. Do not report authenticated production flow as verified from these guest-only checks.
-- Confirm whether the team will use this BossZY27 URL or transfer/update the separate `group36courserecommend.vercel.app` project. The latter still serves an older build and is inaccessible from the BossZY27 Vercel scope.
-- Configure the Render deploy hook and Vercel project token/IDs as GitHub Actions secrets, then set `CD_ENABLED=true` only after both targets are ready. The current workflow skips deployment jobs.
-- Finish the team's backup/restore rehearsal and production smoke/UAT tasks before release to `main`.
+The public API/Swagger, liveness, frontend URL, environment and runbook checks above satisfy the Task 25 acceptance criteria recorded in [Notion](https://app.notion.com/p/3e2b9c0da963800ab46fd120891be53f). Task 25 was marked complete on 9 October 2026. This does not mean the full production release has been verified.
+
+- Registration/login, CSRF and the Secure session cookie have **not** been tested end to end on Vercel HTTPS with a disposable account. The checks above cover only a guest session; include the authenticated flow in smoke/UAT testing.
+- The team has not confirmed whether `group36-coursehub.vercel.app` will be the canonical URL or whether it will update the separate `group36courserecommend.vercel.app` project. The latter still serves an older build and is inaccessible from the BossZY27 Vercel scope.
+- On 9 October, GitHub Actions repository secrets `RENDER_DEPLOY_HOOK_URL`, `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` were present, and the repository variable `CD_ENABLED` was set to `true`. The Render owner reported that native On Commit auto-deploy was turned off; this was not independently checked in Render. No push to `develop` has run after CD was enabled, so the deploy jobs and resulting production versions are **not yet verified**. See the [CD runbook](../deployment-cd.md) for the first-run checks.
+- Backup/restore rehearsal is documented in [Task 24's report](task24-backup-restore.md). The team's remaining production smoke/UAT work still needs to be completed before release to `main`.
