@@ -6,7 +6,7 @@
 - ทีมพัฒนา: กลุ่ม 36
 - เอกสาร: Test Plan และ Acceptance Criteria
 - สถานะ: Draft
-- วันที่ปรับปรุงล่าสุด: 7 ตุลาคม 2026 (เพิ่ม Task 22 learner/provider/admin E2E)
+- วันที่ปรับปรุงล่าสุด: 9 ตุลาคม 2026 (Task 26 smoke และปรับจำนวน E2E ตาม test discovery)
 
 ## วัตถุประสงค์
 
@@ -70,7 +70,27 @@
 - ผู้เรียนค้นหาและบันทึกคอร์ส
 - ผู้เรียนเขียนรีวิวและ Admin อนุมัติรีวิว
 
-Task 22 ทดสอบครบ 10 scenarios ใน `test/e2e/specs/` รวม guest/session, admin/ownership/CSRF, publish/revision, bookmark ข้ามบัญชี, review moderation และ Matcher ผลสำเร็จต้องไม่มี failed/skipped/flaky test และรันซ้ำจากฐานข้อมูลใหม่ได้ ขั้นตอนผู้เรียนสร้าง/แก้รีวิวใช้ API จริง เพราะยังไม่มี UI ส่วน Admin ตรวจรีวิวและคะแนน Catalog ตรวจผ่าน browser
+รายงาน Task 22 วันที่ 7 ตุลาคมบันทึก 10 scenarios ตาม revision ในเวลานั้น ปัจจุบัน `npm run test:e2e:list --prefix code/frontend` พบ **14 tests ใน 5 files** รวม guest/session, admin/ownership/CSRF, publish/revision, bookmark ข้ามบัญชี, review moderation, Matcher, review UI และ startup/retry เกณฑ์ผ่านคือไม่มี failed/skipped/flaky test และรันจากฐานข้อมูลใหม่ได้ ผลจริงของ revision ปัจจุบันอยู่ใน [รายงาน Task 26](test-reports/task26-smoke-and-test-summary.md)
+
+### Task 26: production smoke และหลักฐาน
+
+ใช้ `node test/smoke/production-readonly.mjs` จากราก repo เพื่อตรวจเฉพาะ GET ที่ปลอดภัย ผลแต่ละกรณีต้องมี HTTP status และรูปแบบข้อมูลตามเกณฑ์ ไม่ถือว่า exit code 0 เพียงอย่างเดียวพิสูจน์ workflow ได้ บันทึกผลเป็น pass/fail/blocked ใน [รายงานรวม](test-reports/task26-smoke-and-test-summary.md)
+
+| กรณี | เกณฑ์ผ่าน | วิธีตรวจ |
+| --- | --- | --- |
+| หน้าแรก, hero asset | HTML 200 และ WebP 200 ชนิดถูกต้อง | GET production Vercel |
+| `/match` โดยตรงและ refresh | ทั้งสอง GET คืน SPA HTML 200 | GET production Vercel สองครั้ง; browser rendering ต้องตรวจแยก |
+| Render และ Vercel liveness | HTTP 200 JSON `status: UP` ทั้งสองโดเมน | GET หลังรอ cold start ตามจริง |
+| Swagger | Swagger UI HTML 200 | GET Render |
+| Catalog | Courses เป็น paged JSON; categories/platforms เป็น array | GET ผ่าน Vercel |
+| Matcher | OpenAPI มี POST matcher และผล quiz จริงตรงข้อจำกัด | GET OpenAPI บน production; workflow ใช้ local Playwright บน DB แยก จึงยังไม่ยืนยัน production matcher response |
+| Guest permission | `/me` ตอบ 401 และ admin endpoint ตอบ 401/403 | GET ผ่าน Vercel |
+| CSRF cookie | GET `/auth/csrf` ตอบ JSON และ `XSRF-TOKEN` มี `Secure` | ตรวจ response headers โดยไม่เก็บ token |
+| Register/login/logout, session cookie | บัญชี disposable สมัคร, refresh, logout, login สำเร็จ; session cookie มี `Secure` | Production browser เฉพาะเมื่อทีมกำหนดบัญชีทดสอบและวิธีล้างข้อมูลแล้ว |
+| Learner/provider/admin permission | Role แต่ละแบบเห็น/ถูกปฏิเสธตามสิทธิ์ | Local Playwright บน DB แยก; production ต้องมีบัญชีทดสอบแต่ละ role |
+| Cold start/retry | UI แสดง loading/ข้อผิดพลาดและ retry คืนสภาพได้โดยไม่ส่ง mutation ซ้ำ | Local Playwright จำลอง failure; production cold start ต้องตรวจ browser จริงแยก |
+
+การทดสอบที่เปลี่ยนข้อมูลใช้ `npm run test:e2e --prefix code/frontend` จากราก repo ซึ่งสร้าง PostgreSQL ใหม่ใน Docker และล้าง stack หลังรัน ห้ามนำผลนี้ไปสรุปว่า production auth ผ่าน การตรวจ auth บน production ต้องมีบัญชีทดสอบเฉพาะ, เจ้าของข้อมูลอนุมัติ และแผนลบบัญชี/ข้อมูลที่สร้างก่อนเริ่ม; อย่าเก็บรหัสผ่านหรือค่า cookie ในรายงาน
 
 ## Test Environment
 
