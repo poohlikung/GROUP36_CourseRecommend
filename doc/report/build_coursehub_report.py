@@ -17,6 +17,15 @@ NAVY = RGBColor(23, 43, 69)
 GRAY = RGBColor(87, 96, 107)
 
 
+def complex_script_properties(rpr, size, bold):
+    rpr.get_or_add_bCs().set(qn("w:val"), "1" if bold else "0")
+    size_cs = rpr.find(qn("w:szCs"))
+    if size_cs is None:
+        size_cs = OxmlElement("w:szCs")
+        rpr.append(size_cs)
+    size_cs.set(qn("w:val"), str(round(size * 2)))
+
+
 def font(run, size=16, bold=False, color=None):
     run.font.name = FONT
     run.font.size = Pt(size)
@@ -30,6 +39,7 @@ def font(run, size=16, bold=False, color=None):
         rpr.insert(0, rf)
     for key in ("ascii", "hAnsi", "eastAsia", "cs"):
         rf.set(qn("w:" + key), FONT)
+    complex_script_properties(rpr, size, bold)
 
 
 def set_cell_shading(cell, fill):
@@ -88,6 +98,7 @@ styles = doc.styles
 normal = styles["Normal"]
 normal.font.name = FONT
 normal.font.size = Pt(16)
+complex_script_properties(normal._element.get_or_add_rPr(), 16, False)
 normal.paragraph_format.line_spacing = 1.16
 normal.paragraph_format.space_after = Pt(5)
 normal.paragraph_format.first_line_indent = Cm(0.7)
@@ -99,6 +110,7 @@ for name, size, before, after in [("Title", 24, 0, 12), ("Heading 1", 20, 15, 8)
     s.font.name = FONT
     s.font.size = Pt(size)
     s.font.bold = True
+    complex_script_properties(s._element.get_or_add_rPr(), size, True)
     s.font.color.rgb = NAVY if name != "Title" else RGBColor(0, 0, 0)
     s.paragraph_format.space_before = Pt(before)
     s.paragraph_format.space_after = Pt(after)
@@ -115,17 +127,20 @@ for name in ("Caption", "Reference", "Placeholder"):
         styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
 styles["Caption"].font.name = FONT
 styles["Caption"].font.size = Pt(14)
+complex_script_properties(styles["Caption"]._element.get_or_add_rPr(), 14, False)
 styles["Caption"].font.color.rgb = GRAY
 styles["Caption"].paragraph_format.space_before = Pt(5)
 styles["Caption"].paragraph_format.space_after = Pt(10)
 styles["Caption"].paragraph_format.first_line_indent = Cm(0)
 styles["Reference"].font.name = FONT
 styles["Reference"].font.size = Pt(14)
+complex_script_properties(styles["Reference"]._element.get_or_add_rPr(), 14, False)
 styles["Reference"].paragraph_format.left_indent = Cm(0.7)
 styles["Reference"].paragraph_format.first_line_indent = Cm(-0.7)
 styles["Reference"].paragraph_format.space_after = Pt(7)
 styles["Placeholder"].font.name = FONT
 styles["Placeholder"].font.size = Pt(14)
+complex_script_properties(styles["Placeholder"]._element.get_or_add_rPr(), 14, False)
 styles["Placeholder"].font.color.rgb = GRAY
 styles["Placeholder"].paragraph_format.left_indent = Cm(0.5)
 styles["Placeholder"].paragraph_format.right_indent = Cm(0.5)

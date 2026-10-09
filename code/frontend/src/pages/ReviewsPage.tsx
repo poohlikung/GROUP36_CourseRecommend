@@ -75,7 +75,7 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
   }, [courseId, page, reload]);
 
   useEffect(() => {
-    if (!canReview || !Number.isInteger(courseId) || courseId <= 0) { setMine(null); setInput(initialInput); setLoadingMine(false); return; }
+    if (!canReview || !Number.isInteger(courseId) || courseId <= 0) { setMine(null); setInput(initialInput); setLoadingMine(status === 'loading'); return; }
     const controller = new AbortController();
     setLoadingMine(true); setMineError('');
     reviewApi.mine(courseId, controller.signal).then((review) => {
@@ -94,7 +94,7 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
       if (!controller.signal.aborted) setLoadingMine(false);
     });
     return () => controller.abort();
-  }, [canReview, courseId, mineReload]);
+  }, [canReview, courseId, mineReload, status]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
