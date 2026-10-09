@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { ApiError, getErrorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -25,7 +25,8 @@ export function ReviewsPage() {
 }
 
 function CourseReviewsPage({ courseId }: { courseId: number }) {
-  const { status, user } = useAuth();
+  const { status, user, refresh } = useAuth();
+  const location = useLocation();
   const canReview = status === 'authenticated' && user?.role === 'LEARNER';
   const [courseTitle, setCourseTitle] = useState('');
   const [courseError, setCourseError] = useState('');
@@ -39,6 +40,7 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
   const [mineReload, setMineReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [message, setMessage] = useState('');
   const [reload, setReload] = useState(0);
 
@@ -88,12 +90,15 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canReview || loadingMine || mineError) return;
-    setSaving(true); setError(''); setMessage('');
+    setSaving(true); setFormError(''); setMessage('');
     try {
       const saved = mine ? await reviewApi.update(courseId, input) : await reviewApi.create(courseId, input);
       setMine(saved); setMessage(saved.status === 'PENDING' ? 'บันทึกรีวิวแล้วและส่งให้ผู้ดูแลตรวจสอบ' : 'บันทึกรีวิวแล้ว');
       setReload((value) => value + 1);
-    } catch (requestError) { setError(getErrorMessage(requestError)); }
+    } catch (requestError) {
+      if (requestError instanceof ApiError && requestError.status === 401) await refresh();
+      setFormError(getErrorMessage(requestError));
+    }
     finally { setSaving(false); }
   }
 
@@ -125,11 +130,11 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
       </section>
 
       <aside className="surface-card p-5 sm:p-6 lg:sticky lg:top-24"><p className="eyebrow">ความคิดเห็นของคุณ</p><h2 className="mt-2 text-2xl font-black">{status === 'authenticated' && !canReview ? 'การเขียนรีวิว' : mine ? 'จัดการรีวิวของคุณ' : 'ให้คะแนนคอร์สนี้'}</h2>
-        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">เข้าสู่ระบบเพื่อเขียนและจัดการรีวิวของคุณ</p><Link className="primary-button mt-4 w-full" to="/login">เข้าสู่ระบบเพื่อรีวิว</Link></div> : status === 'authenticated' && !canReview ? <p className="mt-5 text-sm text-slate-600">เฉพาะบัญชีผู้เรียนเท่านั้นที่เขียนรีวิวได้</p> : canReview && mineError ? <div className="mt-5"><p className="alert-error" role="alert">โหลดรีวิวของคุณไม่ได้: {mineError}</p><button className="secondary-button mt-3" type="button" onClick={() => setMineReload((value) => value + 1)}>ลองใหม่</button></div> : canReview && !loadingMine ? <form className="mt-5 space-y-5" onSubmit={submit}>
+        {status === 'guest' ? <div className="mt-5 rounded-2xl bg-blue-50 p-5"><p className="text-sm leading-6 text-slate-700">เข้าสู่ระบบเพื่อเขียนและจัดการรีวิวของคุณ</p><Link className="primary-button mt-4 w-full" to="/login" state={{ from: `${location.pathname}${location.search}` }}>เข้าสู่ระบบเพื่อรีวิว</Link></div> : status === 'authenticated' && !canReview ? <p className="mt-5 text-sm text-slate-600">เฉพาะบัญชีผู้เรียนเท่านั้นที่เขียนรีวิวได้</p> : canReview && mineError ? <div className="mt-5"><p className="alert-error" role="alert">โหลดรีวิวของคุณไม่ได้: {mineError}</p><button className="secondary-button mt-3" type="button" onClick={() => setMineReload((value) => value + 1)}>ลองใหม่</button></div> : canReview && !loadingMine ? <form className="mt-5 space-y-5" onSubmit={submit}>
           {scoreFields.map(({ key, label, hint }) => <fieldset key={key}><legend className="text-sm font-extrabold">{label} <span className="font-normal text-slate-500">— {hint}</span></legend><div className="mt-2 flex gap-1" role="radiogroup">{[1,2,3,4,5].map((score) => <label key={score} className="flex-1"><input className="peer sr-only" type="radio" name={key} value={score} checked={input[key] === score} onChange={() => setInput((current) => ({ ...current, [key]: score }))}/><span className="grid min-h-11 cursor-pointer place-items-center rounded-xl border border-slate-300 bg-white font-black text-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-50 peer-checked:text-amber-800">{score}</span></label>)}</div></fieldset>)}
           <label className="block text-sm font-extrabold">ความคิดเห็น <span className="font-normal text-slate-500">(ไม่บังคับ)</span><textarea className="form-input min-h-32 resize-y" maxLength={2000} value={input.body} onChange={(event) => setInput((current) => ({ ...current, body: event.target.value }))} placeholder="คอร์สนี้มีข้อดีอะไร และผู้เรียนคนอื่นควรรู้อะไรบ้าง"/></label>
           {mine && <p className="rounded-xl bg-slate-100 p-3 text-xs text-slate-600">สถานะ: <b>{reviewStatusLabels[mine.status]}</b>{mine.moderationReason ? ` — เหตุผล: ${mine.moderationReason}` : ''} การแก้ไขจะส่งรีวิวกลับไปให้ผู้ดูแลตรวจอีกครั้ง</p>}
-          {message && <p className="alert-success" role="status">{message}</p>}<button className="primary-button w-full" disabled={saving}>{saving ? 'กำลังบันทึก…' : mine ? 'อัปเดตรีวิว' : 'ส่งรีวิว'}</button>
+          {message && <p className="alert-success" role="status">{message}</p>}{formError && <p className="alert-error" role="alert">{formError}</p>}<button className="primary-button w-full" disabled={saving}>{saving ? 'กำลังบันทึก…' : mine ? 'อัปเดตรีวิว' : 'ส่งรีวิว'}</button>
         </form> : <p className="mt-5 text-sm text-slate-600">กำลังตรวจสอบบัญชีและรีวิวของคุณ…</p>}
       </aside>
     </div>

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../code/frontend/src/api/client';
 import { ReviewsPage } from '../../code/frontend/src/pages/ReviewsPage';
-import { act, cleanup, MemoryRouter, render, Route, Routes, screen, useNavigate, userEvent, waitFor } from '../../code/frontend/src/test/test-utils';
+import { act, cleanup, MemoryRouter, render, Route, Routes, screen, useLocation, useNavigate, userEvent, waitFor } from '../../code/frontend/src/test/test-utils';
 
 const mocks = vi.hoisted(() => ({
   role: 'ADMIN',
+  status: 'authenticated',
+  refresh: vi.fn(),
   getById: vi.fn(),
   list: vi.fn(),
   mine: vi.fn(),
@@ -13,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../code/frontend/src/auth/AuthContext', () => ({
-  useAuth: () => ({ status: 'authenticated', user: { id: 1, role: mocks.role } }),
+  useAuth: () => ({ status: mocks.status, user: { id: 1, role: mocks.role }, refresh: mocks.refresh }),
 }));
 vi.mock('../../code/frontend/src/features/course/courseApi', () => ({
   courseApi: { getById: mocks.getById },
@@ -52,6 +54,8 @@ describe('reviews page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.role = 'ADMIN';
+    mocks.status = 'authenticated';
+    mocks.refresh.mockResolvedValue(undefined);
     mocks.getById.mockResolvedValue({ id: 7, title: 'คอร์ส React' });
     mocks.list.mockResolvedValue({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, first: true, last: true });
     mocks.mine.mockResolvedValue(ownReview);
@@ -126,7 +130,38 @@ describe('reviews page', () => {
     expect(screen.queryByRole('button', { name: 'อัปเดตรีวิว' })).not.toBeInTheDocument();
     expect(screen.queryByText('1 รีวิว')).not.toBeInTheDocument();
   });
+
+  it('shows save errors beside the submit button and refreshes auth on 401', async () => {
+    mocks.role = 'LEARNER';
+    mocks.update.mockRejectedValue(new ApiError(401, 'UNAUTHORIZED', 'กรุณาเข้าสู่ระบบ'));
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'อัปเดตรีวิว' }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('กรุณาเข้าสู่ระบบ');
+    expect(alert.closest('form')).not.toBeNull();
+    expect(alert.closest('section')).toBeNull();
+  });
+
+  it('sends the review page as the login return destination', async () => {
+    mocks.status = 'guest';
+    const user = userEvent.setup();
+    render(<MemoryRouter initialEntries={['/courses/7/reviews?sort=new']}>
+      <Routes>
+        <Route path="/courses/:courseId/reviews" element={<ReviewsPage />} />
+        <Route path="/login" element={<LoginDestination />} />
+      </Routes>
+    </MemoryRouter>);
+    await user.click(screen.getByRole('link', { name: 'เข้าสู่ระบบเพื่อรีวิว' }));
+    expect(screen.getByText('/courses/7/reviews?sort=new')).toBeInTheDocument();
+  });
 });
+
+function LoginDestination() {
+  const location = useLocation();
+  return <p>{(location.state as { from: string }).from}</p>;
+}
 
 function emptyPage() {
   return { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, first: true, last: true };
