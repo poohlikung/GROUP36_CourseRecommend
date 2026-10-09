@@ -42,6 +42,11 @@ class CourseUrlPolicyTests {
     }
 
     @Test
+    void normalizesInternationalizedDomainNames() {
+        assertThat(policy.requireValidHost("https://คอร์ส.ไทย/course")).startsWith("xn--");
+    }
+
+    @Test
     void rejectsPlatformWithoutAnAllowedHost() {
         Platform open = Platform.builder().name("Other").slug("other").allowedHost(" ").build();
         assertThatThrownBy(() -> policy.requireAllowedUrl("https://example.com/course", open))
