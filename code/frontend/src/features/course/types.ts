@@ -49,7 +49,7 @@ export interface CreateCoursePayload {
   slug: string;
   description?: string;
   url: string;
-  platformId: number;
+  platformId?: number;
   level?: CourseLevel;
   language?: CourseLanguage;
   effortHours?: number;
@@ -64,7 +64,7 @@ export interface UpdateCoursePayload {
   slug: string;
   description?: string;
   url: string;
-  platformId: number;
+  platformId?: number;
   level?: CourseLevel;
   language?: CourseLanguage;
   effortHours?: number;
