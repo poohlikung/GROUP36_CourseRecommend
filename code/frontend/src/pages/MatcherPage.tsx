@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { getErrorMessage } from '../api/client';
 import type { CatalogCourse, CatalogOption } from '../features/catalog/types';
-import { getCourseMatches, getMatcherCategories } from '../features/matcher/matcherApi';
+import { getCourseMatches, getMatcherCategories, getMatcherCategoryCourses } from '../features/matcher/matcherApi';
 import type { MatchResponse } from '../features/matcher/types';
 
 const steps = ['หมวดหมู่', 'ระดับและภาษา', 'งบประมาณ', 'เวลาเรียน'];
@@ -32,6 +32,8 @@ export function MatcherPage() {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoryRetry, setCategoryRetry] = useState(0);
   const [categorySlug, setCategorySlug] = useState('');
+  const [categoryData, setCategoryData] = useState<{ slug: string; courses: CatalogCourse[] } | null>(null);
+  const [availabilityError, setAvailabilityError] = useState(false);
   const [level, setLevel] = useState<CatalogCourse['level'] | ''>('');
   const [language, setLanguage] = useState<CatalogCourse['language'] | ''>('');
   const [budget, setBudget] = useState('');
@@ -61,6 +63,42 @@ export function MatcherPage() {
   }, [categoryRetry]);
 
   useEffect(() => () => requestController.current?.abort(), []);
+
+  useEffect(() => {
+    if (!categorySlug) {
+      setCategoryData(null);
+      setAvailabilityError(false);
+      return;
+    }
+    const controller = new AbortController();
+    setAvailabilityError(false);
+    getMatcherCategoryCourses(categorySlug, controller.signal)
+      .then((courses) => { if (!controller.signal.aborted) setCategoryData({ slug: categorySlug, courses }); })
+      .catch(() => { if (!controller.signal.aborted) setAvailabilityError(true); });
+    return () => controller.abort();
+  }, [categorySlug]);
+
+  const categoryCourses = categoryData?.slug === categorySlug ? categoryData.courses : null;
+  // Keep these price rules aligned with backend EligibilityPolicy.rejectionReasons.
+  const matchableCourses = categoryCourses?.filter((course) => course.price?.paymentType === 'FREE'
+    || (course.price?.paymentType === 'ONE_TIME' && course.price.amount !== null
+      && course.price.amount >= 0 && course.price.currency?.toUpperCase() === 'THB'));
+  const levelCourses = matchableCourses?.filter((course) => !level || course.level === level);
+  const matchingChoices = levelCourses?.filter((course) => !language || course.language === language);
+  const minimumPrice = matchingChoices?.length
+    ? matchingChoices.reduce((lowest, course) => Math.min(lowest,
+      course.price?.paymentType === 'FREE' ? 0 : course.price?.amount ?? Infinity), Infinity)
+    : null;
+  const selectedCategoryName = categories.find((category) => category.slug === categorySlug)?.name;
+  const emptyResultHint = categoryCourses?.length === 0
+    ? 'หมวดนี้ยังไม่มีคอร์สที่เผยแพร่ ลองเลือกหมวดอื่น'
+    : matchableCourses?.length === 0
+      ? 'คอร์สในหมวดนี้ยังไม่มีราคาแบบฟรีหรือจ่ายครั้งเดียวเป็นบาทที่ระบบจับคู่ได้'
+      : matchingChoices?.length === 0
+        ? 'ยังไม่มีคอร์สในหมวดนี้ที่ตรงระดับและภาษาที่เลือก'
+        : minimumPrice !== null && Number(budget) < minimumPrice
+          ? `คอร์สที่ตรงหมวด ระดับ และภาษาเริ่มต้น ${minimumPrice.toLocaleString('th-TH')} บาท สูงกว่างบ ${Number(budget).toLocaleString('th-TH')} บาท`
+          : '';
 
   useLayoutEffect(() => {
     const showingResults = result !== null;
@@ -164,12 +202,23 @@ export function MatcherPage() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-2xl" aria-hidden="true">⌕</div>
                 <h3 id="match-empty-title" className="mt-5 text-xl font-black">ยังไม่พบคอร์สที่ตรงทุกเงื่อนไข</h3>
                 <p className="mt-2 text-slate-600">ลองปรับคำตอบแล้วค้นหาอีกครั้ง ระบบจะไม่เปลี่ยนเงื่อนไขให้เอง</p>
+                {emptyResultHint && <p className="mt-3 font-bold text-amber-900">{emptyResultHint}</p>}
+                {categoryCourses && (
+                  <p className="mt-3 text-sm text-slate-700">
+                    ในหมวด {selectedCategoryName} มีคอร์สเผยแพร่ {categoryCourses.length} คอร์ส
+                    {matchingChoices && ` โดย ${matchingChoices.length} คอร์สตรงระดับและภาษาที่เลือกและรองรับการจับคู่`}
+                    {minimumPrice !== null && ` ราคาต่ำสุด ${minimumPrice.toLocaleString('th-TH')} บาท`}
+                  </p>
+                )}
                 {result.constraints.length > 0 && (
-                  <ul className="mt-5 grid gap-3 text-slate-700">
-                    {result.constraints.map((constraint) => (
-                      <li key={constraint.code} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold">{constraint.message}{constraint.excludedCourseCount > 0 ? ` (${constraint.excludedCourseCount} คอร์ส)` : ''}</li>
-                    ))}
-                  </ul>
+                  <div className="mt-5">
+                    <p className="text-sm font-bold text-slate-600">ข้อจำกัดที่พบจากคอร์สทั้งหมด (หนึ่งคอร์สอาจมีหลายข้อ)</p>
+                    <ul className="mt-3 grid gap-3 text-slate-700">
+                      {result.constraints.map((constraint) => (
+                        <li key={constraint.code} className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold">{constraint.message}{constraint.excludedCourseCount > 0 ? ` (${constraint.excludedCourseCount} คอร์ส)` : ''}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             ) : (
@@ -219,22 +268,27 @@ export function MatcherPage() {
               {step === 0 && (
                 <div>
                   <label htmlFor="match-category" className="block font-extrabold">อยากเรียนเรื่องอะไร</label>
-                  <select id="match-category" value={categorySlug} onChange={(event) => { setCategorySlug(event.target.value); setValidationError(''); }} className="form-input" disabled={categories.length === 0}>
+                  <select id="match-category" value={categorySlug} onChange={(event) => { setCategorySlug(event.target.value); setLevel(''); setLanguage(''); setValidationError(''); }} className="form-input" disabled={categories.length === 0}>
                     <option value="">เลือกหมวดหมู่</option>
                     {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
                   </select>
                   {categoryError && <p role="alert" className="alert-error mt-3">โหลดหมวดหมู่ไม่ได้: {categoryError} <button type="button" onClick={() => setCategoryRetry((count) => count + 1)} className="font-bold underline underline-offset-4">ลองอีกครั้ง</button></p>}
                   {categoriesLoading && <p role="status" className="mt-3 text-sm text-slate-600">กำลังโหลดหมวดหมู่…</p>}
                   {!categoriesLoading && !categoryError && categories.length === 0 && <p role="status" className="mt-3 text-sm text-slate-600">ยังไม่มีหมวดหมู่ให้เลือกในขณะนี้</p>}
+                  {categorySlug && !categoryCourses && !availabilityError && <p role="status" className="mt-3 text-sm text-slate-600">กำลังตรวจคอร์สในหมวดนี้…</p>}
+                  {categoryCourses && <p role="status" className="mt-3 text-sm text-slate-600">มีคอร์สเผยแพร่ในหมวดนี้ {categoryCourses.length} คอร์ส · รองรับการจับคู่ {matchableCourses?.length ?? 0} คอร์ส</p>}
+                  {categoryCourses && matchableCourses?.length === 0 && <p className="mt-2 text-sm font-semibold text-amber-900">หมวดนี้ยังไม่มีคอร์สที่จับคู่ได้ ลองเลือกหมวดอื่น</p>}
+                  {availabilityError && <p role="status" className="mt-3 text-sm text-slate-600">ยังตรวจจำนวนคอร์สไม่ได้ แต่ทำแบบทดสอบต่อได้</p>}
                 </div>
               )}
               {step === 1 && (
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div><label htmlFor="match-level" className="block font-extrabold">ระดับที่เหมาะกับคุณ</label><select id="match-level" value={level} onChange={(event) => setLevel(event.target.value as CatalogCourse['level'] | '')} className="form-input"><option value="">เลือกระดับ</option>{levels.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
-                  <div><label htmlFor="match-language" className="block font-extrabold">ภาษาของคอร์ส</label><select id="match-language" value={language} onChange={(event) => setLanguage(event.target.value as CatalogCourse['language'] | '')} className="form-input"><option value="">เลือกภาษา</option>{languages.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+                  <div><label htmlFor="match-level" className="block font-extrabold">ระดับที่เหมาะกับคุณ</label><select id="match-level" value={level} onChange={(event) => setLevel(event.target.value as CatalogCourse['level'] | '')} className="form-input"><option value="">เลือกระดับ</option>{levels.map((item) => <option key={item.value} value={item.value}>{item.label}{matchableCourses ? ` (${matchableCourses.filter((course) => course.level === item.value).length} คอร์ส)` : ''}</option>)}</select></div>
+                  <div><label htmlFor="match-language" className="block font-extrabold">ภาษาของคอร์ส</label><select id="match-language" value={language} onChange={(event) => setLanguage(event.target.value as CatalogCourse['language'] | '')} className="form-input"><option value="">เลือกภาษา</option>{languages.map((item) => <option key={item.value} value={item.value}>{item.label}{levelCourses ? ` (${levelCourses.filter((course) => course.language === item.value).length} คอร์ส)` : ''}</option>)}</select></div>
+                  {level && language && matchingChoices?.length === 0 && <p className="text-sm font-semibold text-amber-900 sm:col-span-2">ยังไม่มีคอร์สที่ตรงระดับและภาษานี้ในหมวดที่เลือก ลองเปลี่ยนตัวเลือก</p>}
                 </div>
               )}
-              {step === 2 && <div><label htmlFor="match-budget" className="block font-extrabold">งบประมาณสูงสุด (บาท)</label><input id="match-budget" type="number" min="0" max="99999999.99" step="0.01" inputMode="decimal" value={budget} onChange={(event) => setBudget(event.target.value)} className="form-input" placeholder="เช่น 1000 หรือ 0 สำหรับคอร์สฟรี" /><p className="mt-2 text-sm text-slate-500">ระบุ 0 ได้ถ้าอยากดูเฉพาะคอร์สฟรีหรือคอร์สราคา 0 บาท</p></div>}
+              {step === 2 && <div><label htmlFor="match-budget" className="block font-extrabold">งบประมาณสูงสุด (บาท)</label><input id="match-budget" type="number" min="0" max="99999999.99" step="0.01" inputMode="decimal" value={budget} onChange={(event) => setBudget(event.target.value)} className="form-input" placeholder="เช่น 1000 หรือ 0 สำหรับคอร์สฟรี" /><p className="mt-2 text-sm text-slate-500">ระบุ 0 ได้ถ้าอยากดูเฉพาะคอร์สฟรีหรือคอร์สราคา 0 บาท</p>{minimumPrice !== null && <p className="mt-2 text-sm font-semibold text-slate-700">คอร์สที่ตรงหมวด ระดับ และภาษาที่เลือก ราคาเริ่มต้น {minimumPrice.toLocaleString('th-TH')} บาท{budget && Number(budget) < minimumPrice ? ' · งบที่ระบุยังไม่ถึงราคานี้' : ''}</p>}</div>}
               {step === 3 && <div><label htmlFor="match-hours" className="block font-extrabold">มีเวลาเรียนกี่ชั่วโมงต่อสัปดาห์</label><input id="match-hours" type="number" min="1" max="168" step="1" inputMode="numeric" value={hours} onChange={(event) => setHours(event.target.value)} className="form-input" placeholder="เช่น 4" /><p className="mt-2 text-sm text-slate-500">คะแนนด้านเวลาประเมินจากเป้าหมายเรียนจบภายใน 4 สัปดาห์</p></div>}
               {validationError && <p role="alert" className="alert-error">{validationError}</p>}
               {requestError && <p role="alert" className="alert-error">ขอผลแนะนำไม่ได้: {requestError}</p>}

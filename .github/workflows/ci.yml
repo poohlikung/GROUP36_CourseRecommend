@@ -47,6 +47,15 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  db-scripts:
+    name: Database script safety tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test backup/restore script guards
+        shell: pwsh
+        run: ./test/scripts/backup-restore.Tests.ps1
+
   e2e:
     name: Learner provider admin E2E
     runs-on: ubuntu-latest

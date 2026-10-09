@@ -47,3 +47,13 @@ test('matcher explains empty results and lets the learner edit answers without r
   await expect(page.getByLabel('ระดับที่เหมาะกับคุณ', { exact: true })).toHaveValue('ADVANCED');
   await expect(page.getByLabel('ภาษาของคอร์ส', { exact: true })).toHaveValue('SUB_THAI');
 });
+
+test('matcher shows when a published category has no matchable courses', async ({ page }) => {
+  await page.goto('/match');
+  await page.getByLabel('อยากเรียนเรื่องอะไร', { exact: true }).selectOption('business-marketing');
+  await expect(page.getByText('มีคอร์สเผยแพร่ในหมวดนี้ 0 คอร์ส · รองรับการจับคู่ 0 คอร์ส')).toBeVisible();
+
+  await page.getByLabel('อยากเรียนเรื่องอะไร', { exact: true }).selectOption('cloud-devops');
+  await expect(page.getByText('มีคอร์สเผยแพร่ในหมวดนี้ 1 คอร์ส · รองรับการจับคู่ 0 คอร์ส')).toBeVisible();
+  await expect(page.getByText('หมวดนี้ยังไม่มีคอร์สที่จับคู่ได้ ลองเลือกหมวดอื่น')).toBeVisible();
+});
