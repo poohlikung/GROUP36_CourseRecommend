@@ -85,6 +85,8 @@ describe('reviews page', () => {
       overallScore: 5, contentScore: 5, teachingScore: 4, difficultyScore: 2, body: 'รีวิวใหม่',
     }));
     expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.mine).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'อัปเดตรีวิว' })).toBeInTheDocument();
   });
 
   it('opens the create form only when the own-review request returns 404', async () => {
@@ -155,6 +157,35 @@ describe('reviews page', () => {
     </MemoryRouter>);
     await user.click(screen.getByRole('link', { name: 'เข้าสู่ระบบเพื่อรีวิว' }));
     expect(screen.getByText('/courses/7/reviews?sort=new')).toBeInTheDocument();
+  });
+
+  it('disables pagination while the next page is loading', async () => {
+    const nextPage = deferred<ReturnType<typeof emptyPage>>();
+    mocks.list.mockImplementation((_id: number, page: number) => page === 0
+      ? Promise.resolve({ ...emptyPage(), totalPages: 2, last: false })
+      : nextPage.promise);
+    const user = userEvent.setup();
+    renderPage();
+    const next = await screen.findByRole('button', { name: 'ถัดไป' });
+    await user.click(next);
+    expect(next).toBeDisabled();
+    await user.click(next);
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('หน้า 1 จาก 2')).toBeInTheDocument();
+    await act(async () => { nextPage.resolve({ ...emptyPage(), page: 1, totalPages: 2, first: false }); });
+    expect(screen.getByText('หน้า 2 จาก 2')).toBeInTheDocument();
+  });
+
+  it('returns to the last valid page if the review count shrinks', async () => {
+    mocks.list.mockImplementation((_id: number, page: number) => Promise.resolve(page === 0
+      ? { ...emptyPage(), totalPages: 2, last: false }
+      : { ...emptyPage(), page: 1, totalPages: 1, first: false }));
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'ถัดไป' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledWith(7, 1, expect.any(AbortSignal)));
+    await waitFor(() => expect(screen.getByText('หน้า 1 จาก 2')).toBeInTheDocument());
+    expect(screen.queryByText('หน้า 2 จาก 1')).not.toBeInTheDocument();
   });
 });
 

@@ -58,10 +58,19 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
     if (!Number.isInteger(courseId) || courseId <= 0) { setError('ไม่พบคอร์สที่ต้องการ'); setLoading(false); return; }
     const controller = new AbortController();
     setLoading(true); setError('');
+    let pageCorrected = false;
     reviewApi.list(courseId, page, controller.signal)
-      .then((result) => { if (!controller.signal.aborted) setReviews(result); })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (page > 0 && page >= result.totalPages) {
+          pageCorrected = true;
+          setPage(Math.max(0, result.totalPages - 1));
+          return;
+        }
+        setReviews(result);
+      })
       .catch((requestError) => { if (!controller.signal.aborted) setError(getErrorMessage(requestError)); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .finally(() => { if (!controller.signal.aborted && !pageCorrected) setLoading(false); });
     return () => controller.abort();
   }, [courseId, page, reload]);
 
@@ -126,7 +135,7 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span className="rounded-xl bg-blue-50 p-2">เนื้อหา <b>{review.contentScore}/5</b></span><span className="rounded-xl bg-emerald-50 p-2">การสอน <b>{review.teachingScore}/5</b></span><span className="rounded-xl bg-amber-50 p-2">ความยาก <b>{review.difficultyScore}/5</b></span></div>
           {review.body && <p className="mt-4 whitespace-pre-wrap leading-7 text-slate-700">{review.body}</p>}
         </article>)}</div>
-        {reviews && reviews.totalPages > 1 && <nav aria-label="หน้ารีวิว" className="mt-6 flex items-center justify-center gap-3"><button className="secondary-button" disabled={reviews.first} onClick={() => setPage((value) => value - 1)}>ก่อนหน้า</button><span className="text-sm font-bold">หน้า {page + 1} จาก {reviews.totalPages}</span><button className="secondary-button" disabled={reviews.last} onClick={() => setPage((value) => value + 1)}>ถัดไป</button></nav>}
+        {reviews && reviews.totalPages > 1 && <nav aria-label="หน้ารีวิว" className="mt-6 flex items-center justify-center gap-3"><button className="secondary-button" disabled={loading || reviews.first} onClick={() => { setLoading(true); setPage((value) => value - 1); }}>ก่อนหน้า</button><span className="text-sm font-bold">หน้า {reviews.page + 1} จาก {reviews.totalPages}</span><button className="secondary-button" disabled={loading || reviews.last} onClick={() => { setLoading(true); setPage((value) => value + 1); }}>ถัดไป</button></nav>}
       </section>
 
       <aside className="surface-card p-5 sm:p-6 lg:sticky lg:top-24"><p className="eyebrow">ความคิดเห็นของคุณ</p><h2 className="mt-2 text-2xl font-black">{status === 'authenticated' && !canReview ? 'การเขียนรีวิว' : mine ? 'จัดการรีวิวของคุณ' : 'ให้คะแนนคอร์สนี้'}</h2>
