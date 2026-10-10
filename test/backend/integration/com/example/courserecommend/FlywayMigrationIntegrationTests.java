@@ -14,11 +14,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.web.server.ResponseStatusException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -134,5 +136,42 @@ class FlywayMigrationIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].platform.name").value("opendurian.com"))
                 .andExpect(jsonPath("$.content[0].externalUrl").value(url));
+    }
+
+    @Test
+    @Transactional
+    @WithMockUser(username = "instructor.cs@kku.ac.th")
+    void rejectsOverlongHostBeforeCreatingPlatform() throws Exception {
+        String host = "a".repeat(50) + "." + "b".repeat(50) + ".example.com";
+        mockMvc.perform(post("/api/v1/providers/1/courses")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Long host course","slug":"long-host-course","url":"https://%s/course"}
+                                """.formatted(host)))
+                .andExpect(status().isBadRequest());
+
+        Integer created = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM platforms WHERE allowed_host = ?", Integer.class, host);
+        assertThat(created).isZero();
+    }
+
+    @Test
+    @Transactional
+    void usesRegisteredDomainInsteadOfAHostSuffix() {
+        Platform subdomain = platformResolver.resolve("https://learn.review-example.com/course", null);
+        Platform root = platformResolver.resolve("https://review-example.com/another-course", null);
+        assertThat(subdomain.getId()).isEqualTo(root.getId());
+        assertThat(root.getAllowedHost()).isEqualTo("review-example.com");
+
+        Platform shortDomain = platformResolver.resolve("https://www.com/course", null);
+        assertThat(shortDomain.getAllowedHost()).isEqualTo("www.com");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM platforms WHERE allowed_host = 'com'", Integer.class)).isZero();
+        assertThatThrownBy(() -> platformResolver.resolve("https://co.th/course", null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400 BAD_REQUEST");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM platforms WHERE allowed_host = 'co.th'", Integer.class)).isZero();
     }
 }
