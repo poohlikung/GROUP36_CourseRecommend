@@ -1,12 +1,30 @@
 import { apiRequest } from '../../api/client';
 import type {
+  AddProviderMemberPayload,
   CreateProviderPayload,
   MyProvider,
   Provider,
+  ProviderMember,
   UpdateProviderPayload,
 } from './types';
 
 export const providerApi = {
+  listMembers(providerId: number, signal?: AbortSignal): Promise<ProviderMember[]> {
+    return apiRequest<ProviderMember[]>(`/api/v1/providers/${providerId}/members`, { signal });
+  },
+
+  addMember(providerId: number, payload: AddProviderMemberPayload, signal?: AbortSignal): Promise<ProviderMember> {
+    return apiRequest<ProviderMember>(`/api/v1/providers/${providerId}/members`, {
+      method: 'POST', body: payload, signal,
+    });
+  },
+
+  removeMember(providerId: number, memberId: number, signal?: AbortSignal): Promise<void> {
+    return apiRequest<void>(`/api/v1/providers/${providerId}/members/${memberId}`, {
+      method: 'DELETE', signal,
+    });
+  },
+
   findMine(signal?: AbortSignal): Promise<MyProvider[]> {
     return apiRequest<MyProvider[]>('/api/v1/providers/me', { signal });
   },
