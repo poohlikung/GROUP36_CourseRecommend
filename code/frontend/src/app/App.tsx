@@ -13,6 +13,7 @@ import { ProviderPage } from '../pages/ProviderPage';
 import { AdminPage } from '../pages/AdminPage';
 import { MatcherPage } from '../pages/MatcherPage';
 import { ReviewsPage } from '../pages/ReviewsPage';
+import { AuditLogsPage } from '../pages/AuditLogsPage';
 
 export function App() {
   return (
@@ -29,6 +30,7 @@ export function App() {
           <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
           <Route path="/providers" element={<ProtectedRoute><ProviderPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
+          <Route path="/admin/audit-logs" element={<ProtectedRoute><AdminRoute><AuditLogsPage /></AdminRoute></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
