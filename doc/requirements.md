@@ -37,7 +37,7 @@
 | 7 | Global Exception Handler + error format | 08 | `exception/GlobalExceptionHandler.java`, `common/ApiErrorResponse.java` | `ApiErrorContractIntegrationTests` | ✅ |
 | 7 | Validation (`@Valid`) | 08 | DTO ทุกตัวใช้ Bean Validation | 400 พร้อม `fieldErrors` | ✅ |
 | 7 | Pagination & Sorting ≥ 1 endpoint | 12 | `GET /api/v1/courses?page&size&sort` (`CatalogController`) | `CatalogCourseIntegrationTests` | ✅ |
-| 8 | Branch ชื่อ_รหัส_section, PR มี reviewer | ทุกคน | branch `*_67338007xx_01`, PR บน GitHub | PR ทุกอันมี reviewer ≥ 1 | ✅ |
+| 8 | Branch ชื่อ_รหัส_section, commit คนละ ≥ 15, PR มี reviewer | ทุกคน, 29 | branch `<ชื่อ>_<รหัส>_01`, PR บน GitHub, [Contribution audit](test-reports/task29-contribution-audit.md) | commit ≥ 15 ต่อคนจากบัญชีตนเอง และ PR ทุกอันมี reviewer ≥ 1 | 🟡 commit ครบทุกคน (43–73); PR ที่ merge 35/40 มีรีวิว และตั้งแต่ #15 มี approve ทุก PR ยกเว้น #20, #39, #43; branch หลักของ Phakin ไม่มี `_01`, #43 ใช้ branch `keattisak-uat-report` และ commit ของ Phakin ยังไม่ผูกบัญชี GitHub ดูรายงาน Task 29 |
 | 9 | โฟลเดอร์ `code/`, `test/`, `doc/`, `img/` | 07 | root ของ repo, test ถูกค้นจาก `test/` ผ่าน `build-helper-maven-plugin` | CI รันเทสต์จาก `test/` | ✅ |
 | 9.1 | Use Case Diagram + Description | 02 | `doc/diagrams/use-case-diagram.png`, `doc/Use Case Descriptions.md` | ครบทุก actor | ✅ |
 | 9.1 | Class, Sequence ≥ 3, Activity, Component, Deployment, State | 21 | `doc/diagrams/` มี diagram แยกตาม feature, activity, component, deployment, state; Mermaid render ได้ | ไฟล์ใน `doc/diagrams/` | ✅ |
