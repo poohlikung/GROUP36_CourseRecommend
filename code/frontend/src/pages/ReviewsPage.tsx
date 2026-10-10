@@ -128,14 +128,14 @@ function CourseReviewsPage({ courseId }: { courseId: number }) {
           {reviews && <span className="status-chip border-amber-200 bg-amber-50 text-amber-800">★ {reviews.totalElements} รีวิว</span>}
         </div>
         {loading && <p className="empty-state mt-5">กำลังโหลดรีวิว…</p>}
-        {error && <p className="alert-error mt-5" role="alert">{error}</p>}
+        {error && <div className="alert-error mt-5 flex flex-wrap items-center justify-between gap-3" role="alert">{error}<button className="secondary-button" type="button" onClick={() => setReload((value) => value + 1)}>ลองใหม่</button></div>}
         {!loading && reviews?.content.length === 0 && <p className="empty-state mt-5">ยังไม่มีรีวิวที่เผยแพร่</p>}
         <div className="mt-5 space-y-4">{reviews?.content.map((review) => <article key={review.id} className="surface-panel p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-black text-slate-950">{review.reviewerDisplayName}</h3><p className="mt-1 text-xs text-slate-500">{new Date(review.createdAt).toLocaleDateString('th-TH')}</p></div><strong className="text-lg text-amber-700">★ {review.overallScore}/5</strong></div>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span className="rounded-xl bg-blue-50 p-2">เนื้อหา <b>{review.contentScore}/5</b></span><span className="rounded-xl bg-emerald-50 p-2">การสอน <b>{review.teachingScore}/5</b></span><span className="rounded-xl bg-amber-50 p-2">ความยาก <b>{review.difficultyScore}/5</b></span></div>
           {review.body && <p className="mt-4 whitespace-pre-wrap leading-7 text-slate-700">{review.body}</p>}
         </article>)}</div>
-        {reviews && reviews.totalPages > 1 && <nav aria-label="หน้ารีวิว" className="mt-6 flex items-center justify-center gap-3"><button className="secondary-button" disabled={loading || reviews.first} onClick={() => { setLoading(true); setPage((value) => value - 1); }}>ก่อนหน้า</button><span className="text-sm font-bold">หน้า {reviews.page + 1} จาก {reviews.totalPages}</span><button className="secondary-button" disabled={loading || reviews.last} onClick={() => { setLoading(true); setPage((value) => value + 1); }}>ถัดไป</button></nav>}
+        {reviews && reviews.totalPages > 1 && <nav aria-label="หน้ารีวิว" className="mt-6 flex items-center justify-center gap-3"><button className="secondary-button" type="button" disabled={loading || !!error || reviews.first} onClick={() => { setLoading(true); setPage(reviews.page - 1); }}>ก่อนหน้า</button><span className="text-sm font-bold">หน้า {reviews.page + 1} จาก {reviews.totalPages}</span><button className="secondary-button" type="button" disabled={loading || !!error || reviews.last} onClick={() => { setLoading(true); setPage(reviews.page + 1); }}>ถัดไป</button></nav>}
       </section>
 
       <aside className="surface-card p-5 sm:p-6 lg:sticky lg:top-24"><p className="eyebrow">ความคิดเห็นของคุณ</p><h2 className="mt-2 text-2xl font-black">{status === 'authenticated' && !canReview ? 'การเขียนรีวิว' : mine ? 'จัดการรีวิวของคุณ' : 'ให้คะแนนคอร์สนี้'}</h2>

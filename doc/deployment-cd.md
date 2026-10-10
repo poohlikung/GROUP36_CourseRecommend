@@ -4,12 +4,12 @@ CI checks every pull request to `develop` or `main`. After a reviewed PR is merg
 
 The public architecture follows [ADR 0004](decisions/0004-spa-frontend-and-deployment-strategy.md): React/Vite on Vercel Hobby, Spring Boot on Render Free, PostgreSQL on Neon Free. `code/frontend/vercel.json` forwards `/api/*` to the existing Render backend and serves `index.html` for client-side routes. The proxy target is the backend URL currently recorded in `doc/requirements.md`; update it if the Render service URL changes.
 
-## Current deployment (8 October 2026)
+## Current deployment (checked 9 October 2026)
 
 - Frontend: [group36-coursehub.vercel.app](https://group36-coursehub.vercel.app/) in the `bosszy27s-projects/group36-coursehub` project. One-time manual production deployment of the frontend tree from `develop` commit `d1e8512`; see [production smoke report](test-reports/task25-deployment.md).
 - Backend: [coursehub-backend-ahz2.onrender.com](https://coursehub-backend-ahz2.onrender.com/api/v1/system/liveness), maintained separately by the team.
 - `group36courserecommend.vercel.app` belongs to a different Vercel project and still serves the older frontend. Updating that exact domain requires access to its project. Do not treat the two domains as the same deployment.
-- GitHub Actions CD is still disabled because `CD_ENABLED` is unset. The latest `develop` run passed all three test jobs but skipped both deploy jobs. The manual release does not establish automatic future deploys.
+- Repository Actions variable `CD_ENABLED` is now `true`, and the Render/Vercel secret names required by the workflow are present (checked 9 October 2026). This confirms configuration names, not secret values or a successful deployment. The latest `develop` run predates the variable update; PR runs skip deploy jobs by design. A successful post-merge push to `develop` and platform checks are still needed to verify CD. The manual release does not establish automatic future deploys.
 
 For another manual frontend release while CD remains disabled, first confirm that the local frontend files match the reviewed `develop` commit. The Vercel CLI uploads files from this checkout, so uncommitted or different frontend files must not be included. From the repository root, run:
 
@@ -29,7 +29,7 @@ The status and diff commands must produce no output; stop if either reports chan
    - `RENDER_DEPLOY_HOOK_URL`: the Render deploy hook URL. Do not put this URL in the repository.
    - `VERCEL_TOKEN`: a Vercel access token for the account that owns the frontend project.
    - `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`: the `orgId` and `projectId` from the team's project's local `.vercel/project.json` after running `vercel link` at the repository root. The `.vercel/` directory is ignored by Git. Use a token with access to that same Vercel account or team.
-4. Check that both projects point to the intended Render/Neon database and Vercel account. Then add the repository **Actions variable** `CD_ENABLED=true`. Until this variable is set, the deploy jobs are intentionally skipped and CI continues to run normally.
+4. Check that both projects point to the intended Render/Neon database and Vercel account. The repository **Actions variable** `CD_ENABLED=true` is already set. Keep it enabled only while the targets are ready; the next qualifying push to `develop` will attempt both deploy jobs after tests pass.
 
 ## Verify and operate
 

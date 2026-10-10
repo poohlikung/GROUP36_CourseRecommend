@@ -47,7 +47,7 @@ Local logs และ Playwright artifacts ใน `test/reports/` ไม่ commi
 | Guest เข้า `/me` และ admin API ไม่ได้ | **pass** | Vercel GET ทั้งสอง endpoint ตอบ 401 |
 | Learner, provider, admin permission บน production | **blocked** | ไม่มีบัญชีทดสอบแต่ละ role; local E2E ตรวจ learner/admin/provider flow บน DB แยก |
 | Cold start UI/retry บน production และไม่มี mutation ซ้ำ | **blocked** | Render liveness ใช้ 107 วินาที; local startup E2E 2 tests จำลอง 503/403 แล้ว recovery แต่ไม่ได้พิสูจน์ production UI ระหว่าง cold start หรือการไม่ยิง mutation ซ้ำ |
-| Backup/restore และ CD บน production | **blocked** | ไม่มีหลักฐาน rehearsal หรือ deploy jobs ที่ทำงานจริง; CI เดิม skip deploy jobs |
+| Backup/restore และ CD บน production | **blocked** | ไม่มีหลักฐาน rehearsal หรือ deploy jobs ที่ทำงานจริง; ณ 9 ต.ค. `CD_ENABLED=true` และชื่อ secrets อยู่ครบ แต่ PR jobs skip deploy ตาม workflow ต้องตรวจ push `develop` หลัง merge |
 
 ## ข้อสรุปและรายการค้าง
 

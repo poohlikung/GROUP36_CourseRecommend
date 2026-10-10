@@ -176,6 +176,33 @@ describe('reviews page', () => {
     expect(screen.getByText('หน้า 2 จาก 2')).toBeInTheDocument();
   });
 
+  it('retries a failed previous page without decrementing past the last loaded page', async () => {
+    let firstPageRequests = 0;
+    mocks.list.mockImplementation((_id: number, page: number) => {
+      if (page === 0) {
+        firstPageRequests++;
+        return firstPageRequests === 2
+          ? Promise.reject(new ApiError(500, 'REQUEST_FAILED', 'โหลดหน้ารีวิวไม่ได้'))
+          : Promise.resolve({ ...emptyPage(), totalPages: 2, last: false });
+      }
+      if (page === 1) return Promise.resolve({ ...emptyPage(), page: 1, totalPages: 2, first: false });
+      throw new Error(`Unexpected page ${page}`);
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'ถัดไป' }));
+    expect(await screen.findByText('หน้า 2 จาก 2')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'ก่อนหน้า' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('โหลดหน้ารีวิวไม่ได้');
+    expect(screen.getByText('หน้า 2 จาก 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ก่อนหน้า' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'ก่อนหน้า' }));
+    expect(mocks.list.mock.calls.map((call) => call[1])).toEqual([0, 1, 0]);
+    await user.click(screen.getByRole('button', { name: 'ลองใหม่' }));
+    await waitFor(() => expect(screen.getByText('หน้า 1 จาก 2')).toBeInTheDocument());
+    expect(mocks.list.mock.calls.map((call) => call[1])).toEqual([0, 1, 0, 0]);
+  });
+
   it('returns to the last valid page if the review count shrinks', async () => {
     mocks.list.mockImplementation((_id: number, page: number) => Promise.resolve(page === 0
       ? { ...emptyPage(), totalPages: 2, last: false }
