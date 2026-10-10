@@ -9,7 +9,7 @@ Step 23 Vercel proxy/session และ loading/retry: [คู่มือตั�
 # รายชื่อสมาชิกกลุ่ม
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |
-| 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | | |
+| 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | phakin_6733800541 | Course Catalog, Matcher Quiz/Results, concurrency tests, CI/CD, deployment/UAT, web redesign |
 | 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD Backend + UI, Database Schema (Flyway) |
 | 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth/User/Profile Backend + UI |
 | 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Course Moderation & Provider Verification Backend + UI |
