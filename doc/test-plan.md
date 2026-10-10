@@ -362,8 +362,13 @@ Acceptance Criteria คือเงื่อนไขขั้นต่ำที
 | TC-23 ถอนสิทธิ์แก้คอร์ส | Course/Security | PostgreSQL Integration + MockMvc | `revokedMemberCannotCreateEditSubmitOrDeleteCourse` | มีแล้ว |
 | TC-24 Concurrent course edit | Course | PostgreSQL Integration | `concurrentCourseEditsCommitOnlyOnePriceAndAudit` | มีแล้ว |
 | TC-25 Create rollback | Course/Audit | PostgreSQL Integration | `failedCreateAuditRollsBackCoursePriceAndCategories` | มีแล้ว |
+| TC-26 Admin ดู Audit Log | Audit/Admin | H2 Controller + PostgreSQL/Flyway + Playwright | `AdminAuditLogControllerTests`, `AuditLogQueryPostgresIntegrationTests`, `audit-logs.spec.ts` | มีแล้วใน UC19 |
+| TC-27 กรองและแบ่งหน้าประวัติ | Audit/Admin | H2 Service + PostgreSQL/Flyway + Frontend + Playwright | `AuditLogQueryServiceTests`, `AuditLogQueryPostgresIntegrationTests`, `audit-logs.test.tsx`, `audit-logs.spec.ts` | มีแล้วใน UC19 |
+| TC-28 ประวัติหลังลบรายการและสิทธิ์ผู้ใช้ | Audit/Security | H2 Controller + PostgreSQL/Flyway + Playwright | `AdminAuditLogControllerTests`, `audit-logs.spec.ts` | มีแล้วใน UC19 |
 
 ผลจริงของ Task 17: [รายงานทดสอบ](test-reports/task17-audit-observer.md) และ [คู่มือสาธิต](task17-audit-observer-guide.md) Tests ของ Task 17 ใช้ transaction ที่ commit/rollback จริง ส่วน browser E2E ไม่รวมอยู่ในหลักฐานรอบนี้
+
+ผลจริงของ UC19 การอ่านประวัติ แยกจาก TC-19 งาน transaction/Observer เดิม: [รายงานทดสอบ](test-reports/audit-log.md) และ [คู่มือดูประวัติ](audit-log-guide.md)
 
 ผลจริงของ Task 18: [รายงานทดสอบ concurrency, permission และ rollback](test-reports/task18-concurrency-permissions.md)
 
