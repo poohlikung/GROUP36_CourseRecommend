@@ -16,17 +16,11 @@ CourseHub รวบรวมข้อมูลคอร์สจากหลา�
 
 | ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Email | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |
-<<<<<<< HEAD
 | 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ | phakin.m@kkumail.com | phakin_6733800541 | Course Catalog, Matcher Quiz UI, CI/CD Pipeline, UI Design System |
 | 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD, Database Schema (Flyway), Backup / Restore |
 | 3 | 673380062-2 | นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth / User / Profile, Matcher Strategy, E2E Tests, Team Members UI |
 | 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Moderation, Provider Verification, Review Moderation, Audit Log |
-=======
-| 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | phakin_6733800541 | Course Catalog, Matcher Quiz UI, CI/CD Pipeline, UI Design System |
-| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD, Database Schema (Flyway), Backup / Restore |
-| 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth / User / Profile, Matcher Strategy, E2E Tests, Team Members UI |
-| 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Moderation, Provider Verification, Review Moderation, Audit Log |
->>>>>>> 9aca8b5db367f217915404f41c7850fa5fbcb394
+
 
 ## ฟีเจอร์หลัก
 
