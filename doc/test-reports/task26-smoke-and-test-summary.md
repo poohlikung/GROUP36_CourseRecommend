@@ -54,10 +54,18 @@
 | Cold start UI/retry บน production และไม่มี mutation ซ้ำ | **blocked** | Render liveness ใช้ 107 วินาที; local startup E2E 2 tests จำลอง 503/403 แล้ว recovery แต่ไม่ได้พิสูจน์ production UI ระหว่าง cold start หรือการไม่ยิง mutation ซ้ำ |
 | Backup/restore และ CD บน production | **pass** | [Task 24](task24-backup-restore.md) มีหลักฐาน Neon backup/restore จริง 13/13 ตารางและ restart แล้วข้อมูลคงอยู่; [CI run #94 ของ `f4dd613`](https://github.com/poohlikung/GROUP36_CourseRecommend/actions/runs/37946736709) ผ่าน deploy jobs ทั้งคู่หลัง re-run Vercel: Render Live `f4dd613` จาก hook และ frontend alias ไป `group36-coursehub.vercel.app`; production smoke ด้านบนเป็นผลก่อน CD ไม่ใช่ผลตรวจแอปหลัง deploy รอบนี้ |
 
-## ข้อสรุปและรายการค้าง
+## ข้อสรุปและรายการค้าง ณ รอบรายงานเดิม
 
 หลัง merge `develop` local frontend 64/64, build, database script safety 8/8, E2E typecheck และ discovery 15 tests ผ่าน CI run #96 ของ `1dca355` ผ่าน backend 312/312 และ E2E บน branch; local ไม่มี Java และ Docker
 
 Production GET smoke 14/14 และ browser navigation 3/3 เป็นหลักฐานก่อน CD ที่ไม่ยืนยัน `f4dd613` หรือ SHA ของ branch นี้ CD ของ `f4dd613` สำเร็จทั้ง Render และ Vercel หลัง re-run ใน run #94 และ backup/restore มีหลักฐานแล้วใน [Task 24](task24-backup-restore.md) **Task 26 ยังไม่ปิด** เพราะต้องตรวจ production auth/session/role/matcher/cold-start retry และ smoke หลัง CD บน revision ที่ deploy จริง; revision `1dca355` ที่ CI ตรวจยังไม่ใช่ revision ที่ขึ้น production
 
 ก่อนตรวจ production auth ให้ทีมระบุบัญชีทดสอบเฉพาะและเจ้าของข้อมูล, กำหนดวิธีลบบัญชี/ข้อมูลที่สร้าง, และตรวจ cookie/CSRF ผ่าน HTTPS โดยไม่บันทึกค่าลับ การทดสอบ local Playwright ใช้ฐานข้อมูลแยกและไม่เป็นหลักฐาน production
+
+## สถานะเพิ่มเติม — 10 ตุลาคม 2026 โดย KeattisakNantharat (9Nut)
+
+[Task 27 รอบล่าสุด](task27-uat.md) บันทึกการทดสอบด้วย Chrome จริงบน production เวลา 22:51–23:00 น. (Asia/Bangkok): 28 checkpoints ผ่าน (รวม setup/cleanup) และ 1 checkpoint ยังไม่ได้สังเกตคือ actual Render cold start โฟล Admin รับรอง Provider/เผยแพร่คอร์ส/อนุมัติรีวิว, เพิ่ม/ลบ Editor ผ่าน UI และตรวจ Coursera จาก URL มีหลักฐานแล้ว; cleanup เสร็จโดยระงับบัญชี UAT และเก็บ audit/password เดิม
+
+GET smoke ก่อนรอบ UI ผ่าน 13/14 คำขอ โดย Render liveness โดยตรง timeout แต่รอบ Chrome ต่อมา liveness ตอบ 200 และโฟลธุรกิจผ่าน การจำลอง liveness 403 เพื่อกด Retry กับ frontend production ไม่ใช่หลักฐาน cold start จริง รายงานรอบเดิมด้านบนคงไว้เป็นประวัติ ไม่ใช้คำว่า blocked ของรอบนั้นแทนผลล่าสุด
+
+**Task 26/27 ยังไม่ปิด**: ต้องยืนยัน actual Render cold-start UI/Retry และการไม่เกิด mutation ซ้ำ รวมถึงตรวจ CI/CD และ revision ที่ให้บริการหลัง merge ก่อน release เข้า main ดูผลรายกรณี หลักฐาน และข้อสังเกต UX ใน Task 27

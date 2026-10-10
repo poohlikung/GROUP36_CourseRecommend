@@ -1,0 +1,373 @@
+{
+  "startedAt": "2026-10-10T15:51:31.557Z",
+  "origin": "https://group36-coursehub.vercel.app",
+  "method": "Real Chrome UI against production; no mocks unless explicitly labelled",
+  "cases": [
+    {
+      "id": "admin-existing-password-login",
+      "result": "pass",
+      "evidence": "Login HTTP 200 and Admin UI visible with existing credentials",
+      "at": "2026-10-10T15:51:35.608Z"
+    },
+    {
+      "id": "guest-admin-route",
+      "result": "pass",
+      "evidence": "Guest /admin redirected to /login",
+      "at": "2026-10-10T15:51:57.223Z"
+    },
+    {
+      "id": "public-catalog",
+      "result": "pass",
+      "evidence": "Catalog search UI visible",
+      "at": "2026-10-10T15:51:58.163Z"
+    },
+    {
+      "id": "provider-create-ui",
+      "result": "pass",
+      "evidence": {
+        "id": 15,
+        "status": "PENDING"
+      },
+      "at": "2026-10-10T15:52:28.863Z"
+    },
+    {
+      "id": "admin-provider-approve-ui",
+      "result": "pass",
+      "evidence": {
+        "id": 15,
+        "httpStatus": 200
+      },
+      "at": "2026-10-10T15:52:35.125Z"
+    },
+    {
+      "id": "uat-learner-register-ui",
+      "result": "pass",
+      "evidence": {
+        "id": 16
+      },
+      "at": "2026-10-10T15:53:12.501Z"
+    },
+    {
+      "id": "editor-add-ui",
+      "result": "pass",
+      "evidence": {
+        "providerId": 15,
+        "memberId": 14,
+        "userId": 16,
+        "httpStatus": 201
+      },
+      "at": "2026-10-10T15:53:15.593Z"
+    },
+    {
+      "id": "editor-permission-ui",
+      "result": "pass",
+      "evidence": "Added Editor sees course management entry",
+      "at": "2026-10-10T15:53:16.884Z"
+    },
+    {
+      "id": "editor-remove-cancel-ui",
+      "result": "pass",
+      "evidence": "Confirmation dialog shown before removal",
+      "at": "2026-10-10T15:53:53.078Z"
+    },
+    {
+      "id": "editor-remove-ui",
+      "result": "pass",
+      "evidence": {
+        "providerId": 15,
+        "memberId": 14,
+        "httpStatus": 204
+      },
+      "at": "2026-10-10T15:53:54.451Z"
+    },
+    {
+      "id": "editor-access-revoked-ui",
+      "result": "pass",
+      "evidence": "After refresh the removed Editor no longer has a Provider management entry",
+      "at": "2026-10-10T15:53:55.537Z"
+    },
+    {
+      "id": "automatic-platform-create-ui",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13,
+        "platformName": "Coursera",
+        "platformId": 1,
+        "status": "DRAFT"
+      },
+      "at": "2026-10-10T15:53:59.839Z"
+    },
+    {
+      "id": "draft-hidden-from-catalog",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13
+      },
+      "at": "2026-10-10T15:55:00.773Z"
+    },
+    {
+      "id": "course-submit-ui",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13,
+        "httpStatus": 200
+      },
+      "at": "2026-10-10T15:55:02.971Z"
+    },
+    {
+      "id": "pending-hidden-from-catalog",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13
+      },
+      "at": "2026-10-10T15:55:04.041Z"
+    },
+    {
+      "id": "admin-course-publish-ui",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13,
+        "httpStatus": 200
+      },
+      "at": "2026-10-10T15:55:09.196Z"
+    },
+    {
+      "id": "published-visible-in-catalog",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13
+      },
+      "at": "2026-10-10T15:55:10.039Z"
+    },
+    {
+      "id": "learner-review-submit-ui",
+      "result": "pass",
+      "evidence": {
+        "reviewId": 6,
+        "status": "PENDING",
+        "httpStatus": 201
+      },
+      "at": "2026-10-10T15:55:12.948Z"
+    },
+    {
+      "id": "admin-review-approve-ui",
+      "result": "pass",
+      "evidence": {
+        "reviewId": 6,
+        "httpStatus": 200
+      },
+      "at": "2026-10-10T15:55:16.541Z"
+    },
+    {
+      "id": "approved-review-public-ui",
+      "result": "pass",
+      "evidence": {
+        "reviewId": 6
+      },
+      "at": "2026-10-10T15:55:17.496Z"
+    },
+    {
+      "id": "manual-retry-controlled-failure",
+      "result": "pass",
+      "evidence": {
+        "scope": "Production frontend; first liveness request intercepted as HTTP 403, retry used real backend",
+        "attempts": 2
+      },
+      "at": "2026-10-10T15:56:42.107Z"
+    },
+    {
+      "id": "actual-render-cold-start",
+      "result": "not-observed",
+      "evidence": "Real browser was ready; Render sleep was not forced. Controlled retry is not evidence of real cold-start recovery.",
+      "at": "2026-10-10T15:56:42.307Z"
+    },
+    {
+      "id": "uat-course-hidden-after-test",
+      "result": "pass",
+      "evidence": {
+        "courseId": 13,
+        "status": "ARCHIVED"
+      },
+      "at": "2026-10-10T15:56:46.184Z"
+    },
+    {
+      "id": "uat-cleanup-public-ui",
+      "result": "pass",
+      "evidence": "Test course removed from catalog after cleanup",
+      "at": "2026-10-10T15:58:12.475Z"
+    },
+    {
+      "id": "uat-cleanup-provider-ui",
+      "result": "pass",
+      "evidence": "Only existing Provider remains; test Provider removed",
+      "at": "2026-10-10T15:58:13.523Z"
+    },
+    {
+      "id": "suspended-uat-session-blocked",
+      "result": "pass",
+      "evidence": "Existing UAT session cannot access profile after suspension; startup shows connection error until retry",
+      "at": "2026-10-10T15:59:56.747Z"
+    },
+    {
+      "id": "manual-retry-real-invalidated-session",
+      "result": "pass",
+      "evidence": "Retry after real session invalidation recovers to login without mocking",
+      "at": "2026-10-10T15:59:57.702Z"
+    },
+    {
+      "id": "suspended-uat-login-rejected",
+      "result": "pass",
+      "evidence": {
+        "httpStatus": 403
+      },
+      "at": "2026-10-10T15:59:58.941Z"
+    },
+    {
+      "id": "admin-still-active-after-cleanup",
+      "result": "pass",
+      "evidence": "Original Admin session and Admin UI remain usable",
+      "at": "2026-10-10T15:59:59.454Z"
+    }
+  ],
+  "mutations": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "at": "2026-10-10T15:51:34.577Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/providers",
+      "status": 201,
+      "at": "2026-10-10T15:52:28.533Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/providers/15/verification-decisions",
+      "status": 200,
+      "at": "2026-10-10T15:52:34.297Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "at": "2026-10-10T15:53:12.477Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/providers/15/members",
+      "status": 201,
+      "at": "2026-10-10T15:53:15.269Z"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/providers/15/members/14",
+      "status": 204,
+      "at": "2026-10-10T15:53:54.449Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/providers/15/courses",
+      "status": 201,
+      "at": "2026-10-10T15:53:59.837Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/courses/13/submissions",
+      "status": 200,
+      "at": "2026-10-10T15:55:02.153Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/courses/13/moderation-decisions",
+      "status": 200,
+      "at": "2026-10-10T15:55:07.876Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/courses/13/reviews",
+      "status": 201,
+      "at": "2026-10-10T15:55:12.941Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/reviews/6/moderation-decisions",
+      "status": 200,
+      "at": "2026-10-10T15:55:16.537Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/courses/13/moderation-decisions",
+      "status": 200,
+      "at": "2026-10-10T15:56:45.866Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 403,
+      "at": "2026-10-10T15:59:58.941Z"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "status": 204,
+      "at": "2026-10-10T16:01:28.574Z"
+    }
+  ],
+  "created": {
+    "users": [
+      {
+        "id": 16,
+        "displayName": "uat-codex-mv2koum9"
+      }
+    ],
+    "providers": [
+      {
+        "id": 15,
+        "name": "uat-codex-mv2koum9",
+        "slug": "uat-codex-mv2koum9"
+      }
+    ],
+    "courses": [
+      {
+        "id": 13,
+        "providerId": 15,
+        "slug": "uat-codex-mv2koum9-course",
+        "title": "UAT uat-codex-mv2koum9"
+      }
+    ],
+    "reviews": [
+      {
+        "id": 6,
+        "courseId": 13,
+        "userId": 16
+      }
+    ]
+  },
+  "tag": "uat-codex-mv2koum9",
+  "finishedAt": "2026-10-10T15:59:59.456Z",
+  "cleanup": {
+    "removedProviders": [
+      15
+    ],
+    "removedCourses": [
+      13
+    ],
+    "removedReviews": [
+      6
+    ],
+    "suspendedUsers": [
+      16
+    ],
+    "auditPreserved": true,
+    "protectedDataCompared": true
+  },
+  "observations": [
+    "Suspending a logged-in user blocks access but initially displays a generic connection error; Retry then reaches login.",
+    "Actual Render cold-start was not forced or confirmed."
+  ],
+  "testSessionLoggedOut": true,
+  "reportPreparedBy": "KeattisakNantharat",
+  "execution": "Playwright automation in real Chrome against production; controlled liveness 403 simulation explicitly labelled."
+}
