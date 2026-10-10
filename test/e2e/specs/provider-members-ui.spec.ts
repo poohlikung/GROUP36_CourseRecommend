@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { fileURLToPath } from 'node:url';
 import type { ProviderMember } from '../../../code/frontend/src/features/provider/types';
 
 // Real browser/UI with an isolated API fixture; no live accounts or backend mutations.
@@ -48,7 +47,7 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
     await expect(page.getByLabel('บทบาทสมาชิก')).toHaveValue('EDITOR');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({
-      path: fileURLToPath(new URL(`../../../doc/test-reports/evidence/uc11-members-${viewport.name}.png`, import.meta.url)),
+      path: test.info().outputPath(`uc11-members-${viewport.name}.png`),
       fullPage: true,
     });
 
