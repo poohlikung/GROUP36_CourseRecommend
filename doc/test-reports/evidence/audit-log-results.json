@@ -1,6 +1,8 @@
 {
   "generatedAt": "2026-10-10T18:54:43.6661165-03:00",
   "timezone": "America/Montevideo",
+  "timestampsReliable": false,
+  "clockStatus": "Historical raw timestamp: Windows displayed approximate Bangkok wall time while configured as America/Montevideo. The -03:00 offset and e2e.startTime must not be used as actual UTC times. See audit-log.md for correction and audit-log-review-fixes.json for evidence generated after NTP synchronization.",
   "branch": "sorawit_6733800648_01",
   "backend": {
     "command": ".\\mvnw.cmd -B --no-transfer-progress verify",
