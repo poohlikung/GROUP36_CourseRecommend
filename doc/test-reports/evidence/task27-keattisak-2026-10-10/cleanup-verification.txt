@@ -1,0 +1,26 @@
+psql:backups/uat-live-cleanup-20261010.sql:53: NOTICE:  UAT fixture cleanup complete. Existing data, Admin credentials, and all audit history preserved.
+DO
+ id |  role   |  status
+----+---------+-----------
+  1 | ADMIN   | ACTIVE
+  8 | LEARNER | SUSPENDED
+  9 | LEARNER | SUSPENDED
+ 10 | LEARNER | SUSPENDED
+ 15 | LEARNER | SUSPENDED
+ 16 | LEARNER | SUSPENDED
+(6 rows)
+
+ test_providers | test_courses | test_reviews
+----------------+--------------+--------------
+              0 |            0 |            0
+(1 row)
+
+ id | status
+----+--------
+ 11 | ACTIVE
+(1 row)
+
+ id | provider_id |  status
+----+-------------+-----------
+ 10 |          11 | PUBLISHED
+(1 row)
