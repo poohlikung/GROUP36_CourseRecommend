@@ -1,5 +1,7 @@
 # ผลทดสอบ UC19 ดู Audit Log
 
+## ผลรอบแรก
+
 - วันที่รัน: 10 ตุลาคม 2026 เวลา 18:43–18:55 (America/Montevideo)
 - Branch: `sorawit_6733800648_01`
 - สภาพแวดล้อม: Windows, Java 21, Docker Desktop Engine 29.8.2, PostgreSQL 16 Alpine ผ่าน Testcontainers และ E2E Compose, Flyway V1–V4, Chromium ผ่าน Playwright
@@ -26,6 +28,23 @@
 - Full backend verify ครอบคลุม transaction/Observer เดิมและ workflow อื่น; full E2E ครอบคลุมเส้นทางผู้เรียน Provider Admin และการเริ่มระบบ
 
 การรัน E2E ครั้งแรกพบเทสต์ใหม่เรียกหน้า login ขณะ session Admin ยัง active ทำให้หน้า login redirect และเทสต์ล้มเหลว แก้ fixture flow ให้เปิดหน้า Audit Log ด้วย session เดิม จากนั้น targeted E2E ผ่าน 2/2 และ full E2E รอบสุดท้ายผ่าน 17/17 ผลในตารางเป็นผลรอบสุดท้าย
+
+## หมายเหตุเรื่องเขตเวลาในหลักฐาน
+
+ไฟล์ `evidence/audit-log-results.json` รอบเดิมบันทึก `generatedAt` ตามเขตเวลาเครื่องที่รันคือ `America/Montevideo` (UTC−03:00) ไม่ใช่เวลาไทย ค่า `2026-10-10T18:54:43.6661165-03:00` เท่ากับ `2026-10-10T21:54:43.6661165Z` และ `2026-10-11T04:54:43.6661165+07:00` ใน `Asia/Bangkok` เวลาอ่านบนหน้าปัดจึงต่างกัน 10 ชั่วโมง แต่เป็นเวลาเดียวกัน จากข้อมูล GitHub PR #42 เปิดเมื่อ `2026-10-10T12:01:53Z` ซึ่งก่อนเวลาสร้างหลักฐานเดิมประมาณ 9 ชั่วโมง 53 นาที จึงเป็นคนละเหตุการณ์และต้องเทียบทั้งวันที่กับ offset โดยไม่เปลี่ยน timestamp ต้นฉบับหรือเวลารันทดสอบย้อนหลัง
+
+## ทดสอบซ้ำหลังแก้ข้อเสนอแนะใน PR
+
+ผลรอบนี้บันทึกใน [audit-log-review-fixes.json](evidence/audit-log-review-fixes.json) โดยระบุเวลาสร้างสรุปทั้ง UTC และ `Asia/Bangkok` จากเวลาเดียวกัน ไม่แก้ค่าเวลารอบเดิม
+
+| คำสั่ง | ผลจริง | หลักฐานใน workspace |
+| --- | --- | --- |
+| จาก `code/backend`: `.\mvnw.cmd -B --no-transfer-progress verify` | **317 ผ่าน, 0 ล้มเหลว, 0 errors, 0 ข้าม**; BUILD SUCCESS | `code/backend/target/surefire-reports/TEST-*.xml`, `test/reports/audit-review-backend-verify.log` |
+| จาก `code/frontend`: `npm run typecheck`, `npm test`, `npm run build` | typecheck/build ผ่าน; **76 เทสต์ผ่าน** | `test/reports/audit-review-frontend-typecheck.log`, `audit-review-frontend-test.log`, `audit-review-frontend-build.log` |
+| จาก `test/e2e`: `npm run typecheck`; จาก `code/frontend`: `npm run test:e2e` | typecheck ผ่าน; **17 ผ่าน, 0 ล้มเหลว, 0 ข้าม, 0 flaky** ใน Compose project `coursehub-e2e-f3ac47fa` | `test/reports/audit-review-e2e-typecheck.log`, `test/reports/e2e/coursehub-e2e-f3ac47fa/results.json`, `test/reports/audit-review-e2e.log` |
+| จาก root: `pwsh -File test/scripts/backup-restore.Tests.ps1` | **8 ผ่าน, 0 ล้มเหลว** | `test/reports/audit-review-backup-restore.log` |
+
+เทสต์ frontend เพิ่มกรณีแก้ตัวกรองขณะอยู่หน้า 3 แล้วไม่ยิงคำขอก่อนกดค้นหา และกรณีช่วงเวลาผิดที่ยังแสดงผลเดิมพร้อมข้อความเตือนในฟอร์ม
 
 ## ขอบเขต
 

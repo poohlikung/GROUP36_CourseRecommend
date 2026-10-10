@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../code/frontend/src/api/client';
 import { AdminRoute } from '../../code/frontend/src/components/RouteGuards';
 import { AuditLogsPage } from '../../code/frontend/src/pages/AuditLogsPage';
-import { cleanup, MemoryRouter, render, Route, Routes, screen, userEvent, waitFor } from '../../code/frontend/src/test/test-utils';
+import { cleanup, fireEvent, MemoryRouter, render, Route, Routes, screen, userEvent, waitFor } from '../../code/frontend/src/test/test-utils';
 
 const mocks = vi.hoisted(() => ({ list: vi.fn(), role: 'ADMIN' }));
 vi.mock('../../code/frontend/src/features/audit/auditLogApi', () => ({ auditLogApi: { list: mocks.list } }));
@@ -59,6 +59,47 @@ describe('audit logs page', () => {
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith(expect.objectContaining({ entityType: 'COURSE' }), 1, expect.any(AbortSignal)));
     await user.click(screen.getByRole('button', { name: 'ล้างตัวกรอง' }));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(expect.objectContaining({ entityType: '', actorId: '' }), 0, expect.any(AbortSignal)));
+  });
+
+  it('keeps the current page and results while editing draft filters', async () => {
+    mocks.list.mockImplementation((_filters, number: number) => Promise.resolve(page([row], number, 3)));
+    const user = userEvent.setup();
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'ขอแก้ไขคอร์ส' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'หน้าถัดไป' }));
+    await user.click(screen.getByRole('button', { name: 'หน้าถัดไป' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledWith(expect.anything(), 2, expect.any(AbortSignal)));
+    const requestsBeforeEditing = mocks.list.mock.calls.length;
+
+    await user.selectOptions(screen.getByLabelText('ประเภทข้อมูล'), 'COURSE');
+    expect(mocks.list).toHaveBeenCalledTimes(requestsBeforeEditing);
+    expect(screen.getByText('หน้า 3', { exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'ขอแก้ไขคอร์ส' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ค้นหา' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ entityType: 'COURSE' }), 0, expect.any(AbortSignal),
+    ));
+  });
+
+  it('keeps existing results when the time range is invalid', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'ขอแก้ไขคอร์ส' })).toBeInTheDocument();
+    const requestsBeforeEditing = mocks.list.mock.calls.length;
+    fireEvent.change(screen.getByLabelText(/ตั้งแต่/), { target: { value: '2026-01-03T12:00' } });
+    fireEvent.change(screen.getByLabelText(/ก่อนเวลา/), { target: { value: '2026-01-02T12:00' } });
+    await user.click(screen.getByRole('button', { name: 'ค้นหา' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('เวลาเริ่มต้นต้องก่อนเวลาสิ้นสุด');
+    expect(screen.getByRole('heading', { name: 'ขอแก้ไขคอร์ส' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ลองใหม่' })).not.toBeInTheDocument();
+    expect(mocks.list).toHaveBeenCalledTimes(requestsBeforeEditing);
+
+    fireEvent.change(screen.getByLabelText(/ก่อนเวลา/), { target: { value: '2026-01-04T12:00' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'ค้นหา' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(requestsBeforeEditing + 1));
   });
 
   it('shows loading and empty results', async () => {

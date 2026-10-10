@@ -8,6 +8,7 @@ const emptyFilters: AuditLogFilters = {
   entityType: '', action: '', actorId: '', entityId: '', from: '', to: '',
 };
 
+// Keep these action codes aligned with AdminAuditLogController.ACTIONS in the backend.
 const actions: Record<string, string> = {
   PUBLISH_COURSE: 'เผยแพร่คอร์ส (ข้อมูลเดิม)',
   COURSE_CREATED: 'สร้างคอร์ส', COURSE_UPDATED: 'แก้ไขคอร์ส', COURSE_SUBMITTED: 'ส่งคอร์สตรวจ',
@@ -21,6 +22,7 @@ const actions: Record<string, string> = {
   REVIEW_APPROVE: 'อนุมัติรีวิว', REVIEW_REJECT: 'ปฏิเสธรีวิว',
 };
 
+// Keep these entity codes aligned with AdminAuditLogController.ENTITY_TYPES in the backend.
 const entityTypes = [
   ['COURSE', 'คอร์ส'], ['PROVIDER', 'ผู้ให้บริการ'], ['PROVIDER_MEMBER', 'สมาชิกทีม'], ['REVIEW', 'รีวิว'],
 ];
@@ -63,6 +65,7 @@ export function AuditLogsPage() {
   const [data, setData] = useState<AuditLogPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [sessionExpired, setSessionExpired] = useState(false);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -85,20 +88,22 @@ export function AuditLogsPage() {
 
   function update<K extends keyof AuditLogFilters>(key: K, value: AuditLogFilters[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
-    setPage(0);
+    setFormError('');
   }
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (draft.from && draft.to && new Date(draft.from) >= new Date(draft.to)) {
-      setError('เวลาเริ่มต้นต้องก่อนเวลาสิ้นสุด');
+      setFormError('เวลาเริ่มต้นต้องก่อนเวลาสิ้นสุด');
       return;
     }
+    setFormError('');
     setPage(0);
     setFilters({ ...draft });
   }
 
   function clear() {
+    setFormError('');
     setDraft({ ...emptyFilters });
     setFilters({ ...emptyFilters });
     setPage(0);
@@ -140,6 +145,7 @@ export function AuditLogsPage() {
           <button type="submit" className="primary-button">ค้นหา</button>
           <button type="button" onClick={clear} className="secondary-button">ล้างตัวกรอง</button>
         </div>
+        {formError && <p role="alert" className="alert-error sm:col-span-2 lg:col-span-3">{formError}</p>}
       </form>
 
       <section className="surface-panel p-5 sm:p-7" aria-busy={loading} aria-label="รายการประวัติ">

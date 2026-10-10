@@ -1,0 +1,46 @@
+{
+  "generatedAtUtc": "2026-10-10T22:19:57.8884168+00:00",
+  "generatedAtBangkok": "2026-10-11T05:19:57.8884168+07:00",
+  "timezoneNote": "Both generatedAt fields represent the same instant. Original evidence remains in audit-log-results.json with America/Montevideo (-03:00) offset.",
+  "branch": "sorawit_6733800648_01",
+  "backend": {
+    "command": ".\\mvnw.cmd -B --no-transfer-progress verify",
+    "result": "BUILD SUCCESS",
+    "tests": 317,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "typecheck": "passed",
+    "tests": 76,
+    "build": "passed"
+  },
+  "e2e": {
+    "command": "npm run test:e2e --prefix code/frontend",
+    "typecheck": "passed",
+    "project": "coursehub-e2e-f3ac47fa",
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "startTimeUtc": "2026-10-10T22:17:35.484Z",
+    "durationMs": 74232.541
+  },
+  "backupRestore": {
+    "command": "pwsh -File test/scripts/backup-restore.Tests.ps1",
+    "passed": 8,
+    "failed": 0
+  },
+  "sources": [
+    "code/backend/target/surefire-reports/TEST-*.xml",
+    "test/reports/audit-review-backend-verify.log",
+    "test/reports/audit-review-frontend-test.log",
+    "test/reports/audit-review-frontend-typecheck.log",
+    "test/reports/audit-review-frontend-build.log",
+    "test/reports/audit-review-e2e-typecheck.log",
+    "test/reports/e2e/coursehub-e2e-f3ac47fa/results.json",
+    "test/reports/audit-review-e2e.log",
+    "test/reports/audit-review-backup-restore.log"
+  ]
+}
