@@ -83,14 +83,14 @@
 | Render และ Vercel liveness | HTTP 200 JSON `status: UP` ทั้งสองโดเมน | GET หลังรอ cold start ตามจริง |
 | Swagger | Swagger UI HTML 200 | GET Render |
 | Catalog | Courses เป็น paged JSON; categories/platforms เป็น array | GET ผ่าน Vercel |
-| Matcher | OpenAPI มี POST matcher และผล quiz จริงตรงข้อจำกัด | GET OpenAPI บน production; workflow ใช้ local Playwright บน DB แยก จึงยังไม่ยืนยัน production matcher response |
+| Matcher | OpenAPI มี POST matcher และผล quiz จริงตรงข้อจำกัด | GET OpenAPI และ [Task 27 UAT](test-reports/task27-uat.md) ทำ quiz บน production แล้ว; local Playwright ยังใช้ DB แยก |
 | Guest permission | `/me` ตอบ 401 และ admin endpoint ตอบ 401/403 | GET ผ่าน Vercel |
 | CSRF cookie | GET `/auth/csrf` ตอบ JSON และ `XSRF-TOKEN` มี `Secure` | ตรวจ response headers โดยไม่เก็บ token |
-| Register/login/logout, session cookie | บัญชี disposable สมัคร, refresh, logout, login สำเร็จ; session cookie มี `Secure` | Production browser เฉพาะเมื่อทีมกำหนดบัญชีทดสอบและวิธีล้างข้อมูลแล้ว |
-| Learner/provider/admin permission | Role แต่ละแบบเห็น/ถูกปฏิเสธตามสิทธิ์ | Local Playwright บน DB แยก; production ต้องมีบัญชีทดสอบแต่ละ role |
+| Register/login/logout, session cookie | บัญชี disposable สมัคร, refresh, logout, login สำเร็จ; session cookie มี `Secure` | [Task 27 UAT](test-reports/task27-uat.md) ยืนยันบน Vercel HTTPS แล้ว; ตรวจ bookmark หลัง refresh ด้วยบัญชีผู้เรียนใหม่ผ่านและลบ bookmark ทดสอบแล้ว |
+| Learner/provider/admin permission | Role แต่ละแบบเห็น/ถูกปฏิเสธตามสิทธิ์ | Local Playwright บน DB แยกผ่าน; [Task 27 UAT](test-reports/task27-uat.md) ตรวจ learner/Provider, Admin บางโฟล และหน้า Audit Log แบบอ่านอย่างเดียวบน production แล้ว ส่วน Admin รับรอง/เผยแพร่คอร์สบน production ยังไม่ครบ |
 | Cold start/retry | UI แสดง loading/ข้อผิดพลาดและ retry คืนสภาพได้โดยไม่ส่ง mutation ซ้ำ | Local Playwright จำลอง failure; production cold start ต้องตรวจ browser จริงแยก |
 
-การทดสอบที่เปลี่ยนข้อมูลใช้ `npm run test:e2e --prefix code/frontend` จากราก repo ซึ่งสร้าง PostgreSQL ใหม่ใน Docker และล้าง stack หลังรัน ห้ามนำผลนี้ไปสรุปว่า production auth ผ่าน การตรวจ auth บน production ต้องมีบัญชีทดสอบเฉพาะ, เจ้าของข้อมูลอนุมัติ และแผนลบบัญชี/ข้อมูลที่สร้างก่อนเริ่ม; อย่าเก็บรหัสผ่านหรือค่า cookie ในรายงาน
+การทดสอบที่เปลี่ยนข้อมูลใช้ `npm run test:e2e --prefix code/frontend` จากราก repo ซึ่งสร้าง PostgreSQL ใหม่ใน Docker และล้าง stack หลังรัน ผล local ไม่แทนหลักฐาน production auth; ผล production ที่ตรวจจริงอยู่ใน [Task 27 UAT](test-reports/task27-uat.md) การตรวจ production รอบต่อไปต้องยืนยันผู้รับผิดชอบบัญชีและวิธีเก็บกวาดข้อมูลทดสอบก่อนเพิ่มข้อมูลใหม่ อย่าเก็บรหัสผ่านหรือค่า cookie ในรายงาน
 
 ## Test Environment
 

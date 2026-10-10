@@ -1,0 +1,162 @@
+{
+  "startedAt": "2026-10-10T13:30:44.838Z",
+  "steps": [
+    {
+      "name": "login-form-visible",
+      "atMs": 6569
+    },
+    {
+      "name": "login-response",
+      "atMs": 7764,
+      "status": 200
+    },
+    {
+      "name": "bookmark-save",
+      "atMs": 14239,
+      "status": 204
+    },
+    {
+      "name": "bookmarks-page-shows-course",
+      "atMs": 15795,
+      "url": "https://group36-coursehub.vercel.app/bookmarks"
+    },
+    {
+      "name": "bookmark-survives-refresh",
+      "atMs": 17446,
+      "pressed": "true",
+      "url": "https://group36-coursehub.vercel.app/bookmarks"
+    },
+    {
+      "name": "bookmark-remove",
+      "atMs": 18544,
+      "status": 204
+    },
+    {
+      "name": "bookmark-absent-after-second-refresh",
+      "atMs": 21091
+    }
+  ],
+  "events": [
+    {
+      "path": "/api/v1/system/liveness",
+      "status": 200,
+      "atMs": 6278
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 401,
+      "atMs": 6495
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "status": 200,
+      "atMs": 6889
+    },
+    {
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "atMs": 7763
+    },
+    {
+      "path": "/api/v1/system/liveness",
+      "status": 200,
+      "atMs": 9093
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 200,
+      "atMs": 9367
+    },
+    {
+      "path": "/api/v1/catalog/categories",
+      "status": 200,
+      "atMs": 10204
+    },
+    {
+      "path": "/api/v1/catalog/platforms",
+      "status": 200,
+      "atMs": 10205
+    },
+    {
+      "path": "/api/v1/courses",
+      "status": 200,
+      "atMs": 11922
+    },
+    {
+      "path": "/api/v1/me/bookmarks/ids",
+      "status": 200,
+      "atMs": 12539
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "status": 200,
+      "atMs": 12786
+    },
+    {
+      "path": "/api/v1/me/bookmarks/10",
+      "status": 204,
+      "atMs": 14238
+    },
+    {
+      "path": "/api/v1/system/liveness",
+      "status": 200,
+      "atMs": 15071
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 200,
+      "atMs": 15226
+    },
+    {
+      "path": "/api/v1/me/bookmarks",
+      "status": 200,
+      "atMs": 15756
+    },
+    {
+      "path": "/api/v1/system/liveness",
+      "status": 200,
+      "atMs": 16292
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 200,
+      "atMs": 16659
+    },
+    {
+      "path": "/api/v1/me/bookmarks",
+      "status": 200,
+      "atMs": 16939
+    },
+    {
+      "path": "/api/v1/auth/csrf",
+      "status": 200,
+      "atMs": 18102
+    },
+    {
+      "path": "/api/v1/me/bookmarks/10",
+      "status": 204,
+      "atMs": 18543
+    },
+    {
+      "path": "/api/v1/system/liveness",
+      "status": 200,
+      "atMs": 19665
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 200,
+      "atMs": 20255
+    },
+    {
+      "path": "/api/v1/me/bookmarks",
+      "status": 200,
+      "atMs": 20551
+    }
+  ],
+  "course": {
+    "id": 10,
+    "title": "test"
+  },
+  "outcome": "PASS",
+  "finishedAt": "2026-10-10T13:31:05.929Z"
+}
