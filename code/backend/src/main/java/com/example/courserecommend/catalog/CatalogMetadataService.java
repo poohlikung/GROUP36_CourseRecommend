@@ -3,8 +3,10 @@ package com.example.courserecommend.catalog;
 import com.example.courserecommend.catalog.dto.CatalogOptionResponse;
 import com.example.courserecommend.domain.entity.Category;
 import com.example.courserecommend.domain.entity.Platform;
+import com.example.courserecommend.domain.enums.CourseStatus;
+import com.example.courserecommend.domain.enums.ProviderStatus;
 import com.example.courserecommend.repository.CategoryRepository;
-import com.example.courserecommend.repository.PlatformRepository;
+import com.example.courserecommend.repository.CourseRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +20,13 @@ public class CatalogMetadataService {
     private static final Sort NAME_ASCENDING = Sort.by(Sort.Direction.ASC, "name");
 
     private final CategoryRepository categoryRepository;
-    private final PlatformRepository platformRepository;
+    private final CourseRepository courseRepository;
 
     public CatalogMetadataService(
             CategoryRepository categoryRepository,
-            PlatformRepository platformRepository) {
+            CourseRepository courseRepository) {
         this.categoryRepository = categoryRepository;
-        this.platformRepository = platformRepository;
+        this.courseRepository = courseRepository;
     }
 
     public List<CatalogOptionResponse> getCategories() {
@@ -34,7 +36,7 @@ public class CatalogMetadataService {
     }
 
     public List<CatalogOptionResponse> getPlatforms() {
-        return platformRepository.findAll(NAME_ASCENDING).stream()
+        return courseRepository.findCatalogPlatforms(CourseStatus.PUBLISHED, ProviderStatus.ACTIVE).stream()
                 .map(this::toResponse)
                 .toList();
     }

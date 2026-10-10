@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { getErrorMessage, getFieldError } from '../api/client';
 import { FieldError } from '../components/AuthCard';
+import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { ProviderMemberManagementSection } from '../features/provider/ProviderMemberManagementSection';
 import { CourseManagementSection } from '../features/course/CourseManagementSection';
 import { providerApi } from '../features/provider/providerApi';
 import type {
@@ -17,84 +19,6 @@ export function isSafeHttpUrl(url: string | null | undefined): boolean {
   return trimmed.startsWith('http://') || trimmed.startsWith('https://');
 }
 
-const focusableElementSelector = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
-
-function useDialogFocusTrap(
-  isOpen: boolean,
-  onClose: () => void,
-  canClose: boolean,
-  fallbackRef?: { readonly current: HTMLElement | null },
-) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  const canCloseRef = useRef(canClose);
-
-  useEffect(() => {
-    closeRef.current = onClose;
-    canCloseRef.current = canClose;
-  }, [onClose, canClose]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const activeDialog: HTMLDivElement = dialog;
-
-    const getFocusableElements = () =>
-      Array.from(activeDialog.querySelectorAll<HTMLElement>(focusableElementSelector));
-    (getFocusableElements()[0] ?? activeDialog).focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        if (!canCloseRef.current) return;
-        event.preventDefault();
-        closeRef.current();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-
-      const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        activeDialog.focus();
-        return;
-      }
-
-      const first = focusableElements[0];
-      const last = focusableElements[focusableElements.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || !activeDialog.contains(active))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (active === last || !activeDialog.contains(active))) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
-      if (trigger?.isConnected) {
-        trigger.focus();
-      } else {
-        fallbackRef?.current?.focus();
-      }
-    };
-  }, [isOpen]);
-
-  return dialogRef;
-}
-
 function focusFirstFieldError(error: unknown, fields: ReadonlyArray<readonly [string, string]>) {
   const firstInvalidField = fields.find(([field]) => Boolean(getFieldError(error, field)));
   if (!firstInvalidField) return;
@@ -109,6 +33,8 @@ export function ProviderPage() {
   const [editingProvider, setEditingProvider] = useState<MyProvider | null>(null);
   const [deletingProvider, setDeletingProvider] = useState<MyProvider | null>(null);
   const [managingCoursesProvider, setManagingCoursesProvider] = useState<MyProvider | null>(null);
+
+  const [managingMembersProvider, setManagingMembersProvider] = useState<MyProvider | null>(null);
 
   // Create Form State
   const [createForm, setCreateForm] = useState<CreateProviderPayload>({
@@ -292,6 +218,22 @@ export function ProviderPage() {
     }
   }
 
+  if (managingMembersProvider) {
+    return (
+      <main className="page-shell">
+        <ProviderMemberManagementSection
+          key={managingMembersProvider.id}
+          provider={managingMembersProvider}
+          onBack={() => {
+            setManagingMembersProvider(null);
+            loadProviders();
+            window.setTimeout(() => pageHeadingRef.current?.focus(), 0);
+          }}
+        />
+      </main>
+    );
+  }
+
   if (managingCoursesProvider) {
     return (
       <main className="page-shell">
@@ -461,6 +403,16 @@ export function ProviderPage() {
                     className="secondary-button !min-h-10 !px-4 !py-2 text-sm"
                   >
                     แก้ไขข้อมูล
+                  </button>
+                )}
+
+                {p.role === 'OWNER' && (
+                  <button
+                    type="button"
+                    onClick={() => setManagingMembersProvider(p)}
+                    className="secondary-button !min-h-10 !px-4 !py-2 text-sm"
+                  >
+                    จัดการสมาชิกทีม
                   </button>
                 )}
 

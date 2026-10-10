@@ -59,7 +59,7 @@
 | UC05 จัดการโปรไฟล์ | `GET/PUT /api/v1/me/profile` | 05 | `ProfileController`, `ProfilePage.tsx` | ✅ |
 | UC06 บันทึกคอร์ส | `PUT/DELETE /api/v1/me/bookmarks/{courseId}` | 13 | `BookmarkController`, `BookmarksPage.tsx`, `BookmarkIntegrationTests` | ✅ |
 | UC07 เขียนรีวิว | `/api/v1/courses/{courseId}/reviews` | 14 | `ReviewController`, `ReviewControllerIntegrationTests` | 🟡 มี backend ยังไม่มี UI |
-| UC08 ลิงก์ออกไปเรียนที่ต้นทาง | URL คอร์สตรวจ host ตาม `platforms.allowed_host` | 11 | `CourseUrlPolicy.requireAllowedUrl` | 🟡 ตรวจ URL ตอนบันทึกแล้ว ยังไม่มี endpoint outbound |
+| UC08 ลิงก์ออกไปเรียนที่ต้นทาง | URL คอร์สใช้ HTTPS และตรวจ host; ระบบระบุแพลตฟอร์มจากโดเมนอัตโนมัติ | 11 | `CourseUrlPolicy`, `CoursePlatformResolver`, `CatalogCourseService` | 🟡 มีลิงก์ตรงบน catalog/matcher; ยังไม่มี endpoint outbound แยก |
 | UC09 สมัครเป็น Provider | `POST /api/v1/providers` | 09 | `ProviderServiceImpl.createProvider`, `ProviderPage.tsx` | ✅ |
 | UC10 จัดการโปรไฟล์สถาบัน | `GET/PUT/DELETE /api/v1/providers/{id}` | 09 | `ProviderServiceImpl`, `ProviderControllerTests` | ✅ |
 | UC11 จัดการสมาชิกทีม | `/api/v1/providers/{id}/members` | 10 | `ProviderMemberService`, `ProviderMemberControllerTests` | ✅ |
@@ -70,4 +70,4 @@
 | UC16 Admin รับรอง Provider | `POST /api/v1/admin/providers/{id}/verification-decisions` | 15 | `ProviderVerificationServiceImpl`, `AdminModerationControllerTests` | ✅ |
 | UC17 Admin ตรวจรีวิว | `GET /api/v1/admin/reviews`, `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | `AdminReviewModerationController`, `ReviewModerationSection`, `AdminReviewModerationControllerTests` | ✅ |
 | UC18 จัดการหมวดหมู่ | — | — | seed หมวดหมู่ใน V2 | ⬜ |
-| UC19 ดู Audit Log | — | 17 | ตาราง `audit_logs` มีข้อมูลจาก Provider/Course แล้ว | 🟡 บันทึกแล้ว ยังไม่มีหน้าดู |
+| UC19 ดู Audit Log | `GET /api/v1/admin/audit-logs`, `/admin/audit-logs` | 17 + UC19 | `AuditLogQueryService`, `AdminAuditLogController`, `AuditLogsPage`, [คู่มือ](audit-log-guide.md), [รายงานทดสอบ](test-reports/audit-log.md) | ✅ อ่าน/กรอง/แบ่งหน้าและตรวจสิทธิ์ผ่าน PostgreSQL กับ browser E2E; งาน transaction/Observer เดิมยังแยกอยู่ใน Task 17 |

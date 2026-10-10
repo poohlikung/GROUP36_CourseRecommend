@@ -53,7 +53,7 @@ UNIQUE (`provider_id`, `user_id`) ชื่อ `uq_provider_member`.
 | id | BIGSERIAL | PK |
 | name | VARCHAR(100) | NOT NULL |
 | slug | VARCHAR(100) | NOT NULL, UNIQUE |
-| allowed_host | VARCHAR(255) | NOT NULL; ใช้ตรวจ URL คอร์ส |
+| allowed_host | VARCHAR(255) | NOT NULL, UNIQUE ตั้งแต่ V5; ใช้ระบุโดเมนของแพลตฟอร์ม |
 
 ## courses
 
@@ -65,7 +65,7 @@ UNIQUE (`provider_id`, `user_id`) ชื่อ `uq_provider_member`.
 | title | VARCHAR(200) | NOT NULL |
 | slug | VARCHAR(100) | NOT NULL, UNIQUE |
 | description | TEXT | nullable |
-| url | VARCHAR(255) | NOT NULL |
+| url | VARCHAR(2048) | NOT NULL; ขยายใน V5 เพื่อรองรับลิงก์คอร์สที่มีพารามิเตอร์ |
 | level | VARCHAR(20) | NOT NULL, DEFAULT `BEGINNER`, CHECK `BEGINNER/INTERMEDIATE/ADVANCED` |
 | language | VARCHAR(20) | NOT NULL, DEFAULT `THAI`, CHECK `THAI/ENGLISH/SUB_THAI` |
 | effort_hours | INTEGER | nullable; CHECK NULL หรือ > 0 |

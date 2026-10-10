@@ -8,7 +8,7 @@
 - Layer: `Controller` รับ request และตรวจ `@Valid` → `Service` ตรวจสิทธิ์ กฎธุรกิจ และ `@Transactional` → `Repository` (Spring Data JPA) ไม่มี Controller เรียก Repository ตรง
 - Controller ขึ้นกับ interface ของ service ไม่ใช่คลาสจริง: `ProviderController` → `ProviderService` (impl: `ProviderServiceImpl`), `CourseController` → `CourseQueryService` สำหรับการอ่าน และ `CourseCommandService` สำหรับการเปลี่ยนข้อมูล (impl: `CourseServiceImpl`), `AdminModerationController` → `CourseModerationService` กับ `ProviderVerificationService` (impl แยกกัน)
 - API รับและส่ง **DTO** (`*Request`, `*Response`) ไม่ serialize Entity โดยตรง การแปลง Entity → DTO อยู่ใน `ProviderMapper` และ `CourseMapper`
-- กฎตรวจลิงก์คอร์สตามโดเมนของ Platform แยกอยู่ใน `CourseUrlPolicy`
+- กฎตรวจลิงก์คอร์สอยู่ใน `CourseUrlPolicy`; `CoursePlatformResolver` ระบุแพลตฟอร์มจากโดเมนของ URL
 - ยืนยันตัวตนด้วย session cookie (`JSESSIONID`) ของ Spring Security
 - คำขอที่เปลี่ยนข้อมูล (`POST`, `PUT`, `DELETE`) ต้องส่ง CSRF token ที่ได้จาก `GET /api/v1/auth/csrf` ใน header ตามค่า `headerName` ที่ตอบกลับ (`X-XSRF-TOKEN`)
 - ทุกการสร้าง แก้ไข ส่งตรวจ และลบ บันทึกลงตาราง `audit_logs` ใน transaction เดียวกับงานหลัก
@@ -33,7 +33,7 @@
 | Status | `code` | ใช้เมื่อ |
 | :---: | --- | --- |
 | 400 | `VALIDATION_ERROR` | ข้อมูลไม่ผ่าน Bean Validation หรือ JSON อ่านไม่ได้ (`fieldErrors` บอกฟิลด์ที่ผิด) |
-| 400 | `REQUEST_ERROR` | กฎธุรกิจที่ข้อมูลผิด เช่น Platform/Category ไม่มีอยู่ หรือ URL ไม่ตรงโดเมนของ Platform |
+| 400 | `REQUEST_ERROR` | กฎธุรกิจที่ข้อมูลผิด เช่น Category ไม่มีอยู่, URL ใช้โดเมนที่ไม่ถูกต้อง หรือ `platformId` แบบเดิมไม่ตรงกับ URL |
 | 401 | `UNAUTHORIZED` | ยังไม่ได้เข้าสู่ระบบ หรือ session หมดอายุ |
 | 403 | `FORBIDDEN` | เข้าสู่ระบบแล้วแต่ไม่มีสิทธิ์ เช่น ไม่ใช่ Owner/Editor ของ Provider นั้น |
 | 403 | `CSRF_INVALID` | ไม่ส่งหรือส่ง CSRF token ผิด |
@@ -104,8 +104,8 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 | --- | --- | :---: | --- |
 | `title` | string | ✓ | ไม่ว่าง, ≤ 200 ตัวอักษร |
 | `slug` | string | ✓ | 3–100 ตัวอักษร, `^[a-z0-9]+(?:-[a-z0-9]+)*$`, ไม่ซ้ำทั้งระบบ |
-| `url` | string | ✓ | ≤ 255, `http(s)://`, host ต้องเป็น `allowed_host` ของ Platform หรือ subdomain |
-| `platformId` | number | ✓ | ต้องมีอยู่ ไม่งั้นได้ 400 |
+| `url` | string | ✓ | ≤ 2048, HTTPS และโดเมนเว็บไซต์ถูกต้อง; ระบบจับคู่แพลตฟอร์มที่รู้จักหรือสร้างรายการจากโดเมนใหม่อัตโนมัติ |
+| `platformId` | number | | รองรับคำขอจาก client เดิม; หากส่งมา ต้องมีอยู่และโดเมน URL ต้องตรงกัน หน้าเว็บปัจจุบันไม่ส่งฟิลด์นี้ |
 | `description` | string | | ส่ง `""` = `null` |
 | `level` | `BEGINNER` / `INTERMEDIATE` / `ADVANCED` | | create ไม่ส่ง = `BEGINNER`; update ไม่ส่ง = ค่าเดิม |
 | `language` | `THAI` / `ENGLISH` / `SUB_THAI` | | create ไม่ส่ง = `THAI`; update ไม่ส่ง = ค่าเดิม |
@@ -150,6 +150,35 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 คำขอตัดสิน: `{ "decision": "REJECT", "expectedVersion": 0, "reason": "ข้อความไม่เกี่ยวกับคอร์ส" }` ใช้ `APPROVE` หรือ `REJECT`; การปฏิเสธต้องมีเหตุผลไม่เกิน 1,000 ตัวอักษร และต้องส่ง `expectedVersion` ที่ได้จากคิว หาก version เปลี่ยนหรือรีวิวไม่ได้รอตรวจแล้วจะได้ `409 Conflict` คำขอ POST/PUT ต้องมี CSRF token
 
 คะแนนเฉลี่ยใน catalog คำนวณจากรีวิว `PUBLISHED` เท่านั้น จึงเปลี่ยนตามผลอนุมัติหรือการแก้ไขรีวิว
+
+### 4.7 ดูประวัติการใช้งานระบบ (UC19)
+
+`GET /api/v1/admin/audit-logs` ต้องมี session ของ Admin ที่ยัง active และบทบาท Admin ในฐานข้อมูลปัจจุบัน เป็น API อ่านอย่างเดียว ไม่สร้างหรือแก้ประวัติ และตอบ `Cache-Control: no-store` ผู้ไม่เข้าสู่ระบบได้ `401` ผู้ไม่มีสิทธิ์ได้ `403`.
+
+| Query | ค่าและความหมาย |
+| --- | --- |
+| `entityType` | `COURSE`, `PROVIDER`, `PROVIDER_MEMBER`, `REVIEW` |
+| `action` | รหัสกิจกรรมตรงตามที่บันทึก เช่น `COURSE_CREATED`, `COURSE_SUBMITTED`, `COURSE_APPROVE`, `COURSE_REQUEST_REVISION`, `PROVIDER_APPROVE`, `PROVIDER_MEMBER_ADDED`, `REVIEW_REJECT`; รองรับ `PUBLISH_COURSE` จาก seed เดิมด้วย |
+| `actorId`, `entityId` | ID จำนวนเต็มบวก |
+| `from`, `to` | ISO-8601 ที่มี timezone UTC เช่น `2026-01-01T00:00:00Z`; ใช้ `from <= createdAt < to` และ `from < to` |
+| `page`, `size` | หน้าเริ่ม 0 (ค่าเริ่มต้น 0); ขนาด 1–50 (ค่าเริ่มต้น 10) |
+
+ตัวกรองทั้งหมดใช้ร่วมกันได้ ค่าผิดตอบ `400` ในรูปแบบ error เดิม เรียง `createdAt DESC, id DESC` และแบ่งหน้าที่ฐานข้อมูล รายการที่ถูกลบจากตารางต้นทางยังแสดง `entityType` และ `entityId` ได้
+
+```json
+{
+  "content": [{
+    "id": 25, "createdAt": "2026-01-01T00:00:00Z",
+    "actorId": 1, "actorDisplayName": "ผู้ดูแลระบบ",
+    "action": "COURSE_APPROVE", "entityType": "COURSE", "entityId": 12,
+    "oldStatus": "PENDING", "newStatus": "PUBLISHED", "reason": null
+  }],
+  "page": 0, "size": 10, "totalElements": 1, "totalPages": 1,
+  "first": true, "last": true
+}
+```
+
+ชื่อผู้กระทำใช้ `ผู้ใช้ #<actorId>` หากไม่มี profile; ไม่ส่ง User entity หรือ password hash
 
 ## 5. เทสต์ที่ยืนยันสัญญานี้
 

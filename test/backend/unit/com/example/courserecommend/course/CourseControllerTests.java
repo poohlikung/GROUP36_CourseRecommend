@@ -104,6 +104,23 @@ class CourseControllerTests {
 
     @Test
     @WithMockUser(username = "cctrl-owner@example.com")
+    void createCourse_DetectsKnownPlatformWithoutPlatformId() throws Exception {
+        CreateCourseRequest request = new CreateCourseRequest(
+                "Detected Platform Course", "cctrl-detected-platform", null,
+                "https://www.example.com/course", null, null, null, null,
+                PaymentType.FREE, BigDecimal.ZERO, "THB", Set.of());
+
+        mockMvc.perform(post("/api/v1/providers/" + provider.getId() + "/courses")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.platformId").value(platform.getId()))
+                .andExpect(jsonPath("$.platformName").value("CCtrl Platform"));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
     void createCourse_ValidationFailure_InvalidSlug() throws Exception {
         CreateCourseRequest request = new CreateCourseRequest(
                 "Invalid Slug Course",
@@ -254,6 +271,27 @@ class CourseControllerTests {
                 .andExpect(jsonPath("$.title").value("Updated Course Title"))
                 .andExpect(jsonPath("$.slug").value("cctrl-update-after"))
                 .andExpect(jsonPath("$.amount").value(990.00));
+    }
+
+    @Test
+    @WithMockUser(username = "cctrl-owner@example.com")
+    void updateCourse_DetectsChangedPlatformFromUrl() throws Exception {
+        Course course = createTestCourse("cctrl-change-platform", CourseStatus.DRAFT);
+        Platform anotherPlatform = platformRepository.save(Platform.builder()
+                .name("Another Learning Site").slug("another-learning-site")
+                .allowedHost("learning.example.org").build());
+        UpdateCourseRequest request = new UpdateCourseRequest(
+                "Moved course", "cctrl-change-platform", null,
+                "https://www.learning.example.org/new-course", null,
+                null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/api/v1/courses/" + course.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.platformId").value(anotherPlatform.getId()))
+                .andExpect(jsonPath("$.platformName").value("Another Learning Site"));
     }
 
     @Test

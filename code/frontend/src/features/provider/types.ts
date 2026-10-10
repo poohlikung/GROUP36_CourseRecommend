@@ -2,6 +2,18 @@ export type ProviderStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
 
 export type MemberRole = 'OWNER' | 'EDITOR';
 
+export interface ProviderMember {
+  id: number;
+  userId: number;
+  email: string;
+  memberRole: MemberRole;
+}
+
+export interface AddProviderMemberPayload {
+  email: string;
+  memberRole: MemberRole;
+}
+
 export interface Provider {
   id: number;
   name: string;

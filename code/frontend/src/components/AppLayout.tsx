@@ -33,6 +33,7 @@ export function AppLayout() {
       '/bookmarks': 'คอร์สที่บันทึก',
       '/providers': 'ผู้ให้บริการ',
       '/admin': 'งานตรวจ Admin',
+      '/admin/audit-logs': 'ประวัติการใช้งานระบบ',
     };
     document.title = `${pageTitles[location.pathname] ?? 'CourseHub'} | CourseHub`;
 
@@ -95,6 +96,7 @@ export function AppLayout() {
               {status === 'authenticated' && user ? (
                 <>
                   {user.role === 'ADMIN' && <NavLink to="/admin" className={navLinkClass}>งานตรวจ Admin</NavLink>}
+                  {user.role === 'ADMIN' && <NavLink to="/admin/audit-logs" className={navLinkClass}>ประวัติระบบ</NavLink>}
                   <NavLink to="/providers" className={navLinkClass}>ผู้ให้บริการ (Provider)</NavLink>
                   <NavLink to="/bookmarks" className={navLinkClass}>คอร์สที่บันทึก</NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
