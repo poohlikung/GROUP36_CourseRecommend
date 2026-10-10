@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "5690af5",
+  "startedAt": "2026-10-10T11:12:58.015Z",
+  "environment": "Windows, Playwright Chromium, isolated Docker Compose PostgreSQL and backend",
+  "testCount": 15,
+  "passed": 15,
+  "failed": 0,
+  "skipped": 0,
+  "flaky": 0,
+  "durationSeconds": 239.5,
+  "cleanup": "The isolated backend, PostgreSQL containers, volume, and project network were removed after the run."
+}

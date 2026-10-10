@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor Member
+    participant API as BookmarkController
+    participant Service as BookmarkService
+    participant Users as UserRepository
+    participant Courses as CourseRepository
+    participant Saved as SavedCourseRepository
+    participant Catalog as CatalogCourseService
+    Member->>API: PUT /api/v1/me/bookmarks/{courseId}
+    API->>Service: save(email, courseId)
+    Service->>Users: findByEmail(email)
+    Service->>Courses: findById(courseId)
+    alt Course not PUBLISHED or provider not ACTIVE
+        Service-->>Member: 404 not found
+    else Public course
+        Service->>Saved: insertIfAbsent(userId, courseId)
+        Service-->>Member: 204 no content
+    end
+    opt List bookmarks
+        Member->>API: GET /api/v1/me/bookmarks?page&size
+        API->>Service: list(email, page, size)
+        Service->>Users: findByEmail(email)
+        Service->>Saved: findVisibleCourseIds(userId, PUBLISHED, ACTIVE, pageable)
+        Service->>Catalog: mapCoursesInPageOrder(ids)
+        Service-->>Member: 200 page of currently visible saved courses
+    end
+    Note over Member,Saved: GET /ids checks stored IDs without a public visibility filter

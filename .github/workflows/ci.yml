@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/backend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: code/backend/pom.xml
+      - name: Build and test backend
+        run: ./mvnw -B --no-transfer-progress verify
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/frontend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: code/frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run frontend tests
+        run: npm test
+      - name: Build frontend
+        run: npm run build
+
+  db-scripts:
+    name: Database script safety tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test backup/restore script guards
+        shell: pwsh
+        run: ./test/scripts/backup-restore.Tests.ps1
+
+  e2e:
+    name: Learner provider admin E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            code/frontend/package-lock.json
+            test/e2e/package-lock.json
+      - name: Install frontend and E2E dependencies
+        run: |
+          npm ci --prefix code/frontend
+          npm ci --prefix test/e2e
+      - name: Install Chromium and browser dependencies
+        working-directory: test/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Check E2E types
+        run: npm run typecheck --prefix test/e2e
+      - name: Run E2E against isolated PostgreSQL and backend
+        run: npm run test:e2e --prefix code/frontend
+      - name: Upload E2E reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursehub-e2e-${{ github.run_attempt }}
+          path: test/reports/e2e/
+          retention-days: 7
+          if-no-files-found: warn
+
+  deploy-backend:
+    name: Deploy backend to Render
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.CD_ENABLED == 'true'
+    needs: [backend, frontend, e2e]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-backend
+      cancel-in-progress: false
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Check Render deploy hook
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo '::error::Set the RENDER_DEPLOY_HOOK_URL repository secret before enabling CD.'
+            exit 1
+          fi
+      - name: Deploy the tested commit
+        run: |
+          separator='?'
+          case "$RENDER_DEPLOY_HOOK_URL" in
+            *\?*) separator='&' ;;
+          esac
+          curl --fail --show-error --silent --request POST "${RENDER_DEPLOY_HOOK_URL}${separator}ref=${GITHUB_SHA}"
+
+  deploy-frontend:
+    name: Deploy frontend to Vercel
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.CD_ENABLED == 'true'
+    needs: [backend, frontend, e2e]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-frontend
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check Vercel configuration
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo '::error::Set VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID repository secrets before enabling CD.'
+            exit 1
+          fi
+      - name: Install Vercel CLI
+        run: npm install --global vercel@54.1.0
+      - name: Pull production settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build deployment
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy prebuilt frontend
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

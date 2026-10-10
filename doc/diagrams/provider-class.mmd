@@ -1,0 +1,47 @@
+classDiagram
+    class ProviderController {
+        +create(Authentication, CreateProviderRequest) ResponseEntity
+        +findMine(Authentication) List~MyProviderResponse~
+        +getById(Long) ProviderResponse
+        +getBySlug(String) ProviderResponse
+        +update(Authentication, Long, UpdateProviderRequest) ProviderResponse
+        +delete(Authentication, Long) void
+    }
+    class ProviderService {
+        <<interface>>
+        +createProvider(String, CreateProviderRequest) ProviderResponse
+        +findMyProviders(String) List~MyProviderResponse~
+        +getById(Long) ProviderResponse
+        +getBySlug(String) ProviderResponse
+        +updateProvider(String, Long, UpdateProviderRequest) ProviderResponse
+        +deleteProvider(String, Long) void
+    }
+    class ProviderServiceImpl
+    class ProviderMapper
+    class ProviderRepository {
+        <<interface>>
+        +findBySlug(String) Optional~Provider~
+        +existsBySlug(String) boolean
+    }
+    class ProviderMemberRepository {
+        <<interface>>
+        +findByProviderIdAndUserId(Long, Long) Optional~ProviderMember~
+    }
+    class ProviderOwnershipService {
+        +isEditorOrOwner(Long) boolean
+    }
+    class Provider {
+        status ProviderStatus
+    }
+    class ProviderMember {
+        memberRole MemberRole
+    }
+    class User
+    ProviderController --> ProviderService
+    ProviderService <|.. ProviderServiceImpl
+    ProviderServiceImpl --> ProviderRepository
+    ProviderServiceImpl --> ProviderMemberRepository
+    ProviderServiceImpl --> ProviderMapper
+    ProviderServiceImpl --> ProviderOwnershipService : visibility
+    ProviderMember "0..*" --> "1" Provider
+    ProviderMember "0..*" --> "1" User

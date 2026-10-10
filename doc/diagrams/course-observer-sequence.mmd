@@ -1,0 +1,47 @@
+sequenceDiagram
+    actor Admin
+    participant API as AdminModerationController
+    participant Tx as Spring transaction interceptor
+    participant Service as CourseModerationServiceImpl
+    participant DB as PostgreSQL
+    participant Publisher as CourseEventPublisher
+    participant Events as Spring ApplicationEvent
+    participant Listener as CourseMetricsListener
+    participant Registry as MeterRegistry
+    Admin->>API: POST moderation-decisions
+    API->>Tx: decideCourse(id, request)
+    Tx->>DB: BEGIN
+    Tx->>Service: decideCourse
+    Service->>Service: Check actor, version, transition, reason
+    Service->>DB: Update course status/version (flush)
+    Service->>DB: Insert AuditLog
+    alt Business write / audit fails
+        Service--xTx: Exception
+        Tx->>DB: ROLLBACK
+        Note over Publisher,Registry: No event publication, counter does not increase
+        Tx--xAPI: Failure
+        API-->>Admin: Error response (409 for version conflict)
+    else Business writes succeed
+        Service->>Publisher: publish(immutable snapshot)
+        Note over Publisher,Tx: MANDATORY joins existing transaction
+        Publisher->>Events: publishEvent
+        Events->>Events: Register AFTER_COMMIT synchronization
+        Service-->>Tx: DTO
+        alt Outer transaction rolls back
+            Tx->>DB: ROLLBACK
+            Note over Events,Registry: Published event is not observed, counter does not increase
+            Tx--xAPI: Outer caller failure
+        else Transaction commits
+            Tx->>DB: COMMIT
+            Tx->>Events: afterCompletion(COMMITTED)
+            Events->>Listener: onStatusChanged(event)
+            alt Metrics available
+                Listener->>Registry: counter(action, from, to).increment()
+            else Counter lookup / increment fails
+                Registry--xListener: RuntimeException
+                Listener->>Listener: Log event context and stack trace
+            end
+            Tx-->>API: DTO
+            API-->>Admin: HTTP 200
+        end
+    end

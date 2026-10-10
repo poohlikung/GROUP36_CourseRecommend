@@ -1,0 +1,51 @@
+sequenceDiagram
+    actor Member
+    participant Controller as ProviderController
+    participant Service as ProviderServiceImpl
+    participant Users as UserRepository
+    participant Providers as ProviderRepository
+    participant Members as ProviderMemberRepository
+    participant Courses as CourseRepository
+    participant Audit as AuditLogRepository
+    Member->>Controller: POST /api/v1/providers
+    Controller->>Service: createProvider(email, request)
+    Service->>Users: findByEmail(normalized email)
+    Service->>Providers: existsBySlug(normalized slug)
+    alt Slug already used
+        Service-->>Member: 409 conflict
+    else New slug
+        Service->>Providers: save(PENDING Provider)
+        Service->>Members: save(OWNER membership)
+        Service->>Audit: save(PROVIDER_CREATED)
+        Service-->>Controller: ProviderResponse
+        Controller-->>Member: 201 Location /api/v1/providers/{id}
+    end
+    opt Update provider
+        Member->>Controller: PUT /api/v1/providers/{id}
+        Controller->>Service: updateProvider(email, id, request)
+        Service->>Users: findByEmail(email) and require ACTIVE
+        Service->>Providers: findById(id)
+        Service->>Members: findByProviderIdAndUserId(id, userId)
+        alt Not OWNER or EDITOR
+            Service-->>Member: 403 forbidden
+        else Authorized
+            Service->>Providers: save(updated Provider)
+            Service->>Audit: save(PROVIDER_UPDATED)
+            Service-->>Member: 200 ProviderResponse
+        end
+    end
+    opt Delete provider
+        Member->>Controller: DELETE /api/v1/providers/{id}
+        Controller->>Service: deleteProvider(email, id)
+        Service->>Members: findByProviderIdAndUserId(id, userId)
+        Note over Service: Require OWNER
+        Service->>Courses: existsByProviderId(id)
+        alt Provider has courses
+            Service-->>Member: 409 conflict
+        else No courses
+            Service->>Members: deleteByProviderId(id)
+            Service->>Providers: delete(provider)
+            Service->>Audit: save(PROVIDER_DELETED)
+            Service-->>Member: 204 no content
+        end
+    end

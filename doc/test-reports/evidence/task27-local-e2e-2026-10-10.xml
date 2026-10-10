@@ -1,0 +1,42 @@
+<testsuites id="" name="" tests="15" failures="0" skipped="0" errors="0" time="239.520754">
+<testsuite name="auth.spec.ts" timestamp="2026-10-10T11:13:02.157Z" hostname="chromium" tests="3" failures="0" skipped="0" time="42.276" errors="0">
+<testcase name="learner registers, keeps session on refresh, logs out and logs in again" classname="auth.spec.ts" time="17.604">
+</testcase>
+<testcase name="guest is redirected from all protected routes and API rejects unauthenticated access" classname="auth.spec.ts" time="11.73">
+</testcase>
+<testcase name="learner cannot enter admin UI or bypass admin and CSRF rules through API" classname="auth.spec.ts" time="12.942">
+</testcase>
+</testsuite>
+<testsuite name="learner.spec.ts" timestamp="2026-10-10T11:13:02.157Z" hostname="chromium" tests="5" failures="0" skipped="0" time="116.336" errors="0">
+<testcase name="learner saves a course, refreshes it, keeps bookmarks private and removes it" classname="learner.spec.ts" time="63.622">
+</testcase>
+<testcase name="non-member cannot edit or submit provider courses and the stored draft remains unchanged" classname="learner.spec.ts" time="8.737">
+</testcase>
+<testcase name="learner updates review through the form, admin moderates through UI and catalog ratings follow published reviews" classname="learner.spec.ts" time="22.035">
+</testcase>
+<testcase name="review form waits for existing review and updates it through the browser" classname="learner.spec.ts" time="13.661">
+</testcase>
+<testcase name="admin sees the course title and reviews but cannot open the learner review form" classname="learner.spec.ts" time="8.281">
+</testcase>
+</testsuite>
+<testsuite name="matcher.spec.ts" timestamp="2026-10-10T11:13:02.157Z" hostname="chromium" tests="3" failures="0" skipped="0" time="12.676" errors="0">
+<testcase name="guest matcher uses real CSRF and shows eligible seeded course, score and ranking reasons" classname="matcher.spec.ts" time="4.185">
+</testcase>
+<testcase name="matcher explains empty results and lets the learner edit answers without relaxing constraints" classname="matcher.spec.ts" time="2.743">
+</testcase>
+<testcase name="matcher shows when a published category has no matchable courses" classname="matcher.spec.ts" time="5.748">
+</testcase>
+</testsuite>
+<testsuite name="publishing.spec.ts" timestamp="2026-10-10T11:13:02.157Z" hostname="chromium" tests="2" failures="0" skipped="0" time="49.396" errors="0">
+<testcase name="provider registers and publishes a course through admin approval, then learner discovers it" classname="publishing.spec.ts" time="26.774">
+</testcase>
+<testcase name="admin requests revision, provider sees the reason and resubmits the edited draft" classname="publishing.spec.ts" time="22.622">
+</testcase>
+</testsuite>
+<testsuite name="startup.spec.ts" timestamp="2026-10-10T11:13:02.157Z" hostname="chromium" tests="2" failures="0" skipped="0" time="10.667" errors="0">
+<testcase name="cold start keeps Home visible and retries through the frontend origin" classname="startup.spec.ts" time="7.806">
+</testcase>
+<testcase name="retry recovers a protected deep link after an immediate startup error" classname="startup.spec.ts" time="2.861">
+</testcase>
+</testsuite>
+</testsuites>

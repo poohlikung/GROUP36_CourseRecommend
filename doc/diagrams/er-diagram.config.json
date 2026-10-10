@@ -1,0 +1,27 @@
+{
+ "theme": "base",
+ "themeVariables": {
+  "background": "#ffffff",
+  "primaryColor": "#ffffff",
+  "primaryTextColor": "#000000",
+  "primaryBorderColor": "#000000",
+  "secondaryColor": "#ffffff",
+  "tertiaryColor": "#ffffff",
+  "lineColor": "#000000",
+  "textColor": "#000000",
+  "mainBkg": "#ffffff",
+  "nodeBorder": "#000000",
+  "attributeBackgroundColorOdd": "#ffffff",
+  "attributeBackgroundColorEven": "#ffffff",
+  "fontFamily": "Arial, Tahoma, sans-serif",
+  "fontSize": "20px",
+  "edgeLabelBackground": "#ffffff"
+ },
+ "er": {
+  "fontSize": 20,
+  "useMaxWidth": false,
+  "entityPadding": 18,
+  "minEntityWidth": 140
+ },
+ "themeCSS": ".relationshipLine{stroke:#000 !important;stroke-width:2.5px !important;} .relationshipLabel, .edgeLabel, .edgeLabel *{font-size:22px !important;font-weight:bold;color:#000 !important;fill:#000 !important;} .entityBox{stroke-width:2px !important;} .entityLabel{font-weight:bold;}"
+}

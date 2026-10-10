@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor Member
+    participant Security as Spring Security and ActiveUserFilter
+    participant Controller as ProfileController
+    participant Service as ProfileService
+    participant Users as UserRepository
+    participant Profile as UserProfile
+    participant Mapper as ProfileMapper
+    Member->>Security: PUT /api/v1/me/profile with session and CSRF
+    Security->>Controller: updateProfile(authentication, valid request)
+    Controller->>Service: updateProfile(email, request)
+    Service->>Users: findByEmail(email)
+    alt Missing or suspended account
+        Service-->>Member: 401 or 403
+    else Active account
+        Service->>Profile: update(trimmed displayName, trimmed or null bio)
+        Note over Service,Profile: Transaction commits JPA dirty changes
+        Service->>Mapper: toResponse(user)
+        Mapper-->>Service: ProfileResponse
+        Service-->>Controller: ProfileResponse
+        Controller-->>Member: 200 ProfileResponse
+    end

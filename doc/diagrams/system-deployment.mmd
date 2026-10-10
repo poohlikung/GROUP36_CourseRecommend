@@ -1,0 +1,15 @@
+flowchart LR
+    Browser[Browser]
+    subgraph Frontend[Frontend process outside Docker Compose]
+        Vite[Vite dev server port 5173, serves React app]
+    end
+    subgraph Compose[docker-compose.yml]
+        Backend[backend container, Java 21 Spring Boot, port 8080]
+        Postgres[(postgres container, PostgreSQL 16, port 5432)]
+        Volume[(postgres_data volume)]
+    end
+    Browser -->|HTTP frontend| Vite
+    Vite -->|dev proxy /api to localhost 8080| Backend
+    Backend -->|JDBC, DATABASE_URL| Postgres
+    Backend -->|Flyway V1 to V4 at startup| Postgres
+    Postgres --> Volume

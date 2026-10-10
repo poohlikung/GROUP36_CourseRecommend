@@ -1,0 +1,29 @@
+classDiagram
+    class ProfileController {
+        +getProfile(Authentication) ProfileResponse
+        +updateProfile(Authentication, UpdateProfileRequest) ProfileResponse
+    }
+    class ProfileService {
+        +getProfile(String) ProfileResponse
+        +updateProfile(String, UpdateProfileRequest) ProfileResponse
+    }
+    class ProfileMapper {
+        +toResponse(User) ProfileResponse
+    }
+    class UserRepository {
+        <<interface>>
+        +findByEmail(String) Optional~User~
+    }
+    class User {
+        +getProfile() UserProfile
+        +getStatus() UserStatus
+    }
+    class UserProfile {
+        +update(String, String) void
+    }
+    ProfileController --> ProfileService
+    ProfileService --> UserRepository
+    ProfileService --> ProfileMapper
+    User "1" *-- "1" UserProfile
+    UserRepository ..> User
+    ProfileMapper ..> User

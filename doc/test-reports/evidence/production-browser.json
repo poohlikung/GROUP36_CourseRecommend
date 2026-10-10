@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-10-09T23:50:40.149Z",
+  "origin": "https://group36-coursehub.vercel.app",
+  "browser": "Chromium 149.0.7827.55",
+  "cases": [
+    {
+      "id": "home-browser",
+      "result": "pass",
+      "status": 200,
+      "headingVisible": true,
+      "url": "https://group36-coursehub.vercel.app/"
+    },
+    {
+      "id": "match-direct-browser",
+      "result": "pass",
+      "status": 200,
+      "headingVisible": true,
+      "url": "https://group36-coursehub.vercel.app/match"
+    },
+    {
+      "id": "match-refresh-browser",
+      "result": "pass",
+      "status": 200,
+      "headingVisible": true,
+      "url": "https://group36-coursehub.vercel.app/match"
+    }
+  ]
+}

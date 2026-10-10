@@ -1,0 +1,40 @@
+sequenceDiagram
+    actor Owner
+    participant Controller as ProviderMemberController
+    participant Service as ProviderMemberService
+    participant Providers as ProviderRepository
+    participant Ownership as ProviderOwnershipService
+    participant Users as UserRepository
+    participant Members as ProviderMemberRepository
+    participant Audit as AuditLogRepository
+    Owner->>Controller: POST /api/v1/providers/{providerId}/members
+    Controller->>Service: addMember(providerId, email, role)
+    Service->>Providers: findByIdForUpdate(providerId)
+    Service->>Ownership: requireOwner(providerId)
+    Ownership->>Members: findByProviderIdAndUserId(providerId, actorId)
+    alt Actor is not OWNER
+        Ownership-->>Owner: 403 forbidden
+    else Owner authorized
+        Service->>Users: findByEmail(normalized target email)
+        Note over Service: Target must be ACTIVE and not already a member
+        Service->>Members: existsByProviderIdAndUserId(providerId, targetId)
+        Service->>Members: saveAndFlush(new ProviderMember)
+        Service->>Audit: saveAndFlush(PROVIDER_MEMBER_ADDED)
+        Service-->>Controller: ProviderMemberView
+        Controller-->>Owner: 201 Location /members/{memberId}
+    end
+    opt Remove member
+        Owner->>Controller: DELETE /api/v1/providers/{providerId}/members/{memberId}
+        Controller->>Service: removeMember(providerId, memberId)
+        Service->>Providers: findByIdForUpdate(providerId)
+        Service->>Ownership: requireOwner(providerId)
+        Service->>Members: findByIdAndProviderId(memberId, providerId)
+        alt Target is last OWNER
+            Service->>Members: countByProviderIdAndMemberRole(providerId, OWNER)
+            Service-->>Owner: 409 conflict
+        else Removal allowed
+            Service->>Members: delete(target) then flush()
+            Service->>Audit: saveAndFlush(PROVIDER_MEMBER_REMOVED)
+            Service-->>Owner: 204 no content
+        end
+    end

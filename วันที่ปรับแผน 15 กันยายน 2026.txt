@@ -1,0 +1,539 @@
+วันที่ปรับแผน: 15 กันยายน 2026  
+
+ปรับล่าสุดในรอบนี้: เลือก Vercel + Render Free + Neon Free, รองรับ backend cold start ด้วยหน้าโหลด และจัดงานสำหรับทีม 4 คน  
+
+สถานะ: แผนสำหรับทีมพัฒนา ยังไม่ได้เขียนหรือทดสอบระบบตามแผนนี้  
+
+ชื่อระบบ: คอร์สดีบอกต่อ (CourseHub)  
+
+เอกสารข้อกำหนด: ใบงานโปรเจค CP353002 Principles of Software Design and Development (Spring Boot)
+
+## 1. ข้อสรุปและลำดับความสำคัญ
+
+เราจะสร้างเว็บตัวกลางที่ให้เจ้าของคอร์สสมัครเป็นผู้ให้บริการ ลงคอร์ส และส่งให้ผู้ดูแลตรวจ ผู้เรียนค้นหา ดูรายละเอียด บันทึกคอร์ส เขียนรีวิว และกดไปเรียนที่เว็บไซต์เจ้าของคอร์สได้ การชำระเงินและวิดีโอเรียนยังอยู่ที่ต้นทาง
+
+**เปลี่ยน backend เป็น Spring Boot และ ORM เป็น Spring Data JPA ตามใบงาน** ใช้ React และ PostgreSQL ต่อได้ เป้าหมายรอบนี้คือระบบที่ส่งวิชาได้ครบ อธิบายการออกแบบได้ และต่อยอดเป็น marketplace ได้ภายหลัง
+
+ลำดับการตัดสินใจ:
+
+1. ข้อกำหนดและกติกาในใบงานที่ผู้ใช้เลือกยึดเป็นหลัก
+2. ขอบเขต CourseHub ที่ตกลงกันในบทสนทนา
+3. แผนฉบับนี้สำหรับงานส่งวิชา
+4. แผนเดิม `แผนงานต้นจนจบ.md` สำหรับรายละเอียดธุรกิจที่ไม่ขัดกับข้อ 1–3
+
+ข้อความในใบงานเป็นข้อกำหนดงานเรียน ไม่ใช่คำสั่งให้ผู้ช่วยดำเนินการแทนนักศึกษา การวางแผนนี้ยังไม่ใช่หลักฐานว่าซอฟต์แวร์ผ่านข้อกำหนด และไม่สร้าง commit, ชื่อสมาชิก, บรรทัดอ้างอิงโค้ด หรือผลทดสอบที่ยังไม่มีจริง
+
+## 2. สิ่งที่ต้องเปลี่ยนจากแผนเดิม
+
+| เรื่อง | แผนเดิม | แผนสำหรับส่งวิชา | เหตุผล |
+| --- | --- | --- | --- |
+| Backend | Rust + Axum + Tokio | Java + Spring Boot + Spring MVC | ใบงานบังคับ Spring Boot 3.x+ และ Java 17+ |
+| ORM | SQLx | Spring Data JPA / Hibernate | ใบงานบังคับ ORM นี้ |
+| Migration | SQL migrations สำหรับ Rust | Flyway versioned SQL migrations | เก็บ constraints/indexes เป็นไฟล์และรันซ้ำได้ |
+| Architecture | React/Rust/API/worker | React + Spring Boot แบบ Layered Architecture | Controller → Service → Repository ต้องเห็นชัด |
+| Frontend | React Router Framework Mode + SSR | React + TypeScript + Vite + React Router สำหรับ SPA | React ใช้ได้ตามใบงาน ลดงาน SSR ในรอบส่งวิชา |
+| Auth | Supabase Auth OIDC/JWT | Spring Security + session cookie + password hashing | เป็นข้อเสนอเพื่อลด dependency และแสดง Security ใน Spring; ใบงานไม่ได้บังคับรูปแบบ auth |
+| API prefix | `/v1/*` | `/api/v1/*` | ใช้รูปแบบ resource-based ตามตัวอย่างใบงาน |
+| Identity schema | User + AuthIdentity | User + UserProfile แบบ One-to-One | ต้องมี One-to-One ที่มีเหตุผลและ constraint จริง |
+| Patterns | ยังไม่มีรายการหลักฐานตามวิชา | Architectural Patterns ครบ + Behavioral 3 แบบ | เพิ่ม Strategy, State และ Observer โดยผูกกับปัญหาจริง |
+| Tests | Rust tests + Vitest/Playwright | JUnit 5 + Mockito + Spring Boot Test และ frontend tests | ให้หลักฐานตามวิชา |
+| Repo | apps/services/crates/packages | `code/`, `test/`, `doc/`, `img/` | ชื่อโฟลเดอร์เป็นข้อกำหนด |
+| การมอบงาน | ส่ง ticket ให้ผู้พัฒนา/AI | สมาชิกกลุ่มรับผิดชอบโค้ดและประวัติ Git ของตนเอง | ใบงานห้าม outsource และกำหนดคะแนนรายบุคคล |
+| เวลา | ประมาณ 9–13 สัปดาห์สำหรับคนเดียว | แผนตัวอย่าง 8 สัปดาห์สำหรับทีม 4 คน | ต้องปรับตามวันส่งจริงที่ยังไม่ระบุ |
+
+React ยังคงเป็น frontend ส่วน Spring Boot ดูแล API และกฎธุรกิจทั้งหมด PostgreSQL ยังเหมาะกับความสัมพันธ์และข้อกำหนด SQL ของวิชา การเปลี่ยนนี้เกิดจากเกณฑ์รายวิชา ไม่ได้หมายความว่ามีผล benchmark ว่า Java เร็วกว่า Rust หรือว่า stack ใดดีที่สุดในทุกกรณี
+
+## 3. ตารางตรวจข้อกำหนดจากใบงาน
+
+เลขหัวข้อในคอลัมน์แรกตรงกับหัวข้อในใบงานต้นฉบับ แยกข้อบังคับออกจากข้อเสนอของแผนนี้
+
+| หัวข้อใบงาน | สิ่งที่ต้องทำ | หลักฐานหรือเกณฑ์ตรวจรับ |
+| --- | --- | --- |
+| 1–2 เทคโนโลยี | Spring Boot 3.x+, Java 17+, Maven/Gradle, SQL, JPA, REST, frontend | `pom.xml`, wrapper, source code, API ที่ React ใช้งานจริง |
+| 3 Layered Architecture | Controller → Service → Repository; DTO/Mapper แยก Entity | package structure, Class/Sequence Diagram, architecture test |
+| 4 SOLID | แสดงทั้ง S/O/L/I/D; constructor injection | `doc/solid-analysis.md` พร้อมไฟล์ บรรทัด และเหตุผลจากโค้ดจริง |
+| 5.1 Architectural Patterns | Layered, MVC, Repository, Service Layer, DTO/Mapper, DI | `doc/design-patterns.md` และ Class Diagram |
+| 5.2 GoF | เลือก 1 กลุ่ม มีอย่างน้อย 3 แบบในกลุ่มนั้น | เลือก Behavioral: Strategy, State, Observer; มี implementation และ tests |
+| 6 ฐานข้อมูล | ≥6 ตาราง, One-to-One, One-to-Many, FK/index, cascade/fetch, migration | Flyway, ERD, Data Dictionary, JPA mapping และ database tests |
+| 7 API | CRUD ครบ ≥2 resource, HTTP/status ถูก, validation/error, pagination/sorting, Swagger | Provider/Course CRUD, MockMvc tests, public Swagger UI |
+| 8 Git | main/develop/branch ส่วนตัวชื่อถูก, commit คนละ ≥15, PR reviewer ≥1 | git log, GitHub Contributors, PR และ review โดยสมาชิกจริง |
+| 9 Repository | `code/`, `test/`, `doc/`, `img/` | โฟลเดอร์และเนื้อหาจริง; ไม่ใช้โฟลเดอร์ว่างเป็นหลักฐาน |
+| 9.1 Diagrams | Use Case, Domain, Class, Sequence ≥3, Activity, ERD, Component, Deployment, State ถ้ามีสถานะ | source ของ diagram และไฟล์ภาพอ่านได้ใน `doc/diagrams/` |
+| 10 README | ครบทุกหัวข้อ รวมสมาชิก/branch/หน้าที่/วิธีรัน/URL | README ที่ทดสอบคำสั่งบนเครื่องใหม่แล้ว |
+| 11 Deploy | URL สาธารณะ, Dockerfile, docker-compose.yml | public URL, Swagger URL, smoke test และ runbook |
+| 11 คะแนนพิเศษ | CI/CD Build → Test → Deploy | GitHub Actions ที่รันผ่าน; ทำหลังข้อบังคับพร้อม |
+| 12 กลุ่ม | ≤5 คน, ทุกคนมีงานโค้ด, รายชื่อ+repo ส่งตามกำหนด | ตารางสมาชิกและหลักฐานรายบุคคล |
+| 13–14 ก่อนส่ง | ไม่ลอก/ไม่ outsource, อธิบายโค้ดได้, test report, slides, merge main | checklist และซ้อมนำเสนอจากระบบจริง |
+
+ใบงานหัวข้อ 8.1 ระบุ branch ผิดรูปแบบว่าไม่ตรวจ/ไม่ได้คะแนนส่วนนั้น แต่ตารางหัวข้อ 13 ระบุ −5 คะแนนรายบุคคล ให้ทีมตั้งชื่อให้ถูกตั้งแต่แรก และถามผู้สอนเรื่องผลคะแนนที่ไม่สอดคล้องกันนี้เมื่อสะดวก
+
+## 4. ขอบเขตระบบสำหรับรอบส่งวิชา
+
+### 4.1 ฟีเจอร์ที่ต้องเสร็จก่อน
+
+1. บัญชีผู้ใช้: สมัคร เข้าสู่ระบบ ออกจากระบบ และโปรไฟล์ผู้เรียน
+2. Provider: สร้าง/อ่าน/แก้ไข/ลบผู้ให้บริการตามเงื่อนไข และหน้ารายละเอียด
+3. Course: สร้าง draft, CRUD, ส่งตรวจ, ขอแก้, เผยแพร่, พัก และ archive
+4. ProviderMember: owner/editor; ผู้ใช้แก้ไขได้เฉพาะ Provider ที่มีสิทธิ์
+5. Catalog: ค้นหา กรองหมวด/ระดับ/ราคา/ภาษา เรียง และแบ่งหน้า
+6. Reviews: เขียน/แก้รีวิวของตนเอง ผู้ดูแลอนุมัติ/ปฏิเสธ คะแนนรวมใช้เฉพาะรีวิวที่เผยแพร่
+7. Bookmarks: บันทึก/ยกเลิกบันทึกคอร์ส และหน้ารายการของตนเอง
+8. Matcher แบบกติกา: กรองงบ/ภาษา/ระดับก่อน แล้วจัดอันดับพร้อมเหตุผล เพื่อใช้ Strategy ในปัญหาจริง
+9. หลังบ้าน: ตรวจ Provider/Course/Review และดูประวัติการเปลี่ยนสถานะสำคัญ
+10. Deployment, Swagger, tests, diagrams, คู่มือ และ slides ตามวิชา
+
+### 4.2 ทำต่อเมื่อข้อบังคับพร้อม
+
+Helpful, report queue, Roadmap editor, OAuth Google, email magic link, อัปโหลดรูป, analytics dashboard และ SSR/SEO เต็มรูปแบบเป็น backlog ต่อจากรอบส่งวิชา ถ้าจะเพิ่มก่อนส่งต้องประเมินเวลาและรักษา tests/เอกสารเดิมให้ทัน
+
+รอบส่งวิชาใช้รูปตัวอย่างที่ทีมมีสิทธิ์ใช้ใน `img/` และข้อมูลคอร์สตัวอย่างที่ระบุที่มา ไม่อ้างว่ามีการตรวจจบคอร์สหรือรีวิวจากผู้เรียนจริงโดยไม่มีหลักฐาน
+
+ยังไม่รับชำระเงิน ไม่หักคอมมิชชั่น ไม่จ่ายเงินให้ Provider ไม่เปิดวิดีโอเรียนเอง ไม่ scrape อัตโนมัติ และไม่ทำระบบ AI แนะนำคอร์สในรอบนี้
+
+## 5. Tech stack และสถาปัตยกรรม
+
+### 5.1 สิ่งที่เลือก
+
+| ส่วน | เทคโนโลยี | วิธีใช้ |
+| --- | --- | --- |
+| Backend | Java 21 LTS + Spring Boot 3.x รุ่น stable ที่ compatibility ตรงกัน | Java 21 เป็นข้อเสนอ; อย่างน้อย Java 17 ตามใบงาน; pin รุ่นจริงใน P0 |
+| Build | Maven + Maven Wrapper | ให้เครื่องทีมและ CI ใช้ build configuration เดียวกัน |
+| HTTP | Spring MVC / RestController | ใช้ REST `/api/v1`; ไม่ใช้ WebFlux ร่วมกับ JPA ในรอบนี้ |
+| Persistence | Spring Data JPA / Hibernate | repository interfaces, service transactions, DTO projections สำหรับ list |
+| Database | PostgreSQL | ใช้เหมือนกันใน local/test/cloud เพื่อลดความต่าง constraints |
+| Migration | Flyway | versioned SQL + seed development ที่แยกจากข้อมูลจริง |
+| Security | Spring Security | session, password encoder, role/ownership และ CSRF สำหรับ SPA |
+| Frontend | React + TypeScript + Vite + React Router | public catalog, learner dashboard, Provider/Admin pages |
+| API docs | springdoc-openapi รุ่น compatible กับ Spring Boot ที่เลือก | เปิด `/swagger-ui.html` และ OpenAPI; ทดสอบ redirect/access จริง |
+| Tests | JUnit 5, Mockito, Spring Boot Test, MockMvc, Testcontainers PostgreSQL | service unit, API/security, DB integration |
+| Frontend tests | Vitest + React Testing Library; Playwright สำหรับ flow สำคัญ | ทดสอบฟอร์มและเชื่อมระบบจริง |
+| Test report | Maven Surefire/Failsafe + JaCoCo | เก็บผล unit/integration/coverage; ไม่ใช่แค่ screenshot ว่ารันผ่าน |
+| Runtime | Docker + Docker Compose | web/API/DB local; multi-stage images บน cloud |
+| Hosting รอบส่งวิชา | Vercel Hobby สำหรับ React + Render Free สำหรับ Spring Boot + Neon Free สำหรับ PostgreSQL | เริ่มฟรีภายในโควตา; ยอมให้ backend หลับและแสดง loading/retry; Vercel Hobby ใช้เฉพาะงานที่ไม่ใช่เชิงพาณิชย์ |
+| CI/CD | GitHub Actions | build/test ทุก PR; deploy delivery version เมื่ออนุญาตในทีม |
+
+เครื่องมือหลักไม่มีค่าลิขสิทธิ์สำหรับเริ่มพัฒนา local ส่วน cloud, domain, email, storage และ quota มีเงื่อนไขของผู้ให้บริการ ให้ตรวจแผนฟรีปัจจุบันและความพร้อมในวันนำเสนอก่อนเลือก ไม่รับประกันว่าระบบ production จะฟรีตลอด
+
+SSR, Rust worker, SQLx, Redis และ R2 จากแผนเดิมไม่ใช่ dependency ของงานส่งวิชารอบนี้ หากต้องการเพิ่มหลังส่งให้บันทึก ADR และวัดความจำเป็นก่อน
+
+### 5.2 การเรียกข้าม Layer
+
+```mermaid
+flowchart TD
+    View[React View] --> HTTP[Spring Security และ REST Controller]
+    HTTP --> Service[Service interfaces และ implementation]
+    Service --> Repo[Spring Data JPA repositories]
+    Repo --> Entity[Domain entities และ PostgreSQL]
+    HTTP --> DTO[Request Response DTO และ Mapper]
+    Service --> Policy[Domain policies และ Behavioral Patterns]
+```
+
+- Controller รับ request, ใช้ `@Valid`, เรียก service และกำหนด HTTP response ไม่ทำ query/transaction เอง
+- Service จัดการ business rules, permissions/ownership และ `@Transactional`
+- Repository จัดการ persistence/query เท่านั้น ไม่ใช้ controller DTO เป็น entity
+- Entity/Value Object/Enum เก็บข้อมูลและ invariants ที่เหมาะสม
+- Mapper แปลง DTO ↔ domain โดยไม่ query ฐานข้อมูล; mapping ที่ต้อง lookup ให้ service ทำ
+- Security filter เป็นส่วน framework; identity lookup ใช้ service ตามโครงสร้าง ไม่เปิดช่องให้ Controller เรียก Repository
+- API ไม่ serialize Entity โดยตรง; ปิด Open Session in View และโหลดข้อมูลที่ response ต้องใช้ใน transaction
+
+MVC ในระบบนี้คือ React เป็น View, Spring REST Controller เป็น Controller และ domain/application data เป็น Model ให้ diagram แสดงการเชื่อมกัน ไม่จำเป็นต้องเพิ่ม Thymeleaf เพราะใบงานให้เลือก frontend อย่างใดอย่างหนึ่ง
+
+### 5.3 Authentication ที่เสนอ
+
+ใช้ Spring Security session แบบ cookie สำหรับเว็บเดียวกัน ผู้ใช้มี email และ password hash; ห้ามเก็บ plaintext password คืน hash ใน DTO หรือ log ข้อมูลลับ
+
+production ให้ React อยู่ Vercel และ Spring Boot อยู่ Render โดยเสนอ external rewrite `/api/:path*` → `https://<render-host>/api/:path*` เพื่อให้ browser เรียก API ผ่าน origin ของเว็บเดียวกัน local ใช้ Vite dev proxy ไป backend ทดสอบ Set-Cookie, forwarded headers, HTTPS และ route matching บน deployment จริงก่อนยืนยันแบบนี้ ตั้งค่า Secure/HttpOnly/SameSite ให้เหมาะสม ไม่กำหนด cookie Domain ให้ผูกกับ onrender.com เมื่อใช้ proxy และรักษา CSRF protection สำหรับคำขอที่เปลี่ยนข้อมูล รวม login/logout SPA ต้องขอ CSRF token ใหม่ตาม lifecycle ที่ Spring Security ต้องการ
+
+session/auth/profile/Provider/Admin responses และ liveness probe ใช้ Cache-Control: no-store และไม่ให้ CDN cache เพื่อป้องกันข้อมูลข้ามบัญชีหรือ health response เก่าที่ทำให้หน้าเว็บเข้าใจผิดว่า backend ตื่นแล้ว Swagger/OpenAPI บน Render เปิดผ่าน URL ของ backend ที่ระบุใน README หรือเพิ่ม rewrite สำหรับเส้นทางที่จำเป็นโดยทดสอบจริง
+
+Security tests ต้องครอบคลุม anonymous 401, ไม่มีสิทธิ์ 403, ownership ข้าม Provider, CSRF ไม่ถูกต้อง, logout/session หมดอายุ และการไม่เปิดเผย password hash ทุก resource ที่มี ownership ต้องตรวจใน service ไม่พึ่งการซ่อนปุ่ม React
+
+ถ้าทีมต้องการ Supabase Auth เดิมยังออกแบบให้ใช้ Spring Security resource server ได้ แต่เป็นทางเลือกภายหลัง ไม่ทำทั้งสองระบบพร้อมกันโดยไม่มีความจำเป็น
+
+## 6. Schema ที่ปรับให้ตรงวิชา
+
+### 6.1 ตารางแกนหลักที่เสนอ
+
+เสนอ 12 ตารางเพื่อรองรับขอบเขตจริง มากกว่าเกณฑ์อย่างน้อย 6 ตาราง โดยไม่เพิ่มตารางเพียงเพื่อให้ครบจำนวน
+
+| ตาราง | Fields สำคัญ | Constraints และหน้าที่ |
+| --- | --- | --- |
+| users | id, email, password_hash, role, status, created_at, updated_at | normalized email unique; role LEARNER/ADMIN; สถานะ ACTIVE/SUSPENDED |
+| user_profiles | user_id, display_name, bio, avatar_path | user_id เป็น PK และ FK → users.id จึงบังคับ One-to-One จริง |
+| providers | id, name, slug, description, website_url, status, version, timestamps | slug unique; business profile สำหรับผู้สอน/สถาบัน |
+| provider_members | id, provider_id, user_id, member_role | FK ทั้งสอง; unique(provider_id,user_id); OWNER/EDITOR |
+| platforms | id, name, slug, allowed_host | slug unique; แหล่งเรียนต้นทางและ allowlist link |
+| courses | id, provider_id, platform_id, title, slug, description, url, level, language, effort_hours, status, version, timestamps | FK; slug unique; effort_hours >0 ถ้ามี; optimistic lock |
+| course_prices | course_id, payment_type, amount, currency, checked_at | course_id เป็น PK/FK → courses; one current price; amount ≥0 ถ้าทราบ |
+| categories | id, name, slug | slug unique; ผู้ดูแลจัดการ taxonomy |
+| course_categories | course_id, category_id | composite PK + FK สองด้าน; เป็น Many-to-Many ที่มีประโยชน์จริง |
+| reviews | id, course_id, user_id, overall_score, content_score, teaching_score, difficulty_score, body, status, timestamps | unique(course_id,user_id); ทุกคะแนน CHECK 1–5 |
+| saved_courses | user_id, course_id, created_at | composite PK + FK; บันทึกซ้ำไม่ได้ |
+| audit_logs | id, actor_user_id, action, entity_type, entity_id, old_status, new_status, created_at | actor FK; เก็บการเปลี่ยนสถานะ/สิทธิ์ที่สำคัญ; ไม่มี secrets |
+
+course_prices เป็นข้อเสนอให้แยกข้อมูลราคาเพื่อแสดง One-to-One เพิ่ม แต่ User/UserProfile เป็นความสัมพันธ์หลักที่ใช้ตรวจวิชา ราคาใน MVP เป็นราคาปัจจุบัน ไม่ใช่ประวัติราคา Subscription ระบุให้ชัดว่าเป็นราคาต่อรอบ/ไม่ใช่ราคาเหมาจบคอร์ส ถ้าราคาไม่ทราบใช้ nullable ไม่แทนด้วย 0
+
+### 6.2 ความสัมพันธ์และ JPA mapping
+
+```mermaid
+erDiagram
+    USERS ||--|| USER_PROFILES : has
+    USERS ||--o{ PROVIDER_MEMBERS : joins
+    PROVIDERS ||--o{ PROVIDER_MEMBERS : includes
+    PROVIDERS ||--o{ COURSES : offers
+    PLATFORMS ||--o{ COURSES : hosts
+    COURSES ||--o| COURSE_PRICES : current_price
+    COURSES ||--o{ COURSE_CATEGORIES : classified_by
+    CATEGORIES ||--o{ COURSE_CATEGORIES : contains
+    USERS ||--o{ REVIEWS : writes
+    COURSES ||--o{ REVIEWS : receives
+    USERS ||--o{ SAVED_COURSES : saves
+    COURSES ||--o{ SAVED_COURSES : bookmarked
+    USERS ||--o{ AUDIT_LOGS : acts
+```
+
+| Relation | Mapping ที่เสนอ | Cascade / Fetch / การลบ |
+| --- | --- | --- |
+| User → UserProfile | `@OneToOne`, shared PK ด้วย `@MapsId` | profile เป็นส่วนของ user; PERSIST/MERGE และ orphanRemoval เมื่อมี lifecycle ชัด; ใช้ LAZY แต่ตรวจ query จริงเพราะ One-to-One บางแบบโหลดเพิ่มได้ |
+| Provider → Course | `@OneToMany(mappedBy=...)`; Course `@ManyToOne` | LAZY; ห้าม cascade REMOVE จาก Provider ไป Course; FK RESTRICT |
+| ProviderMember → Provider/User | `@ManyToOne` ทั้งสอง | LAZY; ไม่ cascade จาก membership ไปผู้ใช้/Provider |
+| Course → CoursePrice | One-to-One shared PK | child owned by course; cascade PERSIST/MERGE; orphanRemoval ตามการเปลี่ยนราคา |
+| Course ↔ Category | join entity CourseCategory | LAZY; ลบเฉพาะ link ไม่ลบ Category shared; ต้องแสดง Many-to-Many ใน conceptual ERD |
+| Review → Course/User | `@ManyToOne` ทั้งสอง | LAZY; ไม่ cascade REMOVE; เก็บข้อมูลรีวิวไว้เมื่อ archive คอร์ส |
+| SavedCourse → User/Course | join entity | LAZY; unique/composite key; ไม่ cascade ลบ parent |
+| AuditLog → User | actor relation | ไม่ cascade; ใช้ suspend user แทนการลบข้อมูลประวัติ |
+
+Foreign keys, unique และ CHECK ต้องอยู่ใน Flyway SQL จริง ไม่ใช่มีแค่ JPA annotations หรือคำอธิบายในตาราง การทำ One-to-One ด้วย `@MapsId` ต้องทดสอบว่าหนึ่ง user มี profile ซ้ำไม่ได้; สร้าง user/profile ใน transaction เดียวกันเพื่อให้ requirement mandatory profile เป็นจริงใน application lifecycle
+
+### 6.3 Indexes และ query
+
+- courses(provider_id, status) สำหรับ dashboard และ courses(status, created_at, id) สำหรับ catalog
+- reviews(course_id, status) สำหรับรีวิวที่เผยแพร่และคะแนนรวม
+- provider_members(user_id) และ unique(provider_id,user_id) สำหรับตรวจสมาชิก
+- course_categories(category_id, course_id) สำหรับ filter หมวด
+- saved_courses(user_id, created_at) สำหรับรายการบันทึก
+- audit_logs(entity_type, entity_id, created_at) สำหรับประวัติรายการ
+- PostgreSQL สร้าง index ให้ PK/unique แต่ไม่ได้สร้าง index ให้ FK ทุกตัวโดยอัตโนมัติ ให้ตรวจ query ก่อนเพิ่ม
+
+เริ่ม pagination แบบ page/size ด้วย Spring Data JPA และ deterministic sorting ที่มี id เป็น tie-breaker จำกัด size เช่น 50 และ allowlist sort fields ใช้ projection/entity graph/fetch ที่เหมาะสมเพื่อกัน N+1; ไม่ collection-fetch-join พร้อม pageable โดยไม่ตรวจผล SQL
+
+Data Dictionary ต้องมีทุกคอลัมน์: data type, length/precision, nullable, default, PK/FK, unique/check, enum values, ความหมาย และตัวอย่าง โดยเฉพาะราคาฟรี/ราคาไม่ทราบ/วันที่ตรวจราคา
+
+## 7. SOLID และ Design Patterns ที่จะพิสูจน์
+
+### 7.1 SOLID
+
+| หลักการ | การออกแบบที่เสนอ | หลักฐาน/การทดสอบ |
+| --- | --- | --- |
+| S | Controller, Service, Repository, Mapper, matcher policies แยกหน้าที่ | class responsibility ใน diagram; unit test business rules โดยไม่เปิด HTTP |
+| O | เพิ่ม scoring strategy ใหม่โดยเพิ่ม implementation | test เพิ่ม strategy ผ่าน collection injection โดยไม่แก้ if-else กลาง |
+| L | ScoringStrategy ทุกตัวรับ input contract เดียวและคืนคะแนนตามช่วงเดียว | contract test ทุก implementation; ไม่ throw UnsupportedOperationException สำหรับ input ที่ถูกต้อง |
+| I | แยก CourseQueryService, CourseCommandService และ CourseModerationService ตามผู้ใช้บริการ | Controller inject เฉพาะ interface ที่ใช้; ไม่มี interface รวมทุกระบบ |
+| D | Service รับ repository/policy/service interfaces ผ่าน constructor | dependency diagram และ Mockito unit test; ไม่มี field injection |
+
+ไม่สร้าง interface ให้ทุกคลาสแบบอัตโนมัติ ให้เพิ่มเมื่อมีขอบเขตบริการหรือ variation ที่มีเหตุผล `doc/solid-analysis.md` ต้องระบุชื่อไฟล์และบรรทัดที่มีจริงจาก revision ส่งงาน พร้อมเหตุผลสั้น ๆ ทั้ง 5 ข้อ และอัปเดตหลัง refactor รอบสุดท้าย
+
+### 7.2 Architectural Patterns บังคับ
+
+Layered Architecture, MVC, Repository, Service Layer, DTO + Mapper และ Dependency Injection ต้องมีใน `doc/design-patterns.md` ทั้งหมด รายการเดียวกันต้องมองเห็นใน Class Diagram และ trace ได้จาก scenario จริง
+
+### 7.3 GoF เลือก Behavioral กลุ่มเดียว 3 แบบ
+
+| Pattern | ปัญหาจริง | คลาสที่เสนอ | วิธีตรวจ |
+| --- | --- | --- | --- |
+| Strategy | Matcher ให้ความสำคัญด้านราคา เวลา และคุณภาพต่างกัน และต้องขยายสูตรได้ | ScoringStrategy, BudgetFitStrategy, EffortFitStrategy, ReviewQualityStrategy, CourseMatcherService | ทุก strategy มี contract test; eligibility กรองงบ/ภาษา/ระดับก่อน score; ไม่มีรีวิว/ไม่ทราบราคาได้ผลที่อธิบายได้ |
+| State | Course แต่ละสถานะอนุญาตคำสั่งต่างกัน เช่น draft ส่งตรวจได้ แต่ archived เผยแพร่ตรงไม่ได้ | CourseWorkflowState, DraftState, PendingState, PublishedState, SuspendedState, ArchivedState และสถานะขอแก้ | ใช้ state object แยก behavior จริง ไม่ใช่ enum + if-else เพียงอย่างเดียว; transition tests และ diagram ตรงกัน |
+| Observer | เมื่อเผยแพร่/พักคอร์ส มีผู้สังเกตการเปลี่ยนสถานะโดยไม่ผูก workflow กับระบบติดตาม | CourseStatusChangedEvent, CourseEventPublisher, CourseMetricsListener | publish event หลังเปลี่ยนสถานะ; listener รับหลัง commit; rollback ไม่ถูกนับเป็น publish สำเร็จ |
+
+State ไม่ได้ตัดสิน ownership แทน service: service ตรวจสิทธิ์ก่อน state transition, illegal transition ตอบ 409 และใช้ `@Version` กันผู้ดูแลสองคนเปลี่ยนพร้อมกัน Registry เลือก state ตาม enum ที่ persist ได้ แต่พฤติกรรมอยู่ในคลาส state
+
+Observer ใช้ Spring ApplicationEvent และ AFTER_COMMIT สำหรับ metrics ที่ไม่ใช่ข้อมูลธุรกิจถาวร listener failure ต้อง log/monitor โดยไม่ทำให้ผู้ใช้ได้รับข้อผิดพลาดกำกวมหลังฐานข้อมูล commit แล้ว AuditLog ที่ต้องมีแน่นอนให้ service เขียนใน transaction เดียวกับการเปลี่ยนสถานะ ไม่ใช้ metrics listener เป็นตัวรับประกัน audit
+
+ไม่เพิ่ม payment/discount เพื่อให้ครบ pattern เพราะระบบไม่ได้รับเงิน และไม่อ้างว่าใช้ Observer เพียงเพราะมี Spring dependency ต้องมี publisher, event, subscriber และเหตุการณ์จริงที่สาธิตได้
+
+`doc/design-patterns.md` ต้องเป็นตารางตามใบงาน: Pattern | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ | Class Diagram ประกอบ ระบุ implementation จริงและเชื่อม test/diagram ไม่ใส่คลาสที่ยังเป็นแผนเป็นหลักฐานส่งงาน
+
+## 8. REST API และ CRUD ที่ต้องครบ
+
+### 8.1 สอง resource หลักสำหรับตรวจเกณฑ์ CRUD
+
+| Resource | Create | Read | Update | Delete |
+| --- | --- | --- | --- | --- |
+| Provider | POST `/api/v1/providers` | GET list และ `/{id}` | PUT `/{id}` | DELETE `/{id}` |
+| Course | POST `/api/v1/providers/{providerId}/courses` | GET `/api/v1/courses` และ `/{id}` | PUT `/api/v1/courses/{id}` | DELETE `/api/v1/courses/{id}` |
+
+Create คืน 201 พร้อม Location; Read/Update คืน 200; Delete สำเร็จคืน 204 ไม่มี body Validation 400, anonymous 401, ไม่มีสิทธิ์ 403, ไม่พบ 404, unique/transition/reference conflict 409, unexpected error 500 โดยไม่ส่ง stack trace
+
+Provider ลบจริงได้เมื่อไม่มี Course/ข้อมูลอ้างอิงที่ต้องรักษา service จัดการ membership child ที่ลบได้ใน transaction แล้วลบ Provider; ถ้ามีข้อมูลห้ามลบคืน 409 และใช้ suspend/archive workflow แทน ต้องมี seed/test ที่พิสูจน์ DELETE สำเร็จ ไม่ใช่ทุกกรณีตอบ 409
+
+Course ลบจริงได้เมื่อเป็น draft ที่ยังไม่มีรีวิว/ข้อมูลอ้างอิงสำคัญ โดยลบ owned price/category links ตาม policy; คอร์สที่เผยแพร่หรือมีข้อมูลที่ต้องรักษาใช้ archive ผ่านสถานะและ DELETE ตอบ 409 เพื่อป้องกันการทำลายประวัติ แยก archive ออกจาก DELETE ให้ชัดใน Swagger และ tests
+
+### 8.2 API เสริม
+
+- GET `/api/v1/auth/csrf`, POST `/api/v1/auth/register`, login/logout ตาม Spring Security configuration และ GET `/api/v1/me`
+- GET/PUT `/api/v1/me/profile`
+- GET/POST/DELETE `/api/v1/providers/{id}/members` โดย operation สำหรับรายสมาชิกใช้ member id
+- POST `/api/v1/courses/{id}/submissions` สำหรับส่งตรวจ
+- POST `/api/v1/admin/courses/{id}/moderation-decisions` สำหรับอนุมัติ/ขอแก้/พัก/archive พร้อมเหตุผล
+- GET/POST `/api/v1/courses/{id}/reviews`; PUT/DELETE `/api/v1/reviews/{id}` ตาม ownership/policy
+- POST `/api/v1/admin/reviews/{id}/moderation-decisions`
+- GET/PUT/DELETE `/api/v1/me/saved-courses/{courseId}`; list ใช้ `/api/v1/me/saved-courses`
+- POST `/api/v1/course-matches` รับคำตอบ quiz และคืนผลไม่เกิน 3 รายการพร้อมเหตุผล
+- GET `/api/v1/courses/{id}/outbound-link` คืน URL ที่ตรวจ scheme/host แล้ว; frontend เปิดปลายทาง ไม่รับ redirect URL ใด ๆ จาก browser
+
+Endpoint login/logout จริง, payload และ error response ต้องระบุใน OpenAPI เพราะ Spring Security filter อาจจัดการก่อน Controller ห้าม assume ว่า `@RestControllerAdvice` จัดการข้อผิดพลาดจาก filter ได้ทั้งหมด
+
+### 8.3 Contract กลาง
+
+ใช้ Request/Response DTO แยก Entity, `@Valid` และ Bean Validation ให้ครบ API errors มี fields เช่น timestamp, status, code, message, path, fieldErrors โดย Advice จัดการ application exceptions และ Security handlers ใช้รูปแบบเดียวกัน
+
+list มี content, page, size, totalElements, totalPages และ sort metadata กำหนด server contract ก่อน frontend เชื่อม OpenAPI เป็นเอกสารตรวจรับ และถ้า generate TypeScript client ให้เก็บ/ตรวจ drift ใน CI
+
+กำหนด `springdoc.swagger-ui.path=/swagger-ui.html` และอนุญาต route ที่จำเป็นใน Security สำหรับการตรวจวิชา; verify URL นี้เปิดได้จริงบน public deployment รวม `/v3/api-docs` ไม่สรุปจาก config ว่าใช้งานได้แล้ว
+
+## 9. Repository และเอกสารส่งงาน
+
+### 9.1 โครงสร้างที่ต้องเตรียม
+
+```
+CourseHub/
+├── README.md
+├── docker-compose.yml
+├── .github/workflows/
+├── code/
+│   ├── backend/
+│   │   ├── pom.xml, mvnw, mvnw.cmd, .mvn/
+│   │   ├── Dockerfile
+│   │   └── src/main/
+│   │       ├── java/com/coursehub/
+│   │       │   ├── controller/api/
+│   │       │   ├── service/impl/
+│   │       │   ├── repository/
+│   │       │   ├── domain/entity/, domain/enums/, domain/policy/
+│   │       │   ├── dto/request/, dto/response/
+│   │       │   ├── mapper/, config/, exception/, security/, common/
+│   │       │   └── event/
+│   │       └── resources/db/migration/
+│   └── frontend/
+│       ├── package.json, lockfile, Dockerfile
+│       └── src/
+├── test/
+│   ├── backend/unit/, integration/, architecture/
+│   ├── backend/resources/
+│   ├── frontend/
+│   ├── e2e/
+│   └── reports/
+├── doc/
+│   ├── requirements.md, use-cases.md, api-contract.yaml
+│   ├── solid-analysis.md, design-patterns.md, data-dictionary.md
+│   ├── test-plan.md, test-report.md, deployment.md, user-manual.md
+│   ├── decisions/, diagrams/, slide/
+└── img/
+    ├── course-covers/
+    └── demo-screenshots/
+```
+
+ใบงานบอกว่าการทดสอบทั้งหมดอยู่ `test/` จึงต้องตั้ง Maven testSourceDirectory/testResources หรือ build-helper ให้ชี้ไป root `test/backend/` และตั้ง frontend/E2E config ให้ค้น test ที่ root `test/` จริง ทดสอบคำสั่ง build จาก clone ใหม่ใน P1 เพื่อไม่ให้ Maven รันผ่านแต่ไม่ได้เก็บ test นอกตำแหน่งมาตรฐาน
+
+ชื่อแพ็กเกจจริงตกลงใน P0; unit กับ integration tests ใช้ naming convention ที่ Surefire/Failsafe ค้นพบ เก็บรายงาน generated เป็น CI artifacts และมี `doc/test-report.md` สรุป commit/date/environment/results; ไม่ commit binary report จำนวนมากโดยไม่มีเหตุผล
+
+### 9.2 Diagrams ที่ต้องทำ
+
+| Diagram | เนื้อหาที่ต้องเห็น | ช่วงเริ่มทำ |
+| --- | --- | --- |
+| Use Case + Description | Learner, Provider Owner/Editor, Admin; preconditions/main/alternate flow | P0 |
+| Domain / Conceptual Class | User/Profile/Provider/Course/Review/Price และความสัมพันธ์ธุรกิจ | P0 |
+| Class | layers, interfaces, entity/DTO/mapper, Strategy/State/Observer | P1 และอัปเดตตามโค้ด |
+| Sequence 1 | Provider สร้าง draft → Repository → DB | P2 |
+| Sequence 2 | Admin อนุมัติ → transaction/audit → after-commit event | P3 |
+| Sequence 3 | Learner quiz → eligibility → scoring strategies → results | P4 |
+| Activity | เส้นทางส่งตรวจคอร์สและขอแก้ พร้อม decision guards | P3 |
+| ER Diagram | PK/FK/unique, One-to-One, One-to-Many และ join tables | P1 |
+| Component | React, REST API, Security, business services, DB | P1 |
+| Deployment | browser, HTTPS/reverse proxy, web/API containers, cloud DB | P5 |
+| State | Course statuses/transitions และผู้มีสิทธิ์ทำแต่ละคำสั่ง | P3 |
+
+Course มีสถานะจึงต้องส่ง State Diagram ในโปรเจกต์นี้ เก็บ PlantUML/Mermaid source พร้อม export PNG/SVG ที่อ่านได้ แผนภาพนี้ในแผนยังไม่ใช่ diagram ชุดส่งครบ
+
+### 9.3 README ต้องครบ
+
+ชื่อระบบและคำอธิบาย 3–5 บรรทัด; ตารางสมาชิกชื่อ-นามสกุล/รหัส/section/branch/หน้าที่; Tech Stack; System Architecture; Database Design; Installation & Setup; How to Run; API Documentation; How to Run Tests; Deployment URL; Project Structure
+
+ทุกคำสั่งต้องตรงกับโครงสร้างจริง โดยเฉพาะ Maven Wrapper path, test directories, frontend install/run, migration, environment variables และ Docker Compose README ห้ามมี password/token จริง
+
+## 10. แบ่งงานให้ทุกคนมีโค้ดและรับผิดชอบได้
+
+แผนรอบนี้จัดสำหรับทีม 4 คน ทุกคนรับผิดชอบ API, UI และ tests ของ feature ตัวเอง พร้อมช่วย integration/deployment ไม่กำหนดคนใดทำเอกสารอย่างเดียว และยังไม่ใส่ชื่อ/รหัส/section จนได้รับข้อมูลจริง
+
+| สมาชิก | งานโค้ดหลัก | งานเอกสารและสาธิต |
+| --- | --- | --- |
+| A | Spring Security, User/Profile, auth frontend, security tests; Vercel/API proxy และ shared loading/retry component | auth use cases, SOLID ส่วน security, cookie/CSRF/cold-start tests |
+| B | Provider/Member CRUD ทั้ง API และหน้า Provider, JPA/Flyway ส่วนที่รับผิดชอบ | Provider ERD/data dictionary, Sequence draft, CRUD tests |
+| C | Course CRUD, category/platform, catalog/filter/pagination, saved courses; Render Docker deploy และ liveness endpoint | DTO/Repository, API docs, query/index tests, Render runbook |
+| D | Course moderation State, reviews, Admin UI/AuditLog/Observer และ Matcher Strategy พร้อม quiz/results | State/Activity/Sequence approval, pattern diagrams/contract tests |
+
+สมาชิก B รับ Flyway/Neon connection/backup ร่วมกับงาน Provider; integration/E2E, test report, deploy verification และ slides เป็นงานร่วมทั้ง 4 คน หากงาน D หนักเกินเวลาให้ A/C ช่วย quiz UI และ integration หลัง auth/catalog พร้อม โดย D ยังรับผิดชอบ scoring/state contract กำหนดผู้ช่วยและเจ้าของไฟล์ใน PR ให้ชัด
+
+แต่ละคน review PR ของอีกคนอย่างน้อยตามรอบทีม และซ้อมอธิบาย path จาก frontend → Controller → Service → Repository → DB ของงานตัวเอง รวมเหตุผล pattern, transaction, cascade/fetch และ test ที่จับ bug สำคัญ
+
+## 11. Git workflow ที่ยึดตามใบงาน
+
+- `main`: version ที่ส่งมอบเท่านั้น; อย่ารวมงานที่ยังไม่ผ่านตรวจ
+- `develop`: branch integration ของทีม
+- branch ส่วนตัว: **ชื่อ_รหัสนักศึกษา_section** เช่นตัวอย่างในใบงาน `somchai_66123456_01`; ใช้ข้อมูลจริงและรักษา leading zero ของ section
+- งานของทุกคนรวมผ่าน PR ที่มี reviewer ในทีมอย่างน้อย 1 คน; PR จากส่วนตัวไป develop และ release PR develop → main
+- แต่ละคนตั้ง user.name/user.email และ commit/push ด้วยบัญชี GitHub ของตัวเอง ห้ามช่วยเปลี่ยนผู้เขียนเพื่ออ้างเป็นผลงานอีกคน
+- แต่ละคนมี meaningful commits อย่างน้อย 15 ครั้ง กระจายตลอดโครงการ ไม่แตก commit เทียมหรือ push รวดเดียวก่อนส่ง
+- commit format `<type>: <สิ่งที่ทำ>` เช่น feat, fix, refactor, test, docs
+- เปิด repository public หรือเชิญผู้สอนเป็น collaborator ตามวิธีที่ทีมเลือก; ทดสอบว่าผู้สอนเข้าถึงได้
+
+ก่อนเริ่มงานต้องตรวจชื่อ branch จริง ไม่ใช้ `feature/...` แทน branch รายบุคคลที่ใบงานกำหนด GitHub Actions สามารถรันที่ branch ส่วนตัวได้ แต่ branch protection อย่าบังคับชื่อที่ขัดกับใบงาน
+
+ใบงานห้าม outsource/จ้างทำ/ให้คนภายนอกกลุ่มเขียนโค้ด และทุกคนต้องอธิบายโค้ดตนเองได้ **ไม่ได้นิยามการใช้ AI ไว้ชัดเจน** แผนนี้จึงไม่ตีความว่าอนุญาตหรือห้าม AI ทั้งหมด ก่อนใช้ AI สร้างโค้ดส่งวิชาให้ทีมถามนโยบายผู้สอนและบันทึกคำตอบ; สมาชิกยังรับผิดชอบผลงานจริงและประวัติ Git ของตนเอง
+
+## 12. ลำดับทำงานตั้งแต่ปรับแผนจนส่ง
+
+กรอบตัวอย่าง 8 สัปดาห์สำหรับทีม 4 คน ใบงานอนุญาตไม่เกิน 5 คน แต่แผนนี้แบ่งงานตามทีม 4 คนที่ตกลงกัน ไม่มีวันส่งจริงในใบงานที่อ่าน จึงไม่ผูกกับวันที่สมมติ ระยะและ milestone ต้องปรับเมื่อทราบ deadline/ตารางสมาชิก
+
+| ช่วง | งาน | ผลลัพธ์ที่ต้องผ่านก่อนช่วงต่อไป |
+| --- | --- | --- |
+| P0 สัปดาห์ 1 | ยืนยัน scope, สมาชิก/branch, deadline, AI policy, stack versions, use cases, responsibilities | README สมาชิกจริง, requirement matrix, ADR, Git workflow ที่ถูกต้อง |
+| P1 สัปดาห์ 2 | repo folders, Maven/Vite, Docker, schema/Flyway, JPA mappings, DTO/error/security foundations | clone ใหม่แล้ว build/test ถูกค้นครบ; migrate/seed PostgreSQL ได้; auth slice เชื่อม React |
+| P2 สัปดาห์ 3–4 | Provider/Course CRUD, Member ownership, catalog/filter/pagination, bookmarks | CRUD สอง resource ผ่านทั้ง UI/API รวม DELETE สำเร็จและ 409; ข้าม Provider ถูกปฏิเสธ |
+| P3 สัปดาห์ 5 | moderation State, reviews, AuditLog, Observer metrics, Admin UI | workflow ถูกต้อง; concurrent update 409; rollback ไม่มี event สำเร็จ; published reviews เท่านั้น |
+| P4 สัปดาห์ 6 | Matcher Strategy, quiz/reasons, integration/E2E, diagrams/pattern/SOLID evidence | Strategy/State/Observer สาธิตได้; fixtures/critical flow ผ่าน; เอกสารตรงโค้ด |
+| P5 สัปดาห์ 7 | deploy cloud, public Swagger, backup/restore, smoke tests, CI/CD ถ้ามีเวลา | URL ใช้งานจริง; data ไม่หายหลัง restart; CI test report; README run/setup ถูกต้อง |
+| P6 สัปดาห์ 8 | UAT/แก้ bug, final docs/slides, contribution audit, PR main, ซ้อมนำเสนอ | checklist ทุกข้อมีหลักฐาน, ทุกคนอธิบายโค้ดได้, URL/Swagger เปิด ณ วันนำเสนอ |
+
+Deploy skeleton ตั้งแต่ P1/P2 เพื่อค้นปัญหา cloud เร็ว แต่ P5 เป็นการตรวจ deployment เต็มระบบ ไม่รอ deploy ครั้งแรกก่อนส่ง
+
+ถ้าเวลาไม่พอ ให้ตัด optional features ก่อน ลดความซับซ้อน UI และ seed ข้อมูลที่เพียงพอต่อ scenario อย่าตัด One-to-One, CRUD สอง resource, pattern 3 แบบ, tests, diagrams, Git rules หรือ public deployment
+
+### 12.1 Backlog สำหรับรับช่วงโดยสมาชิกทีม
+
+| Ticket | งาน | Dependency | เกณฑ์รับงาน |
+| --- | --- | --- | --- |
+| C01 | baseline requirements/ADR/member/branch/repo | ไม่มี | matrix ครบและผู้รับผิดชอบทุกคนมีงานโค้ด |
+| C02 | Maven/Vite/Compose + test discovery/CI | C01 | fresh clone build; unit/integration/frontend tests ถูกรันจริง |
+| C03 | Flyway/JPA/ERD/dictionary | C01,C02 | FK/unique/check/One-to-One/One-to-Many tests ผ่าน |
+| C04 | auth/profile/security/error DTO | C03 | React login/logout/profile; 401/403/CSRF/secret exposure tests ผ่าน |
+| C05 | Provider/Member CRUD + UI | C04 | CRUD สำเร็จ/duplicate/reference conflict และ ownership ผ่าน |
+| C06 | Course/catalog/category/platform + UI | C03,C04,C05 | CRUD, filter, pagination/sort และ query tests ผ่าน |
+| C07 | moderation State/Audit/Observer + UI | C06 | transitions/permissions/rollback/concurrency ผ่าน |
+| C08 | Reviews + bookmarks + UI | C04,C06,C07 | uniqueness, own update, moderation, averages และ bookmark duplicate ผ่าน |
+| C09 | Matcher Strategy + quiz/results | C06,C08 | hard filters ไม่ถูกผ่อน; strategy contract และ no-result ผ่าน |
+| C10 | diagrams/SOLID/pattern proofs | เริ่ม C01; ปิดหลัง C09 | references ชี้ไฟล์/บรรทัดจริงของ revision ส่งงาน |
+| C11 | Vercel/Render/Neon deployment, loading/retry, proxy/session, backup/public Swagger | เริ่ม C02; ปิดหลัง C09 | cold start/timeout/re-login/proxy/restore/restart และ public URLs ผ่าน |
+| C12 | E2E/UAT/report/slides/release | C05–C11 | PR review/main, contribution audit และซ้อมนำเสนอครบ |
+
+แต่ละ ticket ต้องมีผู้รับผิดชอบในกลุ่ม, branch จริง, acceptance criteria, test, เอกสารที่ต้องเปลี่ยน และ reviewer ไม่ส่ง ticket เป็นงานให้บุคคลภายนอกกลุ่มเขียนแทน
+
+## 13. การทดสอบและประสิทธิภาพ
+
+| ชั้น | กรณีสำคัญ |
+| --- | --- |
+| Unit / Mockito | permission policy, Matcher filters/scoring, Course State, review averages, deletion rules |
+| Web / MockMvc | @Valid 400, 201/204, 401/403/404/409, Advice/security errors และ pagination/sort |
+| DB / Testcontainers | Flyway fresh migration, FK/unique/check, shared PK One-to-One, cascade/fetch, transactions, optimistic lock |
+| Architecture | Controller ไม่ขึ้นกับ Repository, constructor injection, ไม่ serialize Entity; ใช้ ArchUnit หรือ equivalent ที่ทีมเลือก |
+| Frontend | form validation/errors, pagination/filter, logout, admin/provider ownership UX |
+| E2E | Provider draft → Admin publish → Learner search/save/review → Admin approve → outbound |
+| Deploy smoke | public web/API/Swagger, HTTPS/cookie/CSRF, restart persistence และ DB restore |
+| Cold start / UX | skeleton และข้อความโหลด, backend ตื่นช้า/Neon wake-up, timeout/ยกเลิกการรอ/retry, 401/403 แยกจาก cold start, session หายหลัง restart; ไม่ส่ง mutation ซ้ำ |
+
+ใช้ Testcontainers PostgreSQL สำหรับ integration หาก CI รองรับ Docker ไม่ใช้ H2 เป็นหลักฐานเดียวว่าข้อกำหนด PostgreSQL/Flyway ผ่าน Coverage เป็นตัวช่วยดูช่องว่าง ไม่ใช้แทน scenario ที่มีความหมาย
+
+เป้าหมายประสิทธิภาพที่เสนอ ไม่ใช่เกณฑ์ในใบงาน: catalog page-size ไม่เกิน 50, ป้องกัน N+1, วัด query count และ response latency จากชุดข้อมูลทดสอบที่บอกจำนวน/เครื่อง/region ชัด ใช้ index และ projection ก่อนเพิ่ม cache หรือ microservices
+
+ทุก test report ต้องระบุ commit hash, วันที่, Java/DB/browser environment, คำสั่ง, passed/failed/skipped, coverage ถ้ามี และ known issues หากไม่มี test ถูกค้นให้ถือว่าไม่ผ่าน gate แม้ build exit 0
+
+## 14. Deployment และค่าใช้จ่ายเริ่มต้น
+
+### 14.1 Hosting ที่ทีมเลือก
+
+| ส่วนระบบ | บริการรอบส่งวิชา | ข้อจำกัดที่ต้องรองรับ |
+| --- | --- | --- |
+| React + Vite | Vercel Hobby | หน้าเว็บ static เปิดได้โดยไม่รอ Spring Boot; ฟรีภายในโควตาและสำหรับงานที่ไม่ใช่เชิงพาณิชย์ |
+| Java + Spring Boot | Render Free Web Service ผ่าน Dockerfile | หลับหลังไม่มี inbound traffic 15 นาที; การตื่นอาจใช้ประมาณ 1 นาที; รวม 750 instance-hours ต่อ workspace/เดือน และอาจ restart ได้ |
+| PostgreSQL | Neon Free | 0.5 GB storage และ 100 CU-hours ต่อ project/เดือนตามแพ็กเกจที่ตรวจ; compute scale-to-zero ได้ จึงต้องทดสอบ pool/reconnect และ DB wake-up |
+
+เริ่มต้น 0 บาทได้ภายในโควตา ใช้ URL ที่บริการให้ ไม่ซื้อ domain หรือเปิดส่วนเสริมเสียเงิน ตรวจเงื่อนไขล่าสุดก่อน deploy และติดตาม usage ไม่รับประกันฟรีตลอดเมื่อเปิด marketplace เชิงพาณิชย์หรือมีผู้ใช้มากขึ้น
+
+ยอมให้ Render backend หลับตามแพ็กเกจ ไม่ตั้งบอท, cron หรือ UptimeRobot เพื่อยิง keep-alive ข้อมูลถาวรอยู่ Neon ไม่เก็บใน filesystem ของ Render และไม่เลือก Render Free PostgreSQL ที่หมดอายุหลัง 30 วัน ภาพ demo เก็บใน repo หรือแหล่งที่อนุญาต
+
+ยังต้องมี Dockerfile และ docker-compose.yml ตามใบงาน: local ใช้ Compose รวม PostgreSQL/backend/frontend พร้อม environment example และ healthchecks; production deploy React เป็น static build บน Vercel และ backend เป็น Docker บน Render ใช้ Neon เป็น external persistent DB ไม่รัน Compose บน Vercel
+
+### 14.2 หน้าโหลดและการปลุก backend
+
+1. แสดงโครงหน้าเว็บและ navigation ทันที ใช้ skeleton เฉพาะส่วนที่ต้องรอข้อมูล
+2. แสดงข้อความ “กำลังเตรียมระบบ การเข้าใช้ครั้งแรกอาจใช้เวลาประมาณ 1 นาที” ไม่มีเปอร์เซ็นต์หรือ countdown ที่ไม่ได้วัดจริง
+3. เพิ่ม public GET `/api/v1/system/liveness` คืน 200 เมื่อ process พร้อมรับ HTTP โดยไม่ query DB หรือบริการอื่น ตั้ง no-cache และไม่เผย secrets/diagnostics
+4. เริ่ม probe เมื่อผู้ใช้เปิดหน้าที่ต้องเรียก API หรือกดลองใหม่เท่านั้น เสนอ timeout ครั้งละ 10 วินาที เว้น 5 วินาทีก่อนลองใหม่ รอรวมไม่เกิน 120 วินาที แล้วหยุดและแสดง “ระบบยังไม่พร้อม กรุณาลองอีกครั้ง” พร้อมปุ่ม retry ยกเลิกการรอเมื่อออกจากหน้า ตัวเลขนี้เป็นค่าตั้งต้นที่ต้องทดสอบ ไม่ใช่คำรับประกัน
+5. ถ้า Vercel proxy timeout ระหว่าง Render ตื่น ให้ทดสอบ direct Render liveness probe เป็นทางเลือก: CORS จำกัด origin ของ frontend, เฉพาะ GET และไม่ส่ง credentials ส่วน API ธุรกิจ/auth ยังผ่าน proxy ตามแบบที่ตรวจแล้ว ไม่สมมติว่า proxy รอได้ไม่จำกัด
+6. liveness 200 บอกว่า process ตื่น ไม่ยืนยันว่า DB พร้อม ต้องโหลดข้อมูลจริงต่อและรองรับ Neon wake-up/connection error ก่อนเปิด form ที่ต้องใช้ข้อมูลนั้น
+7. retry อัตโนมัติเฉพาะ probe และ GET ที่ปลอดภัย ไม่ยิง POST/PUT/DELETE ซ้ำแบบเดาสุ่ม หากต้อง retry mutation ต้องออกแบบ idempotency ให้ไม่สร้างข้อมูลซ้ำ
+8. แยก 401 ให้ login, 403 สิทธิ์ไม่พอ, 400 validation และ 409 conflict ออกจากสถานะ cold start ไม่วนปลุก backend เพราะข้อผิดพลาดเหล่านี้
+9. session แบบ in-memory อาจหายเมื่อ instance restart/ถูกสร้างใหม่หลังหลับ ให้ login ใหม่และขอ CSRF token ใหม่ เก็บข้อความฟอร์มที่ยังไม่ส่งเท่าที่เหมาะสม ไม่เก็บรหัสผ่านหรือ tokens ใน browser storage
+10. ข้อความสถานะใช้ aria-live, ปุ่ม retry ใช้ keyboard ได้ และทดสอบมือถือ ไม่ทำ background polling ต่อเนื่องเพื่อกันหลับ
+
+### 14.3 ขั้นตอน deploy และตรวจรับ
+
+1. ตรวจแพ็กเกจ/โควตาและผู้ดูแลบัญชีทั้งสามบริการ รวมข้อจำกัด repo/team ของ Vercel Hobby ทดลอง workflow จาก repo ที่ใช้ส่งวิชา ไม่เปิด paid service โดยไม่มีการตกลงของทีม
+2. deploy skeleton ตั้งแต่ P1: React → Spring Boot → PostgreSQL บน public URLs พร้อม demo data และทดสอบ cold start ก่อนทำ feature จนครบ
+3. ตั้ง secrets ผ่าน host ไม่ commit ลง GitHub; จัดลำดับ Flyway migrations และกำหนด connection pool ให้เหมาะกับ Neon
+4. ทดสอบ external rewrite `/api/:path*` → Render, HTTPS/forwarded headers, Set-Cookie, login/logout/CSRF, no-store ของข้อมูลส่วนตัว และ SPA deep links บน URL จริง ทดสอบ origin/preview ที่ทีมจะใช้
+5. เปิด Swagger UI/OpenAPI ให้ผู้สอนตรวจผ่าน backend URL หรือ rewrite ที่ตรวจแล้ว โดย mutations ยังต้อง login/role
+6. backup Neon และ restore ไป environment ทดสอบ; restart backend แล้วข้อมูลถาวรคงอยู่
+7. freeze tag/commit ที่ตรง README/report/slides และบันทึก URL กับ known limitations
+8. ตรวจ idle มากกว่า 15 นาที → skeleton → backend ตื่น → โหลดข้อมูล, timeout/manual retry, login ใหม่เมื่อ session หาย และไม่มี mutation ซ้ำ ตรวจ public URLs ก่อนและ ณ วันนำเสนอ พร้อม local สำรองหาก cloud ล่ม; local ไม่แทนเกณฑ์ URL สาธารณะ
+
+เริ่มด้วย single backend instance และ in-memory session หากเพิ่มหลาย instance ภายหลังจึงพิจารณา Spring Session JDBC/Redisตามความจำเป็น ไม่เพิ่มบริการเสียเงินในรอบแรก
+
+## 15. สิ่งที่ต้องรู้เพิ่มก่อนลงมือและตรวจส่งสุดท้าย
+
+### 15.1 ข้อมูลที่ยังไม่มี
+
+- วันส่งรายชื่อ/Repository วันส่งงาน และวันนำเสนอ
+- ชื่อ-นามสกุล รหัสนักศึกษา section และบัญชี GitHub ของสมาชิกทั้ง 4 คน
+- ผู้สอนอนุญาตใช้ AI ในระดับใด โดยเฉพาะ code generation และการเปิดเผยการใช้งาน
+- ขอบเขตงานขั้นต่ำที่ผู้สอนอาจกำหนดเพิ่มเติมนอกใบงานนี้
+- ผู้ดูแลบัญชี Vercel/Render/Neon, การติดตามโควตา และผู้รับผิดชอบ URL ณ วันนำเสนอ
+
+ข้อมูลเหล่านี้ไม่ขัดขวางการปรับแผนและออกแบบ แต่ต้องทราบก่อน lock ตารางเวลา ตั้งชื่อ branch จริง หรือใช้วิธีทำงานที่อาจไม่ตรงนโยบายวิชา
+
+### 15.2 Checklist ส่งงาน
+
+- [ ]  ทีม 4 คน (ไม่เกิน 5 คนตามใบงาน) ทุกคนมีโค้ดจริงและหน้าที่ใน README
+- [ ]  branch รายบุคคลชื่อถูก; ทุกคน commit/push บัญชีตนเอง ≥15 meaningful commits กระจายตามเวลา
+- [ ]  PR มี reviewer ในทีม ≥1 และ version ส่งงาน merge main เรียบร้อย
+- [ ]  โฟลเดอร์ code/test/doc/img มีเนื้อหาที่ตรงหน้าที่
+- [ ]  Spring Boot/Java/JPA/Maven/SQL/frontend ตรงใบงาน
+- [ ]  Controller → Service → Repository ไม่มีการข้าม layer; DTO/Mapper แยก Entity
+- [ ]  SOLID ครบพร้อมไฟล์/บรรทัดจริงใน doc/solid-analysis.md
+- [ ]  Architectural Patterns ครบ และ Behavioral Strategy/State/Observer ครบพร้อมเหตุผล/diagram/tests
+- [ ]  ฐานข้อมูล ≥6 ตาราง มี One-to-One และ One-to-Many พร้อม constraints/fetch/cascade/Flyway
+- [ ]  Provider/Course CRUD ครบและสาธิต DELETE สำเร็จได้ทั้งสอง resource
+- [ ]  @Valid/Advice/status/pagination/sorting/Swagger ใช้งานจริง
+- [ ]  tests รันครบและผ่าน มี test report; skipped tests มีเหตุผลและไม่แทน requirement สำคัญ
+- [ ]  diagrams ครบ รวม Sequence ≥3 และ Course State Diagram
+- [ ]  README ครบทุกหัวข้อ setup/run/test ทดลองจาก clone ใหม่
+- [ ]  Dockerfile/docker-compose.yml พร้อม public URL/Swagger ณ วันนำเสนอ
+- [ ]  slides อยู่ doc/slide/ และสอดคล้องกับ revision ส่งงาน
+- [ ]  ทุกคนซ้อมอธิบายโค้ด/กฎธุรกิจ/pattern/test ของตนเองได้
+
+## 16. แหล่งอ้างอิง
+
+แหล่งหลักคือไฟล์ `ใบงานโปรเจค_ CP353002 Principles of Software Design and Development (Spring Boot).docx` ที่ผู้ใช้แนบ อ่านหัวข้อ 1–14 รวมตารางข้อกำหนดแล้ว เลขหัวข้อที่อ้างในแผนนี้เป็นหัวข้อในเอกสาร ไม่ใช่เลขหน้าที่คาดเดา
+
+เอกสารทางการที่ตรวจเพื่อช่วยเลือกเทคโนโลยี:
+
+- Spring Boot 3.5 System Requirements — compatibility Java/build tools; ให้ pin รุ่น stable จริงก่อนเริ่ม
+- springdoc-openapi v2 — OpenAPI/Swagger สำหรับ Spring Boot 3.x
+- Spring Security CSRF — session/CSRF และข้อพิจารณาสำหรับ SPA
+- Vercel Vite — deploy React/Vite
+- Vercel Hobby — เงื่อนไขแพ็กเกจฟรีและ non-commercial use
+- Vercel Rewrites — external origin proxy และ cache headers
+- Render Free — sleep/cold start, ชั่วโมงฟรี, filesystem และข้อจำกัดฐานข้อมูลฟรี
+- Neon Pricing — storage/compute quota และ scale-to-zero; ตรวจอีกครั้งก่อน deploy
+
+ยังไม่ได้ตรวจ implementation, build, migrations, deployment, Git contributions หรือ test results ของ CourseHub ในรอบนี้ เอกสารนี้เป็นแผนปรับงานและเกณฑ์ตรวจรับให้ทีมลงมือทำต่อ

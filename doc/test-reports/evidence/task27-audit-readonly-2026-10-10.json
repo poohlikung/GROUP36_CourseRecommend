@@ -1,0 +1,31 @@
+{
+  "checkedAtUtc": "2026-10-10T13:34:40.754Z",
+  "source": "Production admin audit-log UI and read-only API queries",
+  "adminLoginStatus": 200,
+  "auditListStatus": 200,
+  "totalAuditRows": 40,
+  "actorAuditCounts": {
+    "8": 1,
+    "9": 15,
+    "10": 0,
+    "15": 0
+  },
+  "provider7AuditStatus": 200,
+  "provider7AuditRows": 6,
+  "provider7ApprovalActorIds": [
+    1
+  ],
+  "uiActor9FilteredRows": 15,
+  "uiRowsAfterClearingFilter": 40,
+  "note": "Read-only check; no audit rows or UAT accounts were deleted. Empty actor filters do not prove absence of all user-related records.",
+  "afterTemporaryProviderCheck": {
+    "checkedAtUtc": "2026-10-10T13:39:25.357Z",
+    "actor15AuditRows": 2,
+    "provider14AuditRows": 2,
+    "actions": [
+      "PROVIDER_CREATED",
+      "PROVIDER_DELETED"
+    ],
+    "provider14StillPresent": false
+  }
+}

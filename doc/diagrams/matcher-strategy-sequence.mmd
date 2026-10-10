@@ -1,0 +1,58 @@
+sequenceDiagram
+    actor Learner as Guest or learner
+    participant Security as Spring Security
+    participant Csrf as AuthController
+    participant Controller as CourseMatcherController
+    participant Matcher as CourseMatcherService
+    participant Categories as CategoryRepository
+    participant Courses as CourseRepository
+    participant Policy as EligibilityPolicy
+    participant Ratings as CatalogRatingRepository
+    participant Strategies as List of ScoringStrategy
+    participant Mapper as CatalogCourseService
+    Learner->>Security: GET /api/v1/auth/csrf
+    Security->>Csrf: csrf(CsrfToken)
+    Csrf-->>Learner: token and XSRF-TOKEN cookie
+    Learner->>Security: POST /api/v1/course-matches with cookie/header
+    alt Missing or invalid CSRF
+        Security-->>Learner: 403 CSRF_INVALID
+    else Valid CSRF
+        Security->>Controller: anonymous access permitted
+        alt Invalid request fields
+            Controller-->>Learner: 400 VALIDATION_ERROR
+        else Valid request fields
+            Controller->>Matcher: match(preferences)
+            Matcher->>Categories: existsBySlug(categorySlug)
+            alt Category does not exist
+                Matcher-->>Learner: 400 REQUEST_ERROR via exception handler
+            else Existing category
+                Matcher->>Courses: fetch PUBLISHED with ACTIVE provider and details
+                Courses-->>Matcher: all public candidates
+                loop Each candidate
+                    Matcher->>Policy: category, level, language, known THB price and budget
+                    Policy-->>Matcher: independent rejection reasons or eligible
+                end
+                alt No eligible courses
+                    alt No public candidates
+                        Matcher-->>Controller: empty matches, NO_AVAILABLE_COURSES
+                    else All candidates rejected
+                        Matcher-->>Controller: empty matches, sorted constraint counts
+                    end
+                else Eligible courses
+                    Matcher->>Ratings: findPublishedRatings(all eligible IDs)
+                    Ratings-->>Matcher: published averages and counts
+                    loop Every eligible course and every sorted strategy key
+                        Matcher->>Strategies: score(immutable input)
+                        Strategies-->>Matcher: score 0-100 and reason
+                    end
+                    Note right of Matcher: Mean scores, sort raw score DESC then ID ASC, take 3
+                    loop Each winner
+                        Matcher->>Mapper: toResponse(loaded course, rating)
+                        Mapper-->>Matcher: safe catalog data without further queries
+                    end
+                    Matcher-->>Controller: matches with rounded scores and reasons
+                end
+                Controller-->>Learner: 200 with Cache-Control no-store
+            end
+        end
+    end

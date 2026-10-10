@@ -1,0 +1,62 @@
+classDiagram
+    class CourseController {
+        +createCourse(Long, CreateCourseRequest) ResponseEntity
+        +listProviderCourses(Long) ResponseEntity
+        +getCourse(Long) ResponseEntity
+        +updateCourse(Long, UpdateCourseRequest) ResponseEntity
+        +submitCourse(Long) ResponseEntity
+        +deleteCourse(Long) ResponseEntity
+    }
+    class CourseQueryService {
+        <<interface>>
+        +getCourse(Long) CourseDetailResponse
+        +listCoursesByProvider(Long) List~CourseDetailResponse~
+    }
+    class CourseCommandService {
+        <<interface>>
+        +createCourse(Long, CreateCourseRequest) CourseDetailResponse
+        +updateCourse(Long, UpdateCourseRequest) CourseDetailResponse
+        +submitCourse(Long) CourseDetailResponse
+        +deleteCourse(Long) void
+    }
+    class CourseServiceImpl
+    class CourseModerationService {
+        <<interface>>
+        +listCourses(CourseStatus) List~CourseDetailResponse~
+        +decideCourse(Long, CourseModerationRequest) CourseDetailResponse
+    }
+    class CourseModerationServiceImpl
+    class AdminModerationController
+    class CourseWorkflow {
+        +forStatus(CourseStatus) CourseWorkflowState
+    }
+    class CourseWorkflowState {
+        <<interface>>
+        +submit() CourseStatus
+        +edit() CourseStatus
+        +moderate(CourseDecision) CourseStatus
+        +canDelete() boolean
+    }
+    class CourseRepository
+    class ProviderOwnershipService
+    class CourseUrlPolicy
+    class CoursePlatformResolver
+    class CourseMapper
+    class CourseEventPublisher
+    CourseController --> CourseQueryService
+    CourseController --> CourseCommandService
+    CourseQueryService <|.. CourseServiceImpl
+    CourseCommandService <|.. CourseServiceImpl
+    AdminModerationController --> CourseModerationService
+    CourseModerationService <|.. CourseModerationServiceImpl
+    CourseServiceImpl --> ProviderOwnershipService
+    CourseServiceImpl --> CourseRepository
+    CourseServiceImpl --> CoursePlatformResolver
+    CoursePlatformResolver --> CourseUrlPolicy
+    CourseServiceImpl --> CourseMapper
+    CourseServiceImpl --> CourseWorkflow
+    CourseServiceImpl --> CourseEventPublisher
+    CourseModerationServiceImpl --> CourseRepository
+    CourseModerationServiceImpl --> CourseWorkflow
+    CourseModerationServiceImpl --> CourseEventPublisher
+    CourseWorkflow o-- CourseWorkflowState : six private state implementations

@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> DRAFT: createCourse
+    DRAFT --> DRAFT: edit
+    DRAFT --> PENDING: submit if Provider ACTIVE
+    DRAFT --> [*]: delete if never published and no reviews
+    PENDING --> DRAFT: edit
+    PENDING --> PUBLISHED: APPROVE if Provider ACTIVE
+    PENDING --> REVISION_REQUESTED: REQUEST_REVISION with reason
+    REVISION_REQUESTED --> REVISION_REQUESTED: edit
+    REVISION_REQUESTED --> PENDING: submit if Provider ACTIVE
+    PUBLISHED --> DRAFT: edit
+    PUBLISHED --> SUSPENDED: SUSPEND with reason
+    PUBLISHED --> ARCHIVED: ARCHIVE with reason
+    SUSPENDED --> PUBLISHED: RESTORE if Provider ACTIVE
+    SUSPENDED --> ARCHIVED: ARCHIVE with reason

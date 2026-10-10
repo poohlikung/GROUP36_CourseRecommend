@@ -1,0 +1,31 @@
+sequenceDiagram
+    actor Admin
+    participant Security as Spring Security ROLE_ADMIN
+    participant API as AdminReviewModerationController
+    participant Service as ReviewModerationServiceImpl
+    participant Resolver as AdminActorResolver
+    participant Reviews as ReviewRepository
+    participant Review as Review entity
+    participant Audit as AuditLogRepository
+    Admin->>Security: POST /api/v1/admin/reviews/{id}/moderation-decisions
+    Security->>API: decideReview(id, request)
+    API->>Service: decideReview(id, request)
+    Service->>Resolver: requireAdmin()
+    Service->>Reviews: findById(id)
+    Service->>Service: require expectedVersion and PENDING status
+    alt Stale version or no longer PENDING
+        Service-->>Admin: 409 conflict
+    else Decision allowed
+        alt REJECT without reason
+            Service-->>Admin: 400 bad request
+        else Valid decision
+            alt REJECT with reason
+                Service->>Review: reject(reason)
+            else APPROVE
+                Service->>Review: publish()
+            end
+            Service->>Reviews: saveAndFlush(review)
+            Service->>Audit: save(REVIEW decision audit)
+            Service-->>Admin: 200 AdminReviewResponse
+        end
+    end

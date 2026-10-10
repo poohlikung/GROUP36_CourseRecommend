@@ -1,0 +1,48 @@
+sequenceDiagram
+    actor Visitor
+    participant Security as Spring Security CSRF
+    participant Controller as AuthController
+    participant Service as AuthService
+    participant Users as UserRepository
+    participant Manager as AuthenticationManager
+    participant Session as SessionAuthenticationStrategy
+    participant Context as SecurityContextRepository
+    Visitor->>Controller: GET /api/v1/auth/csrf
+    Controller-->>Visitor: CSRF token and cookie
+    alt Register
+        Visitor->>Security: POST /api/v1/auth/register with CSRF
+        Security->>Controller: register(request)
+        Controller->>Service: register(request)
+        Service->>Users: existsByEmail(normalized email)
+        alt Email already used
+            Service-->>Visitor: 409 conflict
+        else New email
+            Service->>Users: saveAndFlush(User with UserProfile and encoded password)
+            Service-->>Controller: AuthUserResponse
+            Controller->>Manager: authenticate(normalized email, password)
+            Manager->>Service: loadUserDetails(email)
+            Service->>Users: findByEmail(email)
+            Manager-->>Controller: Authentication
+            Controller->>Session: onAuthentication(authentication)
+            Controller->>Context: saveContext(authentication)
+            Controller->>Service: getCurrentUser(email)
+            Service->>Users: findByEmail(email)
+            Controller-->>Visitor: 201 AuthUserResponse and session
+        end
+    else Login
+        Visitor->>Security: POST /api/v1/auth/login with CSRF
+        Security->>Controller: login(request)
+        Controller->>Manager: authenticate(normalized email, password)
+        Manager->>Service: loadUserDetails(email)
+        Service->>Users: findByEmail(email)
+        alt Invalid credentials or suspended user
+            Manager-->>Visitor: authentication failure
+        else Authenticated
+            Manager-->>Controller: Authentication
+            Controller->>Session: onAuthentication(authentication)
+            Controller->>Context: saveContext(authentication)
+            Controller->>Service: getCurrentUser(email)
+            Service->>Users: findByEmail(email)
+            Controller-->>Visitor: 200 AuthUserResponse and session
+        end
+    end
