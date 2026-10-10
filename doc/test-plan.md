@@ -87,7 +87,7 @@
 | Guest permission | `/me` ตอบ 401 และ admin endpoint ตอบ 401/403 | GET ผ่าน Vercel |
 | CSRF cookie | GET `/auth/csrf` ตอบ JSON และ `XSRF-TOKEN` มี `Secure` | ตรวจ response headers โดยไม่เก็บ token |
 | Register/login/logout, session cookie | บัญชี disposable สมัคร, refresh, logout, login สำเร็จ; session cookie มี `Secure` | [Task 27 UAT](test-reports/task27-uat.md) ยืนยันบน Vercel HTTPS แล้ว; ตรวจ bookmark หลัง refresh ด้วยบัญชีผู้เรียนใหม่ผ่านและลบ bookmark ทดสอบแล้ว |
-| Learner/provider/admin permission | Role แต่ละแบบเห็น/ถูกปฏิเสธตามสิทธิ์ | Local Playwright บน DB แยกผ่าน; [Task 27 UAT](test-reports/task27-uat.md) ตรวจ learner/Provider และ Admin บางโฟลบน production แล้ว ส่วน Admin รับรอง/เผยแพร่คอร์สบน production ยังไม่ครบ |
+| Learner/provider/admin permission | Role แต่ละแบบเห็น/ถูกปฏิเสธตามสิทธิ์ | Local Playwright บน DB แยกผ่าน; [Task 27 UAT](test-reports/task27-uat.md) ตรวจ learner/Provider, Admin บางโฟล และหน้า Audit Log แบบอ่านอย่างเดียวบน production แล้ว ส่วน Admin รับรอง/เผยแพร่คอร์สบน production ยังไม่ครบ |
 | Cold start/retry | UI แสดง loading/ข้อผิดพลาดและ retry คืนสภาพได้โดยไม่ส่ง mutation ซ้ำ | Local Playwright จำลอง failure; production cold start ต้องตรวจ browser จริงแยก |
 
 การทดสอบที่เปลี่ยนข้อมูลใช้ `npm run test:e2e --prefix code/frontend` จากราก repo ซึ่งสร้าง PostgreSQL ใหม่ใน Docker และล้าง stack หลังรัน ผล local ไม่แทนหลักฐาน production auth; ผล production ที่ตรวจจริงอยู่ใน [Task 27 UAT](test-reports/task27-uat.md) การตรวจ production รอบต่อไปต้องยืนยันผู้รับผิดชอบบัญชีและวิธีเก็บกวาดข้อมูลทดสอบก่อนเพิ่มข้อมูลใหม่ อย่าเก็บรหัสผ่านหรือค่า cookie ในรายงาน
