@@ -8,5 +8,5 @@
   "skipped": 0,
   "flaky": 0,
   "durationSeconds": 239.5,
-  "cleanup": "The isolated backend, PostgreSQL containers, and project network were removed after the run."
+  "cleanup": "The isolated backend, PostgreSQL containers, volume, and project network were removed after the run."
 }

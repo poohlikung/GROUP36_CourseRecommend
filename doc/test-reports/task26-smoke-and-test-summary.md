@@ -1,5 +1,7 @@
 # Task 26 — Smoke tests + test report
 
+> รายงานนี้เป็นภาพสถานะ ณ 9 ตุลาคม 2026 (UTC+07:00) คำว่า “blocked” และ “ยังไม่ยืนยัน” ด้านล่างเป็นผลของรอบนั้น ไม่ใช่สถานะล่าสุด หลังจากนั้น [Task 27 UAT](task27-uat.md) ได้ทดสอบ matcher, login/logout, session cookie และบางโฟลของ learner/Provider/Admin บน production แล้ว โดยยังมีอาการหน้า login ค้างและงาน UAT บางส่วนที่ต้องตรวจซ้ำ
+
 ## ฐานงานและขอบเขตหลักฐาน
 
 - วันที่ตรวจซ้ำหลัง merge `develop`: **9 ตุลาคม 2026 เวลา 22:35 น. (UTC+07:00)**
