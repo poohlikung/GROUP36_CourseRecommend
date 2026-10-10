@@ -1,165 +1,330 @@
-# กลุ่ม 36 **คอร์สดีบอกต่อ(ระบบแนะนำคอร์สเรียน) SEC.1**
+# CourseHub — คอร์สดีบอกต่อ
 
-ขั้นตอน deploy อัตโนมัติ: [doc/deployment-cd.md](doc/deployment-cd.md)
+**ระบบค้นหาและแนะนำคอร์สเรียนออนไลน์ · กลุ่ม 36 · SEC.1**
 
-เว็บที่ deploy แล้ว: [CourseHub บน Vercel](https://group36-coursehub.vercel.app/) (โปรเจกต์ของ BossZY27, deploy จาก `develop` วันที่ 8 ต.ค. 2026) และ [Backend บน Render](https://coursehub-backend-ahz2.onrender.com/swagger-ui.html) ดู [ผลตรวจ production และงานที่ยังค้าง](doc/test-reports/task25-deployment.md)
+รายวิชา **CP353002 Principles of Software Design and Development**
 
-Step 23 Vercel proxy/session และ loading/retry: [คู่มือตั้งค่าและตรวจ HTTPS](doc/step23-vercel-guide.md), [ผลทดสอบก่อน deploy](doc/test-reports/step23-vercel.md) — ตรวจหน้าเว็บ, nested route และ liveness ผ่าน Vercel แล้ว ([ผลตรวจ production](doc/test-reports/task25-deployment.md)); ยังไม่ได้ทดสอบ login/session cookie บน HTTPS จริง
+CourseHub รวบรวมข้อมูลคอร์สจากหลายแพลตฟอร์ม เพื่อช่วยผู้เรียนค้นหาและเลือกคอร์สตามหมวดหมู่ ระดับ ภาษา งบประมาณ และเวลาที่มี พร้อมบันทึกคอร์ส อ่านหรือเขียนรีวิว และรับคำแนะนำจาก Course Matcher ผู้ให้บริการจัดการข้อมูลสถาบัน ทีมงาน และคอร์สได้ ส่วนผู้ดูแลระบบตรวจสอบคอร์ส ผู้ให้บริการ และรีวิวก่อนเผยแพร่
 
-# รายชื่อสมาชิกกลุ่ม
-| ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Emaill | Branch | หน้าที่รับผิดชอบ |
+**เข้าใช้งาน:** [group36-coursehub.vercel.app](https://group36-coursehub.vercel.app/)
+
+**เอกสาร API:** [Swagger UI](https://coursehub-backend-ahz2.onrender.com/swagger-ui.html) · [OpenAPI JSON](https://coursehub-backend-ahz2.onrender.com/v3/api-docs)
+
+ระบบเป็นตัวกลางสำหรับค้นหาและแนะนำคอร์ส ผู้เรียนไปเรียนและชำระเงินบนเว็บไซต์ต้นทาง CourseHub ไม่รับชำระเงินหรือให้บริการวิดีโอการเรียนเอง และ Matcher ใช้กฎการกรองกับสูตรคะแนนที่อธิบายได้
+
+## รายชื่อสมาชิกกลุ่ม
+
+| ลำดับ | รหัสนักศึกษา | ชื่อ-นามสกุล | Email | Branch | หน้าที่รับผิดชอบ |
 | :---: | :---: | :--- | :--- | :---: | :--- |
+<<<<<<< HEAD
+| 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ | phakin.m@kkumail.com | phakin_6733800541 | Course Catalog, Matcher Quiz UI, CI/CD Pipeline, UI Design System |
+| 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD, Database Schema (Flyway), Backup / Restore |
+| 3 | 673380062-2 | นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth / User / Profile, Matcher Strategy, E2E Tests, Team Members UI |
+| 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Moderation, Provider Verification, Review Moderation, Audit Log |
+=======
 | 1 | 673380054-1 | นายภาคิน เมฆสุวรรณ  | phakin.m@kkumail.com | phakin_6733800541 | Course Catalog, Matcher Quiz UI, CI/CD Pipeline, UI Design System |
 | 2 | 673380072-9 | นายเกียรติศักดิ์ นันทรัตน์ | keattisak.n@kkumail.com | keattisak_6733800729_01 | Provider & Course CRUD, Database Schema (Flyway), Backup / Restore |
 | 3 | 673380062-2 |  นายศุภวัฒน์ ข่ายทอง | supawat.kh@kkumail.com | supawat_6733800622_01 | Auth / User / Profile, Matcher Strategy, E2E Tests, Team Members UI |
 | 4 | 673380064-8 | นายสรวิชญ์ วันเสน | sorawit.wan@kkumail.com | sorawit_6733800648_01 | Admin Moderation, Provider Verification, Review Moderation, Audit Log |
+>>>>>>> 9aca8b5db367f217915404f41c7850fa5fbcb394
 
-## เริ่มระบบบนเครื่อง
+## ฟีเจอร์หลัก
 
-1. คัดลอก `.env.example` เป็น `.env` แล้วตั้ง `POSTGRES_PASSWORD` เป็นรหัสผ่านสำหรับเครื่องตนเอง
-2. รัน `docker compose up --build`
-3. ตรวจ backend ที่ `http://localhost:8080/api/v1/system/liveness` และ Swagger ที่ `http://localhost:8080/swagger-ui.html`
+| ส่วนระบบ | ความสามารถ |
+| --- | --- |
+| Course Catalog | ค้นหาคอร์ส กรองหมวดหมู่ แพลตฟอร์ม ระดับ ภาษา รูปแบบราคาและช่วงราคา พร้อมเรียงลำดับและแบ่งหน้า |
+| Course Matcher | แบบทดสอบ 4 ขั้นตอน แนะนำสูงสุด 3 คอร์ส พร้อมคะแนน เหตุผล และข้อจำกัดเมื่อไม่พบคอร์สที่ตรงเงื่อนไข |
+| บัญชีและโปรไฟล์ | สมัครสมาชิก เข้าสู่ระบบ ออกจากระบบ และแก้ไขโปรไฟล์ส่วนตัว |
+| Bookmark | บันทึกหรือยกเลิกคอร์สที่สนใจ และดูรายการส่วนตัวที่ยังเผยแพร่อยู่ |
+| รีวิว | อ่านรีวิวสาธารณะ ให้คะแนนและเขียนหรือแก้รีวิวของตนเอง รีวิวใหม่หรือที่แก้ไขต้องผ่านการตรวจอีกครั้ง |
+| Provider | ลงทะเบียนและจัดการข้อมูลผู้ให้บริการ พร้อมสมาชิกทีมบทบาท `OWNER` และ `EDITOR` |
+| Course Management | สร้าง แก้ไข ส่งตรวจ และลบคอร์สร่าง พร้อมราคา หมวดหมู่ และการระบุแพลตฟอร์มจาก URL อัตโนมัติ |
+| Admin Moderation | อนุมัติ ขอแก้ไข ระงับ คืนสถานะ หรือเก็บถาวรคอร์ส รับรอง/ระงับผู้ให้บริการ และอนุมัติ/ปฏิเสธรีวิว |
+| Audit Log | ผู้ดูแลดูประวัติ กรองประเภท กิจกรรม ผู้กระทำ รายการ และช่วงเวลา พร้อมแบ่งหน้าฝั่งเซิร์ฟเวอร์ |
 
-สำหรับ local ที่ใช้ HTTP ให้ตั้ง `SESSION_COOKIE_SECURE=false` ใน `.env` (มีตัวอย่างใน `.env.example`) เพื่อให้เบราว์เซอร์รับ session cookie ได้ เมื่อ deploy ผ่าน HTTPS ให้ตั้ง `SESSION_COOKIE_SECURE=true` หรือไม่กำหนดตัวแปรนี้เพื่อใช้ค่าเริ่มต้น `true` และอย่าปิด Secure ใน production
+ผู้เยี่ยมชมดูคอร์ส อ่านรีวิว และใช้ Matcher ได้โดยไม่ต้องเข้าสู่ระบบ บัญชีใหม่มีบทบาท `LEARNER`; สิทธิ์ Provider เกิดจากการเป็นสมาชิกทีมของผู้ให้บริการแต่ละราย ส่วนหน้าผู้ดูแลใช้บทบาท `ADMIN`
 
-ฐานข้อมูลสร้างด้วย Flyway migration เท่านั้น โดย JPA ใช้ `validate` เพื่อป้องกัน schema ถูกแก้โดยอัตโนมัติ
+### เส้นทางหน้าเว็บ
 
-ถ้าใช้ PostgreSQL ที่ติดตั้งในเครื่องแทน Docker ให้สร้างฐานข้อมูลว่างก่อน แล้วเพิ่ม `DATABASE_URL=jdbc:postgresql://localhost:5432/<ชื่อฐานข้อมูลว่าง>` ใน `.env` ที่ root จากนั้นรัน `mvn spring-boot:run` ใน `code/backend` ได้โดยตรง Backend จะอ่าน `.env` ของ root สำหรับการรันแบบนี้ด้วย; ค่า `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` ที่ตั้งใน environment จะมีลำดับสูงกว่า หากฐานข้อมูลเดิมมีตารางแต่ไม่มี `flyway_schema_history` ให้ใช้ฐานข้อมูลว่างใหม่เพื่อให้ Flyway สร้าง schema ครบ อย่า baseline schema ที่ยังไม่ครบ
-
-## Auth และโปรไฟล์
-
-- สมัครสมาชิก: `POST /api/v1/auth/register` (เข้าสู่ระบบอัตโนมัติ)
-- เข้าสู่ระบบ/ออกจากระบบ: `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`
-- ผู้ใช้ปัจจุบัน: `GET /api/v1/me`
-- อ่าน/แก้ไขโปรไฟล์: `GET /api/v1/me/profile`, `PUT /api/v1/me/profile`
-- บันทึกคอร์ส: `PUT /api/v1/me/bookmarks/{courseId}` และยกเลิกด้วย `DELETE /api/v1/me/bookmarks/{courseId}` (ทำซ้ำได้)
-- รายการคอร์สที่บันทึก: `GET /api/v1/me/bookmarks?page=0&size=12`; ตรวจสถานะคอร์สใน catalog ด้วย `GET /api/v1/me/bookmarks/ids?courseIds=1&courseIds=2` (สูงสุด 48 รหัส)
-- หน้าเว็บส่วนตัว: `/bookmarks` แสดงเฉพาะคอร์สที่ยังเผยแพร่และผู้ให้บริการยัง active
-- ทุกคำขอที่เปลี่ยนข้อมูลต้องขอ CSRF token จาก `GET /api/v1/auth/csrf` ก่อน
-
-## ผู้ให้บริการ (Provider CRUD - UC09, UC10)
-
-ผู้ใช้ที่เข้าสู่ระบบสามารถลงทะเบียนเป็นผู้ให้บริการ (Provider Registration - UC09) โดยกรอกชื่อ, Slug, คำอธิบาย และเว็บไซต์ เมื่อสร้างสำเร็จระบบจะกำหนดสถานะเริ่มต้นเป็น `PENDING` และแต่งตั้งผู้สร้างเป็น `OWNER` ของทีมผู้ให้บริการนั้นทันที พร้อมบันทึกประวัติลง `audit_logs`
-
-สำหรับการจัดการข้อมูลสถาบัน (Provider Profile Management - UC10) สมาชิกทีมที่เป็น `OWNER` หรือ `EDITOR` สามารถดูและแก้ไขข้อมูลของสถาบันตนเองได้ ส่วนการลบ Provider ทำได้เฉพาะ `OWNER` และระบบจะไม่อนุญาตให้ลบหากสถาบันนั้นยังมีคอร์สเปิดสอนอยู่ (ตอบกลับ `409 Conflict`)
-
-| คำขอ | ผลสำเร็จ | เงื่อนไข / สิทธิ์ |
+| เส้นทาง | หน้า | สิทธิ์ |
 | --- | --- | --- |
-| `POST /api/v1/providers` | `201` พร้อม `Location: /api/v1/providers/{id}` | ผู้ใช้ล็อกอิน (สร้าง Provider ใหม่, ได้รับบทบาท `OWNER`) |
-| `GET /api/v1/providers/me` | `200` รายการ Provider ที่เป็นสมาชิก | ผู้ใช้ล็อกอิน (แสดง Provider ที่ตนเป็น Owner หรือ Editor) |
-| `GET /api/v1/providers/{id}` | `200` ข้อมูล Provider | ทุกคนดูได้เมื่อ Provider `ACTIVE`; สถานะอื่นดูได้เฉพาะ `OWNER`/`EDITOR` หรือ Admin (คนอื่นได้ `404`) |
-| `GET /api/v1/providers/slug/{slug}` | `200` ข้อมูล Provider | เงื่อนไขเดียวกับ `GET /api/v1/providers/{id}` |
-| `PUT /api/v1/providers/{id}` | `200` ข้อมูลที่แก้ไขแล้ว | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น |
-| `DELETE /api/v1/providers/{id}` | `204` ไม่มี body | เฉพาะ `OWNER` และต้องไม่มีคอร์สค้างอยู่ (หากมีคอร์สจะตอบ `409`) |
+| `/` | หน้าแรก | ทุกคน |
+| `/courses` | ค้นหาคอร์ส | ทุกคน |
+| `/match` | แบบทดสอบและผลแนะนำ | ทุกคน |
+| `/courses/:courseId/reviews` | รีวิวคอร์ส | ทุกคนอ่านได้; ผู้เรียนที่เข้าสู่ระบบเขียนรีวิวได้ |
+| `/register`, `/login` | สมัครสมาชิก / เข้าสู่ระบบ | ผู้ที่ยังไม่ได้เข้าสู่ระบบ |
+| `/profile`, `/bookmarks` | โปรไฟล์ / คอร์สที่บันทึก | ผู้ใช้ที่เข้าสู่ระบบ |
+| `/providers` | ผู้ให้บริการ คอร์ส และสมาชิกทีม | ผู้ใช้ที่เข้าสู่ระบบ; การจัดการขึ้นกับสมาชิกและบทบาทในทีม |
+| `/admin` | ตรวจคอร์ส ผู้ให้บริการ และรีวิว | `ADMIN` |
+| `/admin/audit-logs` | ประวัติระบบ | `ADMIN` |
 
-### หน้าจอ Provider Management บนเว็บ
-- เข้าใช้งานได้ที่เส้นทาง `/providers`
-- แสดงรายชื่อสถาบันที่ผู้ใช้สังกัด พร้อมแสดง Badge สถานะ (`Pending`, `Approved`) และบทบาทสมาชิก (`Owner`, `Editor`)
-- มี Modal สำหรับลงทะเบียนสถาบันใหม่ (UC09)
-- มี Modal สำหรับแก้ไขข้อมูลสถาบันเดิม (UC10)
-- มีปุ่มลบสถาบัน พร้อมระบบยืนยัน และแจ้งเตือนหากติด Conflict
+### กฎสำคัญของระบบ
 
-## สมาชิกทีม Provider (UC11)
+- Catalog และ Matcher แสดงเฉพาะคอร์ส `PUBLISHED` จากผู้ให้บริการ `ACTIVE`; คะแนนและรีวิวสาธารณะใช้เฉพาะรีวิว `PUBLISHED`
+- Provider ใหม่เป็น `PENDING` และผู้สร้างเป็น `OWNER` โดยอัตโนมัติ ผู้ให้บริการต้องได้รับการรับรองเป็น `ACTIVE` ก่อนส่งคอร์สตรวจ
+- `OWNER` และ `EDITOR` จัดการข้อมูล Provider และคอร์สของทีมตนเองได้ การจัดการสมาชิกและลบ Provider เป็นสิทธิ์ของ `OWNER`; ลบ Owner คนสุดท้ายไม่ได้ และลบ Provider ที่ยังมีคอร์สไม่ได้
+- คอร์สใหม่เริ่มที่ `DRAFT` การแก้คอร์ส `PUBLISHED` หรือ `PENDING` ทำให้กลับเป็น `DRAFT` เพื่อส่งตรวจใหม่; คอร์ส `SUSPENDED` และ `ARCHIVED` แก้ไขไม่ได้
+- ลบคอร์สได้เฉพาะ `DRAFT` ที่ไม่เคยเผยแพร่และไม่มีรีวิว ข้อขัดแย้งทางธุรกิจหรือ version ไม่ตรงตอบ `409 Conflict`
+- Matcher กรองหมวดหมู่ ระดับ ภาษา และงบก่อนจัดอันดับ รองรับคอร์สฟรีหรือจ่ายครั้งเดียวที่ทราบราคาเป็น THB ใช้คะแนนด้านงบ เวลา และรีวิว โดยประเมินเวลาเรียนบนเป้าหมาย 4 สัปดาห์ หากไม่พบผลจะอธิบายข้อจำกัดและให้แก้คำตอบ
 
-ผู้ใช้ต้องเข้าสู่ระบบและเป็น `OWNER` ของ Provider ที่ระบุ จึงดู เพิ่ม หรือลบสมาชิกได้ แม้บัญชีเป็น `ADMIN` ก็ต้องเป็น Owner ของ Provider นั้นด้วย ส่วน `OWNER` และ `EDITOR` ผ่าน service ตรวจสิทธิ์สำหรับแก้ Provider/Course ของทีมตนเอง API ชุดนี้ไม่รวมการเปลี่ยนบทบาทสมาชิกเดิมหรือการสร้าง Owner คนแรก ซึ่งเป็นหน้าที่ของ Provider registration และใช้ได้ทุกสถานะ Provider
+## เทคโนโลยีที่ใช้
 
-| คำขอ | ผลสำเร็จ | เงื่อนไข |
-| --- | --- | --- |
-| `GET /api/v1/providers/{providerId}/members` | `200` รายชื่อเรียงตาม member ID | Owner เท่านั้น |
-| `POST /api/v1/providers/{providerId}/members` | `201` พร้อม `Location: /api/v1/providers/{providerId}/members/{memberId}` | Owner เพิ่มบัญชี ACTIVE ที่มีอยู่เป็น `OWNER` หรือ `EDITOR` |
-| `DELETE /api/v1/providers/{providerId}/members/{memberId}` | `204` | Owner ลบสมาชิกในทีม; ลบตัวเองได้เมื่อยังมี Owner อื่น |
+| ส่วน | เทคโนโลยี |
+| --- | --- |
+| Frontend | React 18, TypeScript 5, Vite 6, React Router 7, Tailwind CSS 3 |
+| Backend | Java 21, Spring Boot 3.5.16, Spring MVC, Spring Security, Spring Data JPA/Hibernate, Bean Validation |
+| Database | PostgreSQL, Flyway; local Docker ใช้ PostgreSQL 16 และ production ใช้ Neon |
+| API Documentation | springdoc-openapi 2.8.5, Swagger UI |
+| Metrics | Micrometer สำหรับนับการเปลี่ยนสถานะคอร์สหลัง commit |
+| Testing | JUnit 5, Mockito, MockMvc, Testcontainers, Vitest, React Testing Library, Playwright/Chromium |
+| Deployment | Docker, Docker Compose, GitHub Actions, Vercel, Render, Neon |
 
-POST รับ JSON เช่น `{"email":"editor@example.com","memberRole":"EDITOR"}` อีเมลถูกแปลงเป็นตัวพิมพ์เล็กตามระบบสมัครสมาชิก Response สมาชิกมีเฉพาะ `{"id":12,"userId":34,"email":"editor@example.com","memberRole":"EDITOR"}` และทุก response ของ API ชุดนี้มี `Cache-Control: no-store`
+รุ่น dependency และคำสั่ง build อ้างอิงจาก [Backend pom.xml](code/backend/pom.xml), [Frontend package.json](code/frontend/package.json) และ [E2E package.json](test/e2e/package.json)
 
-ข้อผิดพลาดใช้รูปแบบ `{timestamp,status,code,message,path,fieldErrors}` ของระบบเดิม: `400` ข้อมูลผิด, `401` ไม่ได้เข้าสู่ระบบหรือ session หมดอายุ, `403` ไม่มีสิทธิ์หรือ CSRF ผิด, `404` ไม่พบ Provider/บัญชี/member ID ภายใต้ Provider, `409` สมาชิกซ้ำ/บัญชีถูกระงับ/กำลังลบ Owner คนสุดท้าย การเพิ่มหรือลบที่ไม่สำเร็จไม่เปลี่ยน membership หรือ audit
+## สถาปัตยกรรมและการออกแบบ
 
-ตัวอย่าง PowerShell (เข้าสู่ระบบก่อน แล้วขอ CSRF token ใหม่หลัง login):
-
-```powershell
-$base = 'http://localhost:8080'
-$csrf = Invoke-RestMethod "$base/api/v1/auth/csrf" -SessionVariable memberSession
-$login = @{ email = 'owner@example.com'; password = 'your-password' } | ConvertTo-Json
-Invoke-RestMethod "$base/api/v1/auth/login" -Method Post -WebSession $memberSession -ContentType 'application/json' -Headers @{ 'X-XSRF-TOKEN' = $csrf.token } -Body $login
-$csrf = Invoke-RestMethod "$base/api/v1/auth/csrf" -WebSession $memberSession
-$member = @{ email = 'editor@example.com'; memberRole = 'EDITOR' } | ConvertTo-Json
-Invoke-RestMethod "$base/api/v1/providers/1/members" -Method Post -WebSession $memberSession -ContentType 'application/json' -Headers @{ 'X-XSRF-TOKEN' = $csrf.token } -Body $member
+```mermaid
+flowchart LR
+    Browser[Browser] --> Frontend[React SPA / Vercel]
+    Frontend -->|"/api/* rewrite"| Controller[Spring REST Controllers / Render]
+    Controller --> Service[Service Layer]
+    Service --> Repository[Spring Data JPA Repositories]
+    Repository --> Database[(PostgreSQL / Neon)]
 ```
 
-Swagger/OpenAPI ที่ `/swagger-ui.html` และ `/v3/api-docs` ระบุ session cookie, CSRF header, payload และสถานะตอบกลับของทั้งสาม endpoint
+Backend แยกชั้น **Controller → Service → Repository** โดย Controller รับคำขอและตรวจข้อมูล Service ดูแลสิทธิ์ กฎธุรกิจ และ transaction ส่วน Repository เข้าถึงฐานข้อมูล ใช้ DTO และ Mapper สำหรับข้อมูล API พร้อม Global Exception Handler ที่ตอบข้อผิดพลาดในรูปแบบเดียวกัน
 
-## การจัดการคอร์สเรียน (Course CRUD - UC12, UC13, UC14)
+ยืนยันตัวตนด้วย session cookie `JSESSIONID` และ Spring Security คำขอ `POST`, `PUT`, `DELETE` ต้องส่ง CSRF token จาก `GET /api/v1/auth/csrf` ผ่าน header `X-XSRF-TOKEN` ฝั่ง frontend จัดการ cookie และ token ผ่าน API client กลาง และขอ token ใหม่สำหรับแต่ละ mutation
 
-สมาชิกทีมผู้ให้บริการที่เป็น `OWNER` หรือ `EDITOR` สามารถจัดการคอร์สเรียนของสถาบันตนเองได้ โดยมี Use Cases และเงื่อนไขทางธุรกิจดังนี้:
-- **สร้างคอร์สใหม่ (UC12 - Create Course Draft)**: บันทึกข้อมูลคอร์สเรียนโดยเริ่มต้นที่สถานะ `DRAFT` เสมอ พร้อมกำหนดราคาลงตาราง `course_prices` (รองรับ `FREE`, `ONE_TIME`, `SUBSCRIPTION`) และเชื่อมโยงหมวดหมู่ (`categories`) ระบบระบุแพลตฟอร์มจากโดเมนของ URL โดยอัตโนมัติ เว็บไซต์ใหม่จะแสดงชื่อโดเมนจนกว่าจะมีชื่อแบรนด์ที่ตรวจสอบได้
-- **แก้ไขคอร์สเรียน (UC12 - Edit Course)**: สมาชิกที่เป็น `OWNER` หรือ `EDITOR` สามารถปรับปรุงข้อมูลทั่วไป แพลตฟอร์ม ราคา และหมวดหมู่ของคอร์สในสถาบันตนเองได้ โดย Slug ต้องไม่ซ้ำกับคอร์สอื่นในระบบ คอร์สที่ `PUBLISHED` หรือ `PENDING` จะกลับเป็น `DRAFT` หลังแก้ไขเพื่อให้ต้องส่งตรวจใหม่ (หน้าเว็บแสดงคำเตือนก่อนบันทึก) และแก้ไขคอร์ส `SUSPENDED` หรือ `ARCHIVED` ไม่ได้ (ตอบ `409`) ถ้าคำขอไม่ส่ง `paymentType` ระบบจะคงราคาเดิมไว้
-- **ส่งคอร์สให้ตรวจสอบ (UC13 - Submit Course for Moderation)**: ผู้สร้างหรือผู้ดูแลสามารถส่งคอร์สที่อยู่ในสถานะ `DRAFT` หรือ `REVISION_REQUESTED` เข้าสู่กระบวนการตรวจอนุมัติ โดย Provider ต้องมีสถานะ `ACTIVE` (ได้รับการอนุมัติตาม UC16) ระบบจะเปลี่ยนสถานะเป็น `PENDING` เพื่อรอการตรวจสอบจากผู้ดูแลระบบ หาก Provider ยัง `PENDING` หรือถูก `SUSPENDED` จะตอบ `409 Conflict`
-- **ลบคอร์สดราฟต์ (UC14 - Delete Course Draft)**: สามารถลบได้เฉพาะคอร์สที่อยู่ในสถานะ `DRAFT` ไม่เคยเผยแพร่ (ตรวจจาก `audit_logs`) และต้องไม่มีรีวิวในระบบเท่านั้น หากคอร์สเคยเผยแพร่แล้วหรือมีรีวิวค้างอยู่ ระบบจะปฏิเสธคำขอลบด้วยสถานะ `409 Conflict`
-- ทุกการสร้าง แก้ไข ส่งตรวจ และลบคอร์ส จะถูกบันทึกประวัติการกระทำลงในตาราง `audit_logs` เสมอ
+| Design Pattern | การใช้งานจริง |
+| --- | --- |
+| Strategy | `ScoringStrategy` แยกสูตร `BudgetFitStrategy`, `EffortFitStrategy` และ `ReviewQualityStrategy` ออกจากการกรองและจัดอันดับ |
+| State | `CourseWorkflow` และ `CourseWorkflowState` กำหนดคำสั่งที่อนุญาตในแต่ละสถานะของคอร์ส |
+| Observer | `CourseEventPublisher` ส่งเหตุการณ์ให้ `CourseMetricsListener` นับ metrics หลัง transaction commit สำเร็จ |
 
-| คำขอ | ผลสำเร็จ | เงื่อนไข / สิทธิ์ |
-| --- | --- | --- |
-| `POST /api/v1/providers/{providerId}/courses` | `201` พร้อม `Location: /api/v1/courses/{id}` | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น (สร้างคอร์สดราฟต์ใหม่) |
-| `GET /api/v1/providers/{providerId}/courses` | `200` รายการคอร์สทั้งหมดของ Provider | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider นั้น |
-| `GET /api/v1/courses/{id}` | `200` รายละเอียดคอร์ส | ทุกคนดูได้เมื่อคอร์ส `PUBLISHED` และ Provider `ACTIVE`; กรณีอื่นดูได้เฉพาะ `OWNER`/`EDITOR` หรือ Admin (คนอื่นได้ `404`) |
-| `PUT /api/v1/courses/{id}` | `200` ข้อมูลคอร์สที่แก้ไขแล้ว | เฉพาะ `OWNER` หรือ `EDITOR` ของ Provider เจ้าของคอร์ส |
-| `POST /api/v1/courses/{id}/submissions` | `200` ข้อมูลคอร์ส (สถานะเปลี่ยนเป็น `PENDING`) | เฉพาะคอร์สสถานะ `DRAFT` หรือ `REVISION_REQUESTED` และ Provider ต้อง `ACTIVE` (กรณีอื่นตอบ `409`) |
-| `DELETE /api/v1/courses/{id}` | `204` ไม่มี body | เฉพาะคอร์สสถานะ `DRAFT` ที่ไม่เคยเผยแพร่และไม่มีรีวิว (กรณีอื่นตอบ `409`) |
+ข้อมูลธุรกิจและ Audit Log บันทึกใน transaction เดียวกัน หากเขียน audit ไม่สำเร็จจะ rollback ส่วน metrics เป็นการติดตามหลัง commit และเริ่มนับใหม่เมื่อ process restart
 
-### ส่วนต่อประสาน Course Management บนเว็บ
-- เข้าใช้งานได้ผ่านหน้า `/providers` โดยคลิกปุ่ม **"จัดการคอร์สเรียน"** บนการ์ดของสถาบันที่ผู้ใช้เป็น Owner หรือ Editor
-- แสดงรายการคอร์สของสถาบันพร้อม Badge สถานะ (`Draft`, `Pending`, `Published`, `Revision Requested`) รายละเอียดระดับความยาก ภาษา ระยะเวลาเรียน และรูปแบบราคา
-- มี Modal สำหรับสร้างคอร์สดราฟต์ใหม่ (UC12) พร้อม URL ที่ตรวจแพลตฟอร์มอัตโนมัติและปุ่มเลือกหมวดหมู่
-- มี Modal สำหรับแก้ไขคอร์สเรียน (UC12)
-- มีปุ่ม **"ส่งตรวจ"** (UC13) สำหรับคอร์สดราฟต์เพื่อเปลี่ยนสถานะเป็น Pending โดยปุ่มจะถูกปิดพร้อมข้อความอธิบายเมื่อ Provider ยังไม่ `ACTIVE`
-- มีปุ่ม **"ลบ"** (UC14) สำหรับคอร์สดราฟต์ พร้อมระบบยืนยัน และแจ้งเตือนข้อผิดพลาดหากติดเงื่อนไข
+ดูเหตุผลและหลักฐานที่ [Design Patterns](doc/design-patterns.md), [SOLID Analysis](doc/solid-analysis.md), [Architecture Decisions](doc/decisions/) และ [Diagrams](doc/diagrams/)
 
+## ฐานข้อมูล
 
-## End-to-end learner/provider/admin (Task 22)
+ฐานข้อมูลมี **12 ตารางของระบบ** ไม่รวมตารางประวัติ migration ของ Flyway
 
-ชุด E2E ใช้ Playwright + Chromium กับ React, Spring Boot และ PostgreSQL จริง โดยเปิดฐานข้อมูลทดสอบแยกใน Docker สำหรับแต่ละรอบ จาก root ติดตั้ง dependencies ด้วย `npm ci --prefix code/frontend` และ `npm ci --prefix test/e2e` แล้วเข้า `test/e2e` เพื่อรัน `npx playwright install chromium`
+| กลุ่มข้อมูล | ตาราง |
+| --- | --- |
+| ผู้ใช้ | `users`, `user_profiles` |
+| ผู้ให้บริการและทีม | `providers`, `provider_members` |
+| คอร์ส แพลตฟอร์ม และราคา | `courses`, `platforms`, `course_prices` |
+| หมวดหมู่ | `categories`, `course_categories` |
+| กิจกรรมผู้เรียน | `reviews`, `saved_courses` |
+| ประวัติระบบ | `audit_logs` |
 
-เปิด Docker Desktop แล้วรัน `npm run test:e2e` จาก `code/frontend` หรือ `npm run test:e2e:headed` เพื่อดู browser ต้องว่างพอร์ต 18080/15173 รายงาน HTML/JUnit และ diagnostics อยู่ใน `test/reports/e2e/` เทสต์ผู้เรียนแก้รีวิวผ่านฟอร์มจริง ตรวจคำขอ PUT และผลที่บันทึก ส่วน Admin/Catalog ทดสอบผ่าน UI ตามขอบเขตที่มีในระบบ
+ความสัมพันธ์สำคัญคือ `users`–`user_profiles` และ `courses`–`course_prices` แบบ One-to-One, `providers`–`courses` แบบ One-to-Many และคอร์ส–หมวดหมู่แบบ Many-to-Many ผ่าน `course_categories` มี Foreign Key, Unique Constraint, Check Constraint และ Index ตามการใช้งาน รวมถึง `@Version` สำหรับ Provider, Course และ Review
 
-ดู [คู่มือ Task 22](doc/task22-e2e-guide.md) และ [รายงานผลจริง](doc/test-reports/task22-e2e.md)
+Flyway สร้างและปรับ schema ที่ startup ตาม migration ใน [db/migration](code/backend/src/main/resources/db/migration/):
 
-Frontend ใช้ Vite proxy เรียก `/api` ไปยัง backend ในเครื่อง:
+| Migration | หน้าที่ |
+| --- | --- |
+| `V1__init_schema.sql` | สร้าง 12 ตารางและ constraints/indexes |
+| `V2__seed_initial_data.sql` | เพิ่มข้อมูลตัวอย่างสำหรับคอร์ส ผู้ให้บริการ แพลตฟอร์ม หมวดหมู่ และผู้ใช้ |
+| `V3__audit_log_reason.sql` | เพิ่มเหตุผลใน Audit Log และผลตรวจคอร์ส |
+| `V4__review_moderation.sql` | เพิ่ม version เหตุผล และ index สำหรับตรวจรีวิว |
+| `V5__automatic_course_platforms.sql` | รองรับ URL คอร์สที่ยาวขึ้นและบังคับโดเมนแพลตฟอร์มไม่ซ้ำ |
 
-```powershell
-cd code/frontend
-npm install
-npm run dev
+JPA ใช้ `spring.jpa.hibernate.ddl-auto=validate` เพื่อให้ schema เปลี่ยนผ่าน migration ดูรายละเอียดที่ [ER Diagram](doc/diagrams/er-diagram.png) และ [Data Dictionary](doc/data-dictionary.md)
+
+## โครงสร้างโปรเจกต์
+
+```text
+GROUP36_CourseRecommend/
+├── code/
+│   ├── backend/             # Spring Boot, Maven Wrapper, Dockerfile, Flyway
+│   ├── frontend/            # React pages, feature modules, API client, styles
+│   └── scripts/db/          # สคริปต์สำรอง กู้คืน และตรวจฐานข้อมูล
+├── test/
+│   ├── backend/             # Unit, integration และ test resources
+│   ├── frontend/            # Vitest / React Testing Library
+│   ├── e2e/                 # Playwright และ Docker stack สำหรับทดสอบแยก
+│   ├── scripts/             # ทดสอบตัวป้องกันของสคริปต์ฐานข้อมูล
+│   └── smoke/               # ตรวจ production ผ่าน HTTP และ browser
+├── doc/
+│   ├── decisions/           # Architecture Decision Records
+│   ├── diagrams/            # ER, class, sequence, activity, state ฯลฯ
+│   ├── test-reports/        # รายงานและหลักฐานการทดสอบ
+│   └── slide/               # สไลด์นำเสนอ
+├── img/                     # โฟลเดอร์เตรียมไว้สำหรับภาพประกอบ
+├── .github/workflows/ci.yml # CI และ deployment workflow
+├── .env.example             # ตัวอย่างค่าตั้งต้นสำหรับ local
+├── docker-compose.yml       # PostgreSQL + backend สำหรับ local
+└── README.md
 ```
 
-รันการตรวจสอบ frontend ด้วย `npm run typecheck`, `npm test` และ `npm run build` ส่วน backend ใช้ `code/backend/mvnw.cmd test` โดย integration test ของ PostgreSQL ต้องมี Docker ทำงาน
+## ติดตั้งและรันบนเครื่อง
 
-## งานตรวจของ Admin (Task 15)
+### สิ่งที่ต้องเตรียม
 
-บัญชี `ADMIN` เข้า `/admin` เพื่อดูคอร์สรอตรวจ อนุมัติ ขอให้แก้ไข ระงับ คืนสถานะ หรือเก็บถาวรคอร์ส และรับรอง/ระงับ Provider ได้ การขอแก้ไข ระงับ หรือเก็บถาวรต้องระบุเหตุผล เหตุผลล่าสุดจะแสดงในรายการคอร์สของ Provider ส่วนประวัติผู้ตรวจและเหตุผลเก็บใน `audit_logs` หากมีคนเปลี่ยนข้อมูลระหว่างที่เปิดหน้าไว้ ระบบตอบ `409` เพื่อให้โหลดข้อมูลใหม่
+- Git และ Node.js 22 พร้อม npm ตาม environment ใน CI
+- Docker Desktop ที่เปิดใช้งานอยู่และรองรับ Docker Compose
+- Java 21 สำหรับรันหรือทดสอบ backend ผ่าน Maven Wrapper บนเครื่อง; การรัน backend ใน Docker ใช้ Java จาก image
+- พอร์ต local `5432`, `8080` และ `5173` ต้องพร้อมใช้งาน
 
-รายละเอียดคำขอและสถานะที่อนุญาตอยู่ใน `doc/api-contract.md` หัวข้อ Admin moderation
+### วิธีหลัก: Docker สำหรับฐานข้อมูลและ backend
 
-คำอธิบายการทำงานทีละไฟล์อยู่ใน `doc/task15-course-moderation-guide.md`
+รันจากโฟลเดอร์ root ของ repository คำสั่งตัวอย่างใช้ PowerShell:
 
-## งานตรวจรีวิว (Task 16)
+```powershell
+Copy-Item .env.example .env
+```
 
-ผู้เรียนที่เข้าสู่ระบบสร้างหรือแก้รีวิวของคอร์สที่เผยแพร่ได้ รีวิวใหม่และรีวิวที่แก้ไขจะกลับไปรอตรวจเสมอ รายการรีวิวสาธารณะและคะแนนเฉลี่ยนับเฉพาะรีวิวที่อนุมัติแล้ว
+แก้ `POSTGRES_PASSWORD` ใน `.env` เป็นรหัสผ่านสำหรับฐานข้อมูล local แล้วเริ่มระบบ:
 
-Admin เข้า `/admin` ส่วน **รีวิว** เพื่อดูคิวรอตรวจ เลือกอนุมัติหรือปฏิเสธ การปฏิเสธต้องระบุเหตุผล ผู้เขียนรีวิวดูเหตุผลได้ผ่าน `GET /api/v1/courses/{courseId}/reviews/me` ผลตรวจบันทึกใน `audit_logs` และหากข้อมูลถูกแก้ระหว่างตรวจ API จะตอบ `409` ให้โหลดคิวใหม่
+```powershell
+docker compose up --build
+```
 
-คำอธิบาย API และการทดสอบอยู่ใน `doc/task16-review-moderation-guide.md`
+เปิด terminal อีกหน้าที่ root เพื่อติดตั้งและเริ่ม frontend:
 
-## ดูประวัติการใช้งานระบบ (UC19)
+```powershell
+npm ci --prefix code/frontend
+npm run dev --prefix code/frontend
+```
 
-Admin ที่เข้าสู่ระบบเปิดเมนู **ประวัติระบบ** หรือ `/admin/audit-logs` เพื่อดู Audit Log จาก PostgreSQL กรองประเภท กิจกรรม ผู้กระทำ รายการ และช่วงเวลาได้ พร้อมแบ่งหน้าฝั่งเซิร์ฟเวอร์ รายการที่ถูกลบจากต้นทางยังมีประวัติให้ตรวจ ผู้ใช้ทั่วไปเข้าไม่ได้ ดูวิธีใช้ที่ [คู่มือ UC19](doc/audit-log-guide.md), [API contract](doc/api-contract.md) และ [ผลทดสอบ](doc/test-reports/audit-log.md)
+**Docker Compose ปัจจุบันรันเฉพาะ PostgreSQL และ backend** ส่วน frontend รันผ่าน Vite ซึ่ง proxy `/api` ไปยัง `http://localhost:8080`
 
-## AuditLog และ Observer metrics (Task 17)
+| บริการ | URL บนเครื่อง |
+| --- | --- |
+| หน้าเว็บ | [localhost:5173](http://localhost:5173/) |
+| Backend liveness | [localhost:8080/api/v1/system/liveness](http://localhost:8080/api/v1/system/liveness) |
+| Swagger UI | [localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) |
+| OpenAPI JSON | [localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs) |
 
-การเปลี่ยนสถานะกับ AuditLog บันทึกใน transaction เดียวกัน หากเขียน audit ไม่สำเร็จ ธุรกิจจะ rollback ส่วน Observer นับ counter `course.status.transitions` หลัง commit สำเร็จเท่านั้น แยกตาม `action`, `from`, `to` ถ้า metrics ล้มเหลวจะบันทึก error log และคำขอที่ commit แล้วตอบสำเร็จตามเดิม
+เมื่อเริ่มครั้งแรก Flyway จะสร้าง schema และข้อมูลตัวอย่าง ผู้ใช้สมัครบัญชีใหม่ผ่าน `/register` ได้ ส่วนการทดสอบงานผู้ดูแลต้องใช้บัญชี `ADMIN` ที่ผู้ดูแล environment จัดเตรียมไว้
 
-สถิติเก็บภายใน process และ reset เมื่อ restart แอป ดูการทำงาน แผนภาพ และวิธีทดสอบได้ใน [คู่มือ Task 17](doc/task17-audit-observer-guide.md) และ [รายงานผลทดสอบ](doc/test-reports/task17-audit-observer.md)
+หยุดบริการด้วย `docker compose down`; ข้อมูล PostgreSQL อยู่ใน named volume `postgres_data` และคงอยู่สำหรับการเปิดรอบถัดไป
 
-## Matcher Strategy backend (Task 19)
+### ทางเลือก: รัน backend ผ่าน Maven Wrapper
 
-`POST /api/v1/course-matches` รับ `categorySlug`, `level`, `language`, `budgetThb` และ `hoursPerWeek` ทุกคนเรียกได้หลังขอ CSRF token ระบบกรองคอร์สที่เผยแพร่จาก Provider active ตามหมวดหมู่/ระดับ/ภาษา/งบ แล้วใช้ Budget, Effort และ Review Quality Strategy จัดอันดับสูงสุด 3 คอร์สพร้อมคะแนนและเหตุผล
+ใช้ PostgreSQL ที่ติดตั้งบนเครื่องและสร้างฐานข้อมูลว่างตาม `POSTGRES_DB` ใน `.env` หรือเริ่มเฉพาะฐานข้อมูลด้วย `docker compose up -d postgres` จาก root จากนั้นรัน:
 
-รองรับคอร์สฟรีและราคาจ่ายครั้งเดียวที่ทราบเป็น THB; ประเมินเวลารวมโดยตั้งเป้าจบใน 4 สัปดาห์ หากไม่มีคอร์สผ่านจะคืนรายการว่างพร้อมข้อจำกัดโดยไม่ผ่อนเงื่อนไข หน้าจอ quiz/results อยู่ใน Task 20 ดู payload, สูตร, ตัวอย่าง PowerShell และ diagrams ใน [คู่มือ Task 19](doc/task19-matcher-guide.md), [รายงานทดสอบ](doc/test-reports/task19-matcher.md) และ [หลักฐาน Design Patterns](doc/design-patterns.md)
+```powershell
+cd code/backend
+.\mvnw.cmd spring-boot:run
+```
+
+บน macOS/Linux ใช้ `./mvnw spring-boot:run` แทน Backend อ่าน `.env` ที่ root ผ่าน `spring.config.import` เมื่อรันจาก `code/backend` และยังต้องเปิด frontend ตามขั้นตอนข้างต้น
+
+### ตัวแปรสภาพแวดล้อม
+
+| ตัวแปร | ความหมาย |
+| --- | --- |
+| `POSTGRES_DB` | ชื่อฐานข้อมูล local; ตัวอย่างคือ `courserecommend` |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD` | บัญชีฐานข้อมูลสำหรับ local/Compose |
+| `DATABASE_URL` | JDBC URL สำหรับ override การเชื่อมต่อ เช่น `jdbc:postgresql://localhost:5432/courserecommend` |
+| `DATABASE_USERNAME`, `DATABASE_PASSWORD` | บัญชีฐานข้อมูลที่มีลำดับสูงกว่าค่า `POSTGRES_*` ใน backend |
+| `SESSION_COOKIE_SECURE` | `.env.example` ตั้ง `false` สำหรับ local HTTP; production HTTPS ต้องใช้ `true` ซึ่งเป็นค่าเริ่มต้นของ backend |
+| `COURSEHUB_API_TARGET` | เปลี่ยนปลายทาง Vite dev proxy เมื่อ backend ไม่ได้อยู่ที่ `http://localhost:8080` |
+
+ตั้งค่าการเชื่อมต่อ production ผ่าน environment ของ hosting และเก็บ `.env` กับไฟล์ backup นอก Git ถ้าฐานข้อมูลเดิมมีตารางแต่ไม่มี Flyway history ให้ใช้ฐานข้อมูลว่างสำหรับเริ่มใหม่ตาม migration
+
+## REST API
+
+Base path คือ `/api/v1` รายละเอียด payload, response, validation และ HTTP status ดูได้จาก [API Contract](doc/api-contract.md) และ Swagger UI
+
+| ส่วน | Endpoint หลัก |
+| --- | --- |
+| ระบบและ CSRF | `GET /system/liveness`, `GET /auth/csrf` |
+| บัญชีและโปรไฟล์ | `POST /auth/register`, `/auth/login`, `/auth/logout`; `GET /me`; `GET/PUT /me/profile` |
+| Catalog | `GET /courses`, `/courses/{id}`, `/catalog/categories`, `/catalog/platforms` |
+| Matcher | `POST /course-matches` |
+| Bookmark | `GET /me/bookmarks`, `/me/bookmarks/ids`; `PUT/DELETE /me/bookmarks/{courseId}` |
+| รีวิว | `GET/POST /courses/{courseId}/reviews`; `GET/PUT /courses/{courseId}/reviews/me` |
+| Provider | `POST /providers`; `GET /providers/me`, `/providers/{id}`, `/providers/slug/{slug}`; `PUT/DELETE /providers/{id}` |
+| สมาชิกทีม | `GET/POST /providers/{providerId}/members`; `DELETE /providers/{providerId}/members/{memberId}` |
+| คอร์สของ Provider | `GET/POST /providers/{providerId}/courses`; `PUT/DELETE /courses/{id}`; `POST /courses/{id}/submissions` |
+| Admin | `GET /admin/courses`, `/admin/providers`, `/admin/reviews`; `POST /admin/courses/{id}/moderation-decisions`, `/admin/providers/{id}/verification-decisions`, `/admin/reviews/{id}/moderation-decisions` |
+| Audit Log | `GET /admin/audit-logs` |
+
+API ตอบข้อผิดพลาดด้วยฟิลด์ `timestamp`, `status`, `code`, `message`, `path`, `fieldErrors` โดยแยก `400` ข้อมูลไม่ถูกต้อง, `401` ต้องเข้าสู่ระบบ, `403` ไม่มีสิทธิ์/CSRF ไม่ผ่าน, `404` ไม่พบข้อมูล และ `409` ขัดแย้งกับกฎหรือ version ของข้อมูล
+
+## การทดสอบ
+
+### Backend
+
+จาก `code/backend` โดยติดตั้ง Java 21 และเปิด Docker สำหรับ Testcontainers PostgreSQL:
+
+```powershell
+.\mvnw.cmd verify
+```
+
+บน macOS/Linux ใช้ `./mvnw verify` Maven ค้นชุดทดสอบจาก `test/backend/` ผ่าน build-helper plugin ผล Surefire อยู่ใน `code/backend/target/surefire-reports/` การยืนยัน schema, transaction และ concurrency บน PostgreSQL ต้องตรวจผล integration tests ที่ใช้ Docker ด้วย
+
+### Frontend
+
+จาก root หลังติดตั้ง dependencies:
+
+```powershell
+npm test --prefix code/frontend
+npm run build --prefix code/frontend
+```
+
+Vitest อ่านเทสต์จาก `test/frontend/` ส่วน build ตรวจ TypeScript และสร้าง production bundle ไว้ที่ `code/frontend/dist/`
+
+### End-to-End
+
+จาก root ติดตั้ง Playwright และ Chromium ก่อนรัน:
+
+```powershell
+npm ci --prefix code/frontend
+npm ci --prefix test/e2e
+cd test/e2e
+npx playwright install chromium
+cd ../..
+npm run test:e2e --prefix code/frontend
+```
+
+เปิด Docker และเตรียมพอร์ต `18080` กับ `15173` ชุดทดสอบสร้าง PostgreSQL/backend แยกจากฐานข้อมูลที่ใช้งานปกติ ครอบคลุมผู้เรียน Provider และ Admin พร้อมล้าง Docker stack ของรอบนั้นหลังจบ มีคำสั่ง `test:e2e:headed` สำหรับดู browser และ `test:e2e:list` สำหรับดูรายการเทสต์ รายงาน HTML, JSON, JUnit และ diagnostics อยู่ใต้ `test/reports/e2e/`
+
+ตัวป้องกันสคริปต์ฐานข้อมูลทดสอบจาก root ด้วย:
+
+```powershell
+.\test\scripts\backup-restore.Tests.ps1
+```
+
+ดู [Test Plan](doc/test-plan.md), [คู่มือ E2E](doc/task22-e2e-guide.md) และ [Test Reports](doc/test-reports/) ผลแต่ละรายงานผูกกับวันที่และ commit ที่ระบุ รายงาน [UAT วันที่ 10 ตุลาคม 2026](doc/test-reports/task27-uat.md) มีหลักฐาน E2E บน CI ผ่าน 20/20 รวมการจัดการสมาชิกและ Audit Log และแยกผล production ออกจากฐานข้อมูลทดสอบ
+
+## Deployment และ CI/CD
+
+| บริการ | หน้าที่ |
+| --- | --- |
+| [Vercel](https://group36-coursehub.vercel.app/) | ให้บริการ React SPA, rewrite `/api/*` ไป Render และ fallback ไป `index.html` สำหรับเส้นทางหน้าเว็บ |
+| [Render](https://coursehub-backend-ahz2.onrender.com/swagger-ui.html) | รัน Spring Boot ผ่าน Docker และให้บริการ REST API/Swagger |
+| Neon | PostgreSQL สำหรับข้อมูลถาวร เชื่อมต่อจาก backend |
+
+GitHub Actions ใน [.github/workflows/ci.yml](.github/workflows/ci.yml) รัน backend tests, frontend tests/build, database script safety tests และ Playwright E2E เมื่อเปิด PR หรือ push เข้า `develop`/`main` เมื่อเป็น push เข้า `develop`, ตั้ง `CD_ENABLED=true` และ jobs backend/frontend/E2E ผ่าน จะเรียก Render deploy hook และ deploy frontend ไป Vercel
+
+Render hook ยืนยันการรับคำขอ deploy; ต้องตรวจสถานะ Live และ revision ที่ให้บริการจริงเพิ่มเติม การเตรียมโปรเจกต์และ Actions secrets อธิบายใน [คู่มือ CI/CD](doc/deployment-cd.md) ส่วน API proxy, cookie และ SPA routes อยู่ใน [คู่มือ Vercel](doc/step23-vercel-guide.md)
+
+Backend อาจตอบช้าในช่วงเริ่มทำงาน หน้าเว็บมีสถานะกำลังเตรียมระบบและ retry แบบจำกัดเวลา Session เก็บใน process จึงอาจต้องเข้าสู่ระบบใหม่หลัง backend restart การสำรองและกู้ข้อมูลอธิบายใน [คู่มือ Backup/Restore](doc/task24-backup-restore-guide.md)
+
+## เอกสารประกอบ
+
+| เอกสาร | เนื้อหา |
+| --- | --- |
+| [Requirements](doc/requirements.md) | ข้อกำหนด Use Cases และหลักฐานที่เกี่ยวข้อง |
+| [Use Case Descriptions](doc/Use%20Case%20Descriptions.md) | ขั้นตอนใช้งานและเงื่อนไขแต่ละ Use Case |
+| [API Contract](doc/api-contract.md) | สัญญา API และกฎธุรกิจ |
+| [ER Diagram](doc/diagrams/er-diagram.png) / [Data Dictionary](doc/data-dictionary.md) | โครงสร้างและความสัมพันธ์ของฐานข้อมูล |
+| [SOLID](doc/solid-analysis.md) / [Design Patterns](doc/design-patterns.md) | หลักการออกแบบพร้อมตัวอย่าง implementation และ tests |
+| [Diagrams](doc/diagrams/) / [ADRs](doc/decisions/) | แผนภาพระบบและเหตุผลการตัดสินใจทางสถาปัตยกรรม |
+| [Matcher Backend](doc/task19-matcher-guide.md) / [Matcher UI](doc/task20-matcher-ui-guide.md) | การกรอง สูตรคะแนน และขั้นตอนแบบทดสอบ |
+| [Audit Log](doc/audit-log-guide.md) | การอ่าน กรอง และแบ่งหน้าประวัติระบบ |
+| [Test Plan](doc/test-plan.md) / [Test Reports](doc/test-reports/) | ขอบเขต วิธีรัน และหลักฐานผลทดสอบ |
+| [Production UAT](doc/test-reports/task27-uat.md) | ผลตรวจเว็บจริงและรายการที่ยังต้องตรวจ |
+| [สไลด์นำเสนอ](doc/slide/) | ไฟล์นำเสนอ CourseHub ของกลุ่ม 36 |
+
+## ข้อจำกัดและงานที่พัฒนาต่อ
+
+- Career Roadmap (UC03) และหน้าจัดการหมวดหมู่ (UC18) ยังไม่อยู่ใน implementation ปัจจุบัน หมวดหมู่ใช้ข้อมูล seed
+- Matcher ยังไม่จัดอันดับคอร์ส subscription หรือคอร์สจ่ายครั้งเดียวที่ราคาไม่ทราบ/ไม่ใช่ THB; Catalog ยังแสดงรูปแบบราคาเหล่านี้ได้
+- ตามรายงาน UAT ใน repository ยังต้องตรวจ production เพิ่มในโฟลรับรอง Provider/เผยแพร่คอร์ส/อนุมัติรีวิว, เพิ่มและลบสมาชิกผ่าน UI, ตรวจแพลตฟอร์มอัตโนมัติ และ cold start/retry แบบครบโฟล รวมถึงจัดการข้อมูล UAT ที่ค้าง
+- เอกสารและสไลด์บางไฟล์เป็นหลักฐานของ revision ก่อนหน้า จึงควรอ่านวันที่และ commit ประกอบ โดยเฉพาะจำนวนเทสต์ สถานะ migration และผล deployment
