@@ -70,4 +70,4 @@
 | UC16 Admin รับรอง Provider | `POST /api/v1/admin/providers/{id}/verification-decisions` | 15 | `ProviderVerificationServiceImpl`, `AdminModerationControllerTests` | ✅ |
 | UC17 Admin ตรวจรีวิว | `GET /api/v1/admin/reviews`, `POST /api/v1/admin/reviews/{id}/moderation-decisions` | 16 | `AdminReviewModerationController`, `ReviewModerationSection`, `AdminReviewModerationControllerTests` | ✅ |
 | UC18 จัดการหมวดหมู่ | — | — | seed หมวดหมู่ใน V2 | ⬜ |
-| UC19 ดู Audit Log | — | 17 | ตาราง `audit_logs` มีข้อมูลจาก Provider/Course แล้ว | 🟡 บันทึกแล้ว ยังไม่มีหน้าดู |
+| UC19 ดู Audit Log | `GET /api/v1/admin/audit-logs`, `/admin/audit-logs` | 17 + UC19 | `AuditLogQueryService`, `AdminAuditLogController`, `AuditLogsPage`, [คู่มือ](audit-log-guide.md), [รายงานทดสอบ](test-reports/audit-log.md) | ✅ อ่าน/กรอง/แบ่งหน้าและตรวจสิทธิ์ผ่าน PostgreSQL กับ browser E2E; งาน transaction/Observer เดิมยังแยกอยู่ใน Task 17 |

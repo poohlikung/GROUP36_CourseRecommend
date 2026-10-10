@@ -148,6 +148,10 @@ Admin เข้า `/admin` ส่วน **รีวิว** เพื่อด�
 
 คำอธิบาย API และการทดสอบอยู่ใน `doc/task16-review-moderation-guide.md`
 
+## ดูประวัติการใช้งานระบบ (UC19)
+
+Admin ที่เข้าสู่ระบบเปิดเมนู **ประวัติระบบ** หรือ `/admin/audit-logs` เพื่อดู Audit Log จาก PostgreSQL กรองประเภท กิจกรรม ผู้กระทำ รายการ และช่วงเวลาได้ พร้อมแบ่งหน้าฝั่งเซิร์ฟเวอร์ รายการที่ถูกลบจากต้นทางยังมีประวัติให้ตรวจ ผู้ใช้ทั่วไปเข้าไม่ได้ ดูวิธีใช้ที่ [คู่มือ UC19](doc/audit-log-guide.md), [API contract](doc/api-contract.md) และ [ผลทดสอบ](doc/test-reports/audit-log.md)
+
 ## AuditLog และ Observer metrics (Task 17)
 
 การเปลี่ยนสถานะกับ AuditLog บันทึกใน transaction เดียวกัน หากเขียน audit ไม่สำเร็จ ธุรกิจจะ rollback ส่วน Observer นับ counter `course.status.transitions` หลัง commit สำเร็จเท่านั้น แยกตาม `action`, `from`, `to` ถ้า metrics ล้มเหลวจะบันทึก error log และคำขอที่ commit แล้วตอบสำเร็จตามเดิม

@@ -1,0 +1,48 @@
+{
+  "generatedAtUtc": "2026-10-10T12:36:37.7903611+00:00",
+  "generatedAtBangkok": "2026-10-10T19:36:37.7903611+07:00",
+  "timezone": "Asia/Bangkok",
+  "timestampsReliable": true,
+  "clockNote": "This summary and the referenced E2E results were generated after Windows was changed to Bangkok time and synchronized with NTP. Historical timestamps recorded under the wrong Montevideo timezone are retained separately and must not be interpreted as actual UTC times.",
+  "branch": "sorawit_6733800648_01",
+  "backend": {
+    "command": ".\\mvnw.cmd -B --no-transfer-progress verify",
+    "result": "BUILD SUCCESS",
+    "tests": 317,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "typecheck": "passed",
+    "tests": 106,
+    "build": "passed"
+  },
+  "e2e": {
+    "command": "npm run test:e2e --prefix code/frontend",
+    "typecheck": "passed",
+    "project": "coursehub-e2e-340bb210",
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "startTimeUtc": "2026-10-10T12:34:52.002Z",
+    "durationMs": 84581.806
+  },
+  "backupRestore": {
+    "command": "pwsh -File test/scripts/backup-restore.Tests.ps1",
+    "passed": 8,
+    "failed": 0
+  },
+  "sources": [
+    "code/backend/target/surefire-reports/TEST-*.xml",
+    "test/reports/audit-timefix-backend-verify.log",
+    "test/reports/audit-timefix-frontend-test.log",
+    "test/reports/audit-timefix-frontend-typecheck.log",
+    "test/reports/audit-timefix-frontend-build.log",
+    "test/reports/audit-timefix-e2e-typecheck.log",
+    "test/reports/e2e/coursehub-e2e-340bb210/results.json",
+    "test/reports/audit-timefix-e2e.log",
+    "test/reports/audit-timefix-backup-restore.log"
+  ]
+}

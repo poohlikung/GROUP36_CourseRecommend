@@ -151,6 +151,35 @@ Provider ใหม่มีสถานะ `PENDING` และผู้สร้
 
 คะแนนเฉลี่ยใน catalog คำนวณจากรีวิว `PUBLISHED` เท่านั้น จึงเปลี่ยนตามผลอนุมัติหรือการแก้ไขรีวิว
 
+### 4.7 ดูประวัติการใช้งานระบบ (UC19)
+
+`GET /api/v1/admin/audit-logs` ต้องมี session ของ Admin ที่ยัง active และบทบาท Admin ในฐานข้อมูลปัจจุบัน เป็น API อ่านอย่างเดียว ไม่สร้างหรือแก้ประวัติ และตอบ `Cache-Control: no-store` ผู้ไม่เข้าสู่ระบบได้ `401` ผู้ไม่มีสิทธิ์ได้ `403`.
+
+| Query | ค่าและความหมาย |
+| --- | --- |
+| `entityType` | `COURSE`, `PROVIDER`, `PROVIDER_MEMBER`, `REVIEW` |
+| `action` | รหัสกิจกรรมตรงตามที่บันทึก เช่น `COURSE_CREATED`, `COURSE_SUBMITTED`, `COURSE_APPROVE`, `COURSE_REQUEST_REVISION`, `PROVIDER_APPROVE`, `PROVIDER_MEMBER_ADDED`, `REVIEW_REJECT`; รองรับ `PUBLISH_COURSE` จาก seed เดิมด้วย |
+| `actorId`, `entityId` | ID จำนวนเต็มบวก |
+| `from`, `to` | ISO-8601 ที่มี timezone UTC เช่น `2026-01-01T00:00:00Z`; ใช้ `from <= createdAt < to` และ `from < to` |
+| `page`, `size` | หน้าเริ่ม 0 (ค่าเริ่มต้น 0); ขนาด 1–50 (ค่าเริ่มต้น 10) |
+
+ตัวกรองทั้งหมดใช้ร่วมกันได้ ค่าผิดตอบ `400` ในรูปแบบ error เดิม เรียง `createdAt DESC, id DESC` และแบ่งหน้าที่ฐานข้อมูล รายการที่ถูกลบจากตารางต้นทางยังแสดง `entityType` และ `entityId` ได้
+
+```json
+{
+  "content": [{
+    "id": 25, "createdAt": "2026-01-01T00:00:00Z",
+    "actorId": 1, "actorDisplayName": "ผู้ดูแลระบบ",
+    "action": "COURSE_APPROVE", "entityType": "COURSE", "entityId": 12,
+    "oldStatus": "PENDING", "newStatus": "PUBLISHED", "reason": null
+  }],
+  "page": 0, "size": 10, "totalElements": 1, "totalPages": 1,
+  "first": true, "last": true
+}
+```
+
+ชื่อผู้กระทำใช้ `ผู้ใช้ #<actorId>` หากไม่มี profile; ไม่ส่ง User entity หรือ password hash
+
 ## 5. เทสต์ที่ยืนยันสัญญานี้
 
 | ไฟล์ | สิ่งที่ตรวจ |
