@@ -40,6 +40,7 @@ classDiagram
     class CourseRepository
     class ProviderOwnershipService
     class CourseUrlPolicy
+    class CoursePlatformResolver
     class CourseMapper
     class CourseEventPublisher
     CourseController --> CourseQueryService
@@ -50,7 +51,8 @@ classDiagram
     CourseModerationService <|.. CourseModerationServiceImpl
     CourseServiceImpl --> ProviderOwnershipService
     CourseServiceImpl --> CourseRepository
-    CourseServiceImpl --> CourseUrlPolicy
+    CourseServiceImpl --> CoursePlatformResolver
+    CoursePlatformResolver --> CourseUrlPolicy
     CourseServiceImpl --> CourseMapper
     CourseServiceImpl --> CourseWorkflow
     CourseServiceImpl --> CourseEventPublisher

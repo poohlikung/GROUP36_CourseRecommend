@@ -37,13 +37,12 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
     private static final String ENTITY_TYPE = "COURSE";
 
     private final CourseRepository courseRepository;
-    private final PlatformRepository platformRepository;
     private final CategoryRepository categoryRepository;
     private final ProviderRepository providerRepository;
     private final ReviewRepository reviewRepository;
     private final AuditLogRepository auditLogRepository;
     private final ProviderOwnershipService ownershipService;
-    private final CourseUrlPolicy courseUrlPolicy;
+    private final CoursePlatformResolver platformResolver;
     private final CourseMapper courseMapper;
     private final CourseEventPublisher courseEventPublisher;
 
@@ -59,10 +58,7 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Slug นี้ถูกใช้งานแล้ว");
         }
 
-        Platform platform = platformRepository.findById(request.platformId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่พบ Platform ที่ระบุ"));
-
-        courseUrlPolicy.requireAllowedUrl(request.url(), platform);
+        Platform platform = platformResolver.resolve(request.url(), request.platformId());
 
         Set<Category> categories = resolveCategories(request.categoryIds());
 
@@ -143,10 +139,7 @@ public class CourseServiceImpl implements CourseQueryService, CourseCommandServi
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Slug นี้ถูกใช้งานแล้ว");
         }
 
-        Platform platform = platformRepository.findById(request.platformId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "ไม่พบ Platform ที่ระบุ"));
-
-        courseUrlPolicy.requireAllowedUrl(request.url(), platform);
+        Platform platform = platformResolver.resolve(request.url(), request.platformId());
 
         course.setTitle(request.title().trim());
         course.setSlug(newSlug);

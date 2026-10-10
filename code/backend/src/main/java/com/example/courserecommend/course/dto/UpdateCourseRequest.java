@@ -6,7 +6,6 @@ import com.example.courserecommend.domain.enums.PaymentType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -26,11 +25,10 @@ public record UpdateCourseRequest(
         String description,
 
         @NotBlank(message = "URL ต้องไม่ว่างเปล่า")
-        @Size(max = 255, message = "URL ต้องไม่เกิน 255 ตัวอักษร")
-        @Pattern(regexp = "^(http|https)://.*$", message = "URL ต้องขึ้นต้นด้วย http:// หรือ https://")
+        @Size(max = 2048, message = "URL ต้องไม่เกิน 2048 ตัวอักษร")
+        @Pattern(regexp = "(?i)^https://.*$", message = "URL ต้องขึ้นต้นด้วย https://")
         String url,
 
-        @NotNull(message = "กรุณาระบุ Platform")
         Long platformId,
 
         CourseLevel level,

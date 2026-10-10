@@ -18,7 +18,7 @@ class CourseUrlPolicyTests {
     void acceptsExactHostAndSubdomain() {
         assertThatCode(() -> policy.requireAllowedUrl("https://coursera.org/learn/java", coursera)).doesNotThrowAnyException();
         assertThatCode(() -> policy.requireAllowedUrl("https://www.coursera.org/learn/java", coursera)).doesNotThrowAnyException();
-        assertThatCode(() -> policy.requireAllowedUrl("HTTP://WWW.COURSERA.ORG/x", coursera)).doesNotThrowAnyException();
+        assertThatCode(() -> policy.requireAllowedUrl("HTTPS://WWW.COURSERA.ORG/x", coursera)).doesNotThrowAnyException();
     }
 
     @Test
@@ -34,14 +34,24 @@ class CourseUrlPolicyTests {
         assertBadRequest("javascript:alert(1)");
         assertBadRequest("ftp://coursera.org/file");
         assertBadRequest("https://coursera.org/has space");
+        assertBadRequest("http://coursera.org/course");
+        assertBadRequest("https://localhost/course");
+        assertBadRequest("https://127.0.0.1/course");
         assertBadRequest("   ");
         assertBadRequest(null);
     }
 
     @Test
-    void allowsAnyHttpHostWhenPlatformHasNoAllowedHost() {
+    void normalizesInternationalizedDomainNames() {
+        assertThat(policy.requireValidHost("https://คอร์ส.ไทย/course")).startsWith("xn--");
+    }
+
+    @Test
+    void rejectsPlatformWithoutAnAllowedHost() {
         Platform open = Platform.builder().name("Other").slug("other").allowedHost(" ").build();
-        assertThatCode(() -> policy.requireAllowedUrl("https://example.com/course", open)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> policy.requireAllowedUrl("https://example.com/course", open))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     private void assertBadRequest(String url) {

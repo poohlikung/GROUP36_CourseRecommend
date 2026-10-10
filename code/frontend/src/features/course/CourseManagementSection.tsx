@@ -104,9 +104,18 @@ function focusFirstFieldError(error: unknown, fields: ReadonlyArray<readonly [st
   window.setTimeout(() => document.getElementById(firstInvalidField[1])?.focus(), 0);
 }
 
+function detectedPlatformHost(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    return parsed.hostname.replace(/^www\./i, '');
+  } catch {
+    return null;
+  }
+}
+
 export function CourseManagementSection({ provider, onBack }: CourseManagementSectionProps) {
   const [courses, setCourses] = useState<CourseDetail[]>([]);
-  const [platforms, setPlatforms] = useState<CatalogOption[]>([]);
   const [categories, setCategories] = useState<CatalogOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -123,7 +132,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   const [formSlug, setFormSlug] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formUrl, setFormUrl] = useState('');
-  const [formPlatformId, setFormPlatformId] = useState<number>(0);
   const [formLevel, setFormLevel] = useState<CourseLevel>('BEGINNER');
   const [formLanguage, setFormLanguage] = useState<CourseLanguage>('THAI');
   const [formEffortHours, setFormEffortHours] = useState<string>('');
@@ -147,7 +155,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
   const slugError = getFieldError(formError, 'slug');
   const descriptionError = getFieldError(formError, 'description');
   const urlError = getFieldError(formError, 'url');
-  const platformError = getFieldError(formError, 'platformId');
+  const platformHost = detectedPlatformHost(formUrl);
   const levelError = getFieldError(formError, 'level');
   const languageError = getFieldError(formError, 'language');
   const effortError = getFieldError(formError, 'effortHours');
@@ -183,11 +191,9 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     const controller = new AbortController();
     loadCourses();
     getCatalogOptions(controller.signal)
-      .then(({ platforms: p, categories: c }) => {
+      .then(({ categories: c }) => {
         if (controller.signal.aborted) return;
-        setPlatforms(p);
         setCategories(c);
-        setFormPlatformId((current) => current === 0 && p.length > 0 ? p[0].id : current);
       })
       .catch(() => {
         // Option load failure will be apparent if dropdowns are empty
@@ -201,7 +207,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     setFormSlug('');
     setFormDescription('');
     setFormUrl('');
-    setFormPlatformId(platforms.length > 0 ? platforms[0].id : 0);
     setFormLevel('BEGINNER');
     setFormLanguage('THAI');
     setFormEffortHours('');
@@ -219,7 +224,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
     setFormSlug(course.slug);
     setFormDescription(course.description ?? '');
     setFormUrl(course.url);
-    setFormPlatformId(course.platformId);
     setFormLevel(course.level);
     setFormLanguage(course.language);
     setFormEffortHours(course.effortHours ? String(course.effortHours) : '');
@@ -251,7 +255,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
           slug: formSlug.trim().toLowerCase(),
           description: formDescription.trim(),
           url: formUrl.trim(),
-          platformId: formPlatformId,
           level: formLevel,
           language: formLanguage,
           effortHours: effortNum,
@@ -268,7 +271,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
           slug: formSlug.trim().toLowerCase(),
           description: formDescription.trim(),
           url: formUrl.trim(),
-          platformId: formPlatformId,
           level: formLevel,
           language: formLanguage,
           effortHours: effortNum,
@@ -287,7 +289,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
       focusFirstFieldError(err, [
         ['title', 'course-title'],
         ['slug', 'course-slug'],
-        ['platformId', 'course-platform'],
         ['url', 'course-url'],
         ['level', 'course-level'],
         ['language', 'course-language'],
@@ -690,7 +691,7 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                 <div id="course-title-error"><FieldError message={titleError} /></div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
                 <div>
                   <label htmlFor="course-slug" className="block text-xs font-semibold text-slate-700">
                     URL Slug <span className="text-rose-500">*</span>
@@ -714,27 +715,6 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   <div id="course-slug-error"><FieldError message={slugError} /></div>
                 </div>
 
-                <div>
-                  <label htmlFor="course-platform" className="block text-xs font-semibold text-slate-700">
-                    แพลตฟอร์ม <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    id="course-platform"
-                    required
-                    value={formPlatformId}
-                    onChange={(e) => setFormPlatformId(Number(e.target.value))}
-                    aria-invalid={Boolean(platformError)}
-                    aria-describedby={platformError ? 'course-platform-error' : undefined}
-                    className="form-input text-sm"
-                  >
-                    {platforms.map((plat) => (
-                      <option key={plat.id} value={plat.id}>
-                        {plat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div id="course-platform-error"><FieldError message={platformError} /></div>
-                </div>
               </div>
 
               <div>
@@ -745,15 +725,20 @@ export function CourseManagementSection({ provider, onBack }: CourseManagementSe
                   id="course-url"
                   type="url"
                   required
-                  maxLength={255}
+                  maxLength={2048}
+                  pattern="https://.*"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
                   placeholder="https://example.com/course"
                   aria-invalid={Boolean(urlError)}
-                  aria-describedby={urlError ? 'course-url-error' : undefined}
+                  aria-describedby={urlError ? 'course-url-error course-url-help' : 'course-url-help'}
                   className="form-input text-sm"
                 />
                 <div id="course-url-error"><FieldError message={urlError} /></div>
+                <p id="course-url-help" className="mt-2 text-xs text-slate-600">
+                  ระบบจะระบุแพลตฟอร์มจากโดเมนของลิงก์โดยอัตโนมัติ
+                  {platformHost ? ` · ${platformHost}` : ''}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, StrictMode } from 'react';
 
 import { AuthProvider } from '../../code/frontend/src/auth/AuthContext';
 import { ProviderPage } from '../../code/frontend/src/pages/ProviderPage';
@@ -130,27 +129,14 @@ describe('course management flow', () => {
     cleanup();
   });
 
-  it('does not overwrite a selected platform when an aborted option request finishes late', async () => {
-    const options = {
-      platforms: [
-        { id: 1, name: 'Coursera', slug: 'coursera' },
-        { id: 2, name: 'Udemy', slug: 'udemy' },
-      ],
-      categories: [],
-    };
-    let resolveOldRequest!: (value: typeof options) => void;
-    mocks.getCatalogOptions
-      .mockImplementationOnce(() => new Promise<typeof options>((resolve) => { resolveOldRequest = resolve; }))
-      .mockResolvedValueOnce(options);
+  it('detects the platform from the URL without asking for a platform selection', async () => {
     mocks.listByProvider.mockResolvedValue([]);
-    render(<StrictMode><CourseManagementSection provider={mockProvider} onBack={() => {}} /></StrictMode>);
+    render(<MemoryRouter><CourseManagementSection provider={mockProvider} onBack={() => {}} /></MemoryRouter>);
     const user = userEvent.setup();
     await user.click(screen.getAllByRole('button', { name: 'เพิ่มคอร์สใหม่' })[0]);
-    const platform = await screen.findByLabelText(/แพลตฟอร์ม/);
-    await waitFor(() => expect(screen.getByRole('option', { name: 'Udemy' })).toBeInTheDocument());
-    await user.selectOptions(platform, '2');
-    await act(async () => { resolveOldRequest(options); });
-    expect(platform).toHaveValue('2');
+    expect(screen.queryByLabelText(/^แพลตฟอร์ม/)).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/ลิงก์คอร์สเรียน/), 'https://www.opendurian.com/course');
+    expect(screen.getByText(/opendurian\.com/)).toBeInTheDocument();
   });
 
   it('navigates to course management and renders course list with status badges', async () => {
@@ -211,10 +197,10 @@ describe('course management flow', () => {
           title: 'Modern Web Development',
           slug: 'modern-web-dev',
           url: 'https://coursera.org/learn/modern-web',
-          platformId: 1,
         })
       )
     );
+    expect(mocks.createCourse.mock.calls[0][1]).not.toHaveProperty('platformId');
   });
 
   it('submits a draft course for review (UC13)', async () => {
@@ -312,6 +298,7 @@ describe('course management flow', () => {
         })
       )
     );
+    expect(mocks.updateCourse.mock.calls[0][1]).not.toHaveProperty('platformId');
   });
 
   it('keeps an unknown price empty when editing a paid course', async () => {

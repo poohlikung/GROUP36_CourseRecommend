@@ -4,6 +4,7 @@ import com.example.courserecommend.catalog.dto.CatalogCourseResponse;
 import com.example.courserecommend.catalog.dto.CatalogOptionResponse;
 import com.example.courserecommend.catalog.dto.CatalogPageResponse;
 import com.example.courserecommend.catalog.dto.CatalogPriceResponse;
+import com.example.courserecommend.course.CourseUrlPolicy;
 import com.example.courserecommend.domain.entity.Category;
 import com.example.courserecommend.domain.entity.Course;
 import com.example.courserecommend.domain.entity.CoursePrice;
@@ -22,11 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.net.URI;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,12 +36,15 @@ public class CatalogCourseService {
 
     private final CourseRepository courseRepository;
     private final CatalogRatingRepository catalogRatingRepository;
+    private final CourseUrlPolicy courseUrlPolicy;
 
     public CatalogCourseService(
             CourseRepository courseRepository,
-            CatalogRatingRepository catalogRatingRepository) {
+            CatalogRatingRepository catalogRatingRepository,
+            CourseUrlPolicy courseUrlPolicy) {
         this.courseRepository = courseRepository;
         this.catalogRatingRepository = catalogRatingRepository;
+        this.courseUrlPolicy = courseUrlPolicy;
     }
 
     public CatalogPageResponse<CatalogCourseResponse> getPublishedCourses(
@@ -166,20 +168,9 @@ public class CatalogCourseService {
 
     private String getAllowedExternalUrl(Course course) {
         try {
-            URI uri = URI.create(course.getUrl());
-            String host = uri.getHost();
-            String allowedHost = course.getPlatform().getAllowedHost();
-            if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null || allowedHost == null) {
-                return null;
-            }
-
-            String normalizedHost = host.toLowerCase(Locale.ROOT);
-            String normalizedAllowedHost = allowedHost.toLowerCase(Locale.ROOT);
-            if (normalizedHost.equals(normalizedAllowedHost)
-                    || normalizedHost.endsWith("." + normalizedAllowedHost)) {
-                return uri.toString();
-            }
-        } catch (IllegalArgumentException ignored) {
+            courseUrlPolicy.requireAllowedUrl(course.getUrl(), course.getPlatform());
+            return course.getUrl();
+        } catch (ResponseStatusException | IllegalArgumentException ignored) {
             // Invalid stored links are hidden from the public catalog.
         }
         return null;
